@@ -1539,8 +1539,8 @@ Next, in order of what unblocks the most:
    repository `theebuka/ember` with seven secrets set, on Node 24, and the NGX
    collector has run. Push and both digests are still blocked: they need a
    deployed app for `EMBER_APP_URL`, and the digest needs a From address on a
-   domain verified in Resend (a free-mail address is refused). Until then those
-   jobs fail on their schedule. Keep the VAPID keypair in `.env.local` — a second
+   domain verified in Resend (a free-mail address is refused). Their cron lines are
+   commented out until then; `workflow_dispatch` still runs them by hand. Keep the VAPID keypair in `.env.local` — a second
    pair invalidates every stored subscription.
 3. **Deliver one push to a closed app and one email to a real inbox.** The only way
    to verify phase 26 at all; nothing in the gate can drive either. Check in this

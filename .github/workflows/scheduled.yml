@@ -36,14 +36,14 @@ on:
     # that is the derivation rather than a guess: the script will not contact the
     # same person twice inside two hours, so a tighter cron cannot deliver
     # anything a looser one misses — it can only burn runner minutes proving it.
-    - cron: "0 */2 * * *"
+    # - cron: "0 */2 * * *"  # off until EMBER_APP_URL exists (CLAUDE.md §9 item 2)
 
     # The daily digest, 07:00 UTC.
-    - cron: "0 7 * * *"
+    # - cron: "0 7 * * *"  # off until EMBER_APP_URL exists (CLAUDE.md §9 item 2)
 
     # The weekly digest, Monday 07:00 UTC. Runs alongside the daily one; a user
     # is on one cadence or the other, never both.
-    - cron: "5 7 * * 1"
+    # - cron: "5 7 * * 1"  # off until EMBER_APP_URL exists (CLAUDE.md §9 item 2)
 
   # Every job is also runnable by hand, which is how the first one gets verified
   # — none of this can be exercised by `npm run verify`.
