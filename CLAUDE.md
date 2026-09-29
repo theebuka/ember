@@ -936,7 +936,7 @@ See `docs/decisions/` for full ADRs. Summary:
 *(Maintain rigorously. Anything mocked, stubbed, or knowingly incomplete goes here the moment it's introduced.)*
 
 - **Every screen is real; nothing links to a stub.**
-- **`0009` is written and not yet applied.** Until it is, the admin's local-pricing switch fails with the table's absence (the toast says so) and every reader gets the default — local currency on.
+- **`0009` is applied**, verified 2026-09-29 by probing as an anonymous client: `app_settings` reads `200 []` (public select, no rows yet, so every reader gets the default — local currency on), and an anonymous insert is refused `401 42501` by RLS. What is not yet observed is the admin half — a signed-in admin flipping the switch, and a signed-in non-admin being refused by `is_admin()`; both need a real session.
 - **Plans exist, and there is no checkout.** `lib/plan.ts` is the only place a gate
   is decided, `entitlements` is a select-only table, and every account is `free`
   because the only way a Pro row lands today is somebody typing it into the
