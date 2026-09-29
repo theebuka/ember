@@ -27,7 +27,11 @@ export function RegisterServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
 
     const register = () => {
-      navigator.serviceWorker.register("/sw.js").catch(() => {
+      // A different script URL in development, so the worker knows to cache
+      // nothing (see `DEV` in `public/sw.js`), and so an existing production-
+      // mode registration on this origin is replaced rather than kept.
+      const script = process.env.NODE_ENV === "production" ? "/sw.js" : "/sw.js?mode=dev";
+      navigator.serviceWorker.register(script).catch(() => {
         // Offline support is an enhancement — a registration failure must
         // never surface to the user or block the app.
       });

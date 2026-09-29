@@ -14,11 +14,29 @@ const DATA_CACHE = `${VERSION}-data`;
 
 const OFFLINE_URL = "/offline.html";
 
+/**
+ * Registered from `next dev` (`/sw.js?mode=dev`), this worker is here for push
+ * and notification clicks **and caches nothing**.
+ *
+ * `/_next/static/` is served cache-first, which is only correct because a
+ * production build puts a content hash in every filename — new contents, new
+ * name. The dev server does not: it rebuilds `[root-of-the-server]__….css`
+ * under the same name all day. So the first time `NEXT_PUBLIC_EMBER_SW_IN_DEV`
+ * was switched on, the worker pinned that morning's stylesheet and went on
+ * serving it through every edit; a rule added later never reached the page, and
+ * the side panel scrolled away because its `top` class did not exist in the CSS
+ * the browser had. Nothing errored. The in-app browser never registers a worker,
+ * so it could not reproduce it — only a real Chrome could.
+ */
+const DEV = new URL(self.location.href).searchParams.get("mode") === "dev";
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
-      const cache = await caches.open(SHELL_CACHE);
-      await cache.addAll([OFFLINE_URL, "/icons/icon.svg"]);
+      if (!DEV) {
+        const cache = await caches.open(SHELL_CACHE);
+        await cache.addAll([OFFLINE_URL, "/icons/icon.svg"]);
+      }
       await self.skipWaiting();
     })(),
   );
@@ -29,7 +47,9 @@ self.addEventListener("activate", (event) => {
     (async () => {
       const keys = await caches.keys();
       await Promise.all(
-        keys.filter((k) => !k.startsWith(VERSION)).map((k) => caches.delete(k)),
+        // In development every cache goes, including this version's — a worker
+        // that caches nothing must not keep serving what an earlier one stored.
+        keys.filter((k) => DEV || !k.startsWith(VERSION)).map((k) => caches.delete(k)),
       );
       await self.clients.claim();
     })(),
@@ -67,6 +87,9 @@ async function networkFirst(request, cacheName, fallback) {
 }
 
 self.addEventListener("fetch", (event) => {
+  // Development: straight to the network, always. See `DEV`.
+  if (DEV) return;
+
   const { request } = event;
 
   if (request.method !== "GET") return;
