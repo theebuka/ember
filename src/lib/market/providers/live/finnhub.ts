@@ -589,16 +589,20 @@ export function news(): Promise<NewsItem[]> {
     }
 
     const cutoff = now - WINDOW_DAYS * 86_400_000;
+    // Fresh rows first, so a story Finnhub re-issued under the same id with an
+    // edited headline replaces the stored copy instead of sitting beside it.
     const items = [
-      ...(previous ?? []),
       ...general.flat().map((row) => toItem(row)),
       ...company,
+      ...(previous ?? []),
     ].filter((item) => item.at >= cutoff);
 
     // Wire services syndicate, so the same story arrives under several ids.
+    const seen = new Set<string>();
     const byHeadline = new Map<string, NewsItem>();
     for (const item of items) {
-      if (!item.headline || !item.url) continue;
+      if (!item.headline || !item.url || seen.has(item.id)) continue;
+      seen.add(item.id);
       const key = item.headline.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
       const existing = byHeadline.get(key);
       if (!existing) byHeadline.set(key, item);
