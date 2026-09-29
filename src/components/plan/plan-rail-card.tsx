@@ -50,7 +50,7 @@ export function PlanRailCard() {
 
   return (
     <div className="px-3 pb-1">
-      <div className="rounded-xl border border-line bg-surface-2 p-3.5">
+      <div className="rounded-xl border border-line bg-ground p-3.5">
         <h2 className="flex items-center gap-2 text-caption font-semibold text-ink">
           <Sparkle weight="fill" className="size-4 shrink-0 text-brand" />
           ember Pro

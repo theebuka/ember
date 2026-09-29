@@ -22,12 +22,12 @@ import { cn } from "@/lib/utils";
 /**
  * Desktop primary navigation.
  *
- * **The panel has no surface of its own.** It sits directly on `ground`, the
- * same as the page, with no fill and no dividing border. A white slab behind
- * the nav plus a hard rule down the side is the stock admin-dashboard shell,
- * and it spends a whole vertical edge on a boundary nobody needed: the content
- * is already made of cards that lift off `ground` by value, so the separation
- * draws itself.
+ * **The rail sits on `canvas`, and the page is the panel beside it.** It used
+ * to share `ground` with the page and have no edge at all, reasoning that the
+ * content's cards would draw the separation. They stopped being cards in phase
+ * 14, so nothing did: rail, header and page read as three things floating on
+ * one white field. The frame is the edge, drawn once, by the page rather than
+ * by a rule down the rail.
  *
  * What that leaves is a single elevated element — the active item — which is
  * exactly where the eye should go. It's the same ember-tinted pill the mobile
@@ -121,14 +121,14 @@ export function SidePanel() {
             aria-keyshortcuts="Meta+K Control+K"
             className={cn(
               "flex h-10 w-full items-center gap-2.5 rounded-full px-3.5 text-caption",
-              "bg-surface-2 text-stone outline-none transition-colors",
+              "border border-line bg-ground text-stone outline-none transition-colors",
               "hover:text-graphite",
               "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
             )}
           >
             <Search className="size-4 shrink-0" />
             Search
-            <kbd className="mono-label ml-auto rounded-md bg-surface px-1.5 py-0.5 text-micro text-stone">
+            <kbd className="mono-label ml-auto rounded-md bg-surface-2 px-1.5 py-0.5 text-micro text-stone">
               ⌘K
             </kbd>
           </button>
@@ -153,7 +153,7 @@ export function SidePanel() {
                   isCollapsed ? "justify-center px-0" : "px-3.5",
                   active
                     ? "bg-brand-tint font-semibold text-brand-text"
-                    : "text-stone hover:bg-surface-2 hover:text-graphite",
+                    : "text-stone hover:bg-ground hover:text-graphite",
                 )}
               >
                 {/* Same vocabulary as the mobile bar: active is filled.

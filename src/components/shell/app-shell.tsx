@@ -8,6 +8,7 @@ import { SidePanel } from "@/components/shell/side-panel";
 import { useFindingAlerts } from "@/hooks/use-finding-alerts";
 import { useSync } from "@/hooks/use-sync";
 import { isBareRoute } from "@/lib/nav";
+import { cn } from "@/lib/utils";
 
 /**
  * Application chrome: a bottom bar on mobile, a side panel on desktop.
@@ -58,10 +59,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <AnnouncementBar />
       </div>
 
-      <div className="flex min-h-dvh">
+      {/* The frame, from `md` up: the rail sits on `canvas` and the page is a
+          white panel inset on it. Without it the rail, the header and the page
+          were three things floating on one white field with no edge between
+          chrome and content. `overflow-clip` rather than `hidden` so the panel
+          rounds its corners without becoming a scroll container — sticky
+          headers inside it still stick to the viewport. */}
+      <div className="flex min-h-dvh md:bg-canvas">
         <SidePanel />
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div
+          className={cn(
+            "flex min-w-0 flex-1 flex-col",
+            "md:my-2 md:mr-2 md:min-h-[calc(100dvh-var(--bar-h,0px)-1rem)] md:overflow-clip",
+            "md:rounded-2xl md:border md:border-line md:bg-ground",
+          )}
+        >
           <main
             id="main"
             className="flex-1 pb-[calc(var(--nav-height)+var(--safe-bottom)+1.5rem)] md:pb-16"

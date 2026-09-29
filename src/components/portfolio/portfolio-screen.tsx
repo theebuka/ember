@@ -246,7 +246,9 @@ export function PortfolioScreen() {
             <Button
               size="sm"
               onClick={() => setEditing({ mode: "add" })}
-              disabled={instruments.length === 0}
+              // `hydrated` first: a warm instruments cache can answer before
+              // hydration, and the server always renders this disabled.
+              disabled={!hydrated || instruments.length === 0}
               className="hidden md:inline-flex"
             >
               <Plus />
@@ -454,7 +456,7 @@ export function PortfolioScreen() {
           up to eight seconds on a cold live universe, which reads as broken
           rather than as waiting. Fixed-position, so arriving late moves
           nothing. */}
-      {!isEmpty && instruments.length > 0 && (
+      {hydrated && !isEmpty && instruments.length > 0 && (
         <Fab
           onClick={() => setEditing({ mode: "add" })}
           label="Log trade"

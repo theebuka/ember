@@ -22,7 +22,9 @@ import { cn } from "@/lib/utils";
  *
  * Three deliberate choices:
  *
- *   **A density ramp, not a rectangle.** The intensity curve rises to a crest
+ *   **A density ramp, not a rectangle.** Column height is the hourly
+ *   intensity and the window's hours are drawn in ink, so the crest reads as a
+ *   chart rather than a barcode. The intensity curve rises to a crest
  *   and falls away. "Thursday late morning" is a genuinely soft-shouldered
  *   claim, and drawing it as a fence with hard edges would assert a precision
  *   the model does not have.
@@ -75,22 +77,36 @@ export function WindowBand({
   return (
     <div className={cn("w-full", className)}>
       <div
-        className="relative w-full overflow-hidden rounded-md bg-surface-2"
-        style={{ height: track }}
+        // Room above the bars for the crest's point, which sits *on* the
+        // tallest column rather than inside a filled box.
+        className="relative w-full border-b border-line-strong"
+        style={{ height: track, paddingTop: point / 2 }}
         role="img"
         aria-label={label}
       >
-        {/* The curve itself. */}
-        <div className={cn("flex h-full w-full", gap && "gap-px")} aria-hidden>
-          {execution.curve.map((sample) => (
-            <div
-              key={sample.t}
-              className="h-full flex-1 bg-graphite"
-              // Raised to a power so the crest separates from its shoulders;
-              // a linear map made the whole band read as one flat block.
-              style={{ opacity: 0.06 + sample.intensity ** 1.7 * 0.62 }}
-            />
-          ))}
+        {/* The curve itself — one column per hour, height is intensity.
+            It was full-height columns varying only in opacity inside a grey
+            box, which at 72 columns read as a barcode rather than a chart.
+            Height carries the ramp now; tone carries the window: inside it
+            the columns are ink, outside they are the hairline grey. */}
+        <div className={cn("flex h-full w-full items-end", gap && "gap-px")} aria-hidden>
+          {execution.curve.map((sample) => {
+            const inWindow =
+              execution.hasWindow &&
+              sample.t >= execution.opensAt &&
+              sample.t < execution.closesAt;
+            return (
+              <div
+                key={sample.t}
+                className={cn(
+                  "flex-1 rounded-t-[1.5px]",
+                  inWindow ? "bg-graphite" : "bg-line-strong",
+                )}
+                // A floor so a dead hour still marks its place on the axis.
+                style={{ height: `${Math.max(8, sample.intensity ** 1.4 * 100)}%` }}
+              />
+            );
+          })}
         </div>
 
         {/* Midnight boundaries — three days is long enough to lose track.
@@ -101,16 +117,16 @@ export function WindowBand({
             <div
               key={t}
               aria-hidden
-              className="absolute inset-y-0 w-px bg-ground/50"
+              className="absolute bottom-0 h-2 w-px bg-stone/60"
               style={{ left: `${positionOf(t)}%` }}
             />
           ))}
 
-        {/* The peak. */}
+        {/* The peak, resting on the crest. */}
         {execution.hasWindow && (
           <EmberPoint
             size={point}
-            className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
+            className="absolute top-0 -translate-x-1/2"
             style={{ left: `${peakLeft}%` }}
           />
         )}

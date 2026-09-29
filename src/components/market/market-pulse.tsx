@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeChip } from "@/components/market/change-chip";
+import { ChangeText } from "@/components/market/change-chip";
 import { Sparkline } from "@/components/market/sparkline";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Candle, Instrument, Quote } from "@/lib/api/types";
@@ -54,9 +54,9 @@ export function MarketPulse({
             <p className="num text-caption font-medium text-ink">
               {formatQuotePrice(instrument, quote.price)}
             </p>
-            <ChangeChip value={quote.changePct} size="sm" className="mt-0.5">
+            <ChangeText value={quote.changePct} className="text-caption font-medium mt-0.5">
               {`${quote.changePct >= 0 ? "+" : "−"}${(Math.abs(quote.changePct) * 100).toFixed(2)}%`}
-            </ChangeChip>
+            </ChangeText>
           </div>
         </li>
       ))}

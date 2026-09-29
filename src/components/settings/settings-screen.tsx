@@ -162,16 +162,11 @@ export function SettingsScreen() {
             and the pane keeps a readable measure. A switch 1,400px from its
             label is worse than a narrow column. */}
         <div className="min-w-0 max-w-3xl">
-          {/* The tab's own title, and the only heading above the controls.
-              Blocks below it label themselves with an eyebrow, or — for the
-              first block on a tab — with nothing at all, because this is
-              already its label. */}
-          <div className="mb-7">
-            <h2 className="text-title font-semibold tracking-[-0.02em] text-ink">
-              {section.label}
-            </h2>
-            <p className="mt-1 text-caption text-stone">{section.hint}</p>
-          </div>
+          {/* The tab row is the visible title. A second "Account" 40px under
+              the selected "Account" tab, with a lowercase tagline beneath it,
+              was the same word twice before the first control — so the
+              heading stays for assistive tech and nothing else. */}
+          <h2 className="sr-only">{section.label}</h2>
 
           {/* 40px between blocks, not 32. Tightening it was the wrong half of
               the fix — the pane read as a wall because of the *text*, and taking

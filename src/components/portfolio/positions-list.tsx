@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeChip } from "@/components/market/change-chip";
+import { ChangeText } from "@/components/market/change-chip";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { BaseCurrency } from "@/lib/api/types";
 import { formatMoney, formatPercent, formatQuantity } from "@/lib/market/format";
@@ -94,9 +94,9 @@ export function PositionsList({
               {formatMoney(position.marketValue, base)}
             </p>
             <div className="mt-0.5 flex items-center justify-end gap-1.5">
-              <ChangeChip value={position.dayChange} size="sm">
+              <ChangeText value={position.dayChange} className="text-caption font-medium">
                 {formatPercent(position.dayChangePct, { signed: true })}
-              </ChangeChip>
+              </ChangeText>
             </div>
           </div>
         </li>

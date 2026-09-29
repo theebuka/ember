@@ -248,17 +248,17 @@ export function SignalCard({
                 <p className="min-w-0 flex-1 text-caption text-stone">
                   {blockedReason}
                 </p>
-                <Button variant="ghost" size="lg" onClick={onDismiss}>
+                <Button variant="ghost" size="sm" onClick={onDismiss}>
                   <X />
                   Dismiss
                 </Button>
               </>
             ) : (
               <>
-                <Button size="lg" onClick={onExecute}>
+                <Button size="sm" onClick={onExecute}>
                   Execute
                 </Button>
-                <Button variant="ghost" size="lg" onClick={onDismiss}>
+                <Button variant="ghost" size="sm" onClick={onDismiss}>
                   <X />
                   Dismiss
                 </Button>

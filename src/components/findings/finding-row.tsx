@@ -118,7 +118,7 @@ export function FindingRow({
       )}
 
       {/* ── What to do about it, sized ───────────────────────────────────── */}
-      <div className="mt-3.5 flex flex-wrap items-baseline gap-x-4 gap-y-1 border-t border-line pt-3">
+      <div className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
         {isRisk && risk ? (
           <>
             <span className="text-caption font-medium text-ink">
@@ -146,12 +146,12 @@ export function FindingRow({
         ) : null}
       </div>
 
-      <p className="mt-1.5 text-micro text-stone">
+      <p className="mt-1 text-micro text-stone">
         {isRisk && risk ? risk.action.note : (assessment.sizing?.note ?? "")}
       </p>
 
       {/* ── Why ember says so ────────────────────────────────────────────── */}
-      <p className="mt-2 text-micro text-stone">
+      <p className="mt-0.5 text-micro text-stone">
         {isRisk && risk
           ? `${risk.citation.authors} (${risk.citation.year}), ${risk.citation.title}.`
           : (assessment.contributions[0] &&
@@ -159,7 +159,7 @@ export function FindingRow({
       </p>
 
       {/* ── Act ──────────────────────────────────────────────────────────── */}
-      <div className="mt-3.5 flex flex-wrap items-center gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-1.5">
         {handled ? (
           <>
             <span className="flex items-center gap-1.5 text-caption text-stone">
@@ -178,14 +178,17 @@ export function FindingRow({
           </>
         ) : (
           <>
-            <Button size="default" onClick={onExecute}>
+            {/* `sm` throughout: a list of findings is several of these in a
+                column, and a 40px brand pill on every one turned the inbox
+                into a stack of competing calls to action. */}
+            <Button size="sm" onClick={onExecute}>
               {isRisk ? "Log the reduction" : "Execute"}
             </Button>
-            <Button variant="ghost" size="default" onClick={onDismiss}>
+            <Button variant="ghost" size="sm" onClick={onDismiss}>
               <X />
               Dismiss
             </Button>
-            <Button variant="ghost" size="default" asChild className="ml-auto">
+            <Button variant="ghost" size="sm" asChild className="ml-auto">
               <Link href={`/asset/${encodeURIComponent(finding.symbol)}`}>
                 Full read
                 <ArrowRight />

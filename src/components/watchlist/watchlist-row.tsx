@@ -4,7 +4,7 @@ import Link from "next/link";
 import { EyeOff, MoreHorizontal } from "@/components/common/icon";
 import { ActionBadge } from "@/components/signals/action-badge";
 import { Confidence } from "@/components/signals/confidence";
-import { ChangeChip } from "@/components/market/change-chip";
+import { ChangeText } from "@/components/market/change-chip";
 import { Sparkline } from "@/components/market/sparkline";
 import { Button } from "@/components/ui/button";
 import {
@@ -139,9 +139,9 @@ export function WatchlistRow({
             <p className="num text-caption font-medium text-ink">
               {formatQuotePrice(instrument, quote.price)}
             </p>
-            <ChangeChip value={quote.changePct} size="sm" className="mt-0.5">
+            <ChangeText value={quote.changePct} className="text-caption font-medium mt-0.5">
               {formatPercent(quote.changePct, { signed: true })}
-            </ChangeChip>
+            </ChangeText>
           </>
         ) : (
           <p className="text-caption text-stone">—</p>

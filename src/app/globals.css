@@ -38,6 +38,10 @@
   --surface-2: #f5f6f8; /* sunken wells, inputs, secondary buttons */
   --surface: #ffffff; /* cards — same as ground on light, deliberately */
   --ground: #ffffff; /* the page */
+  /* What the page sits on, desktop only. The rail lives here and the page is a
+     white panel inset on it — the frame that says where chrome ends and content
+     begins. Distinct from `surface-2`, which is a well *inside* a page. */
+  --canvas: #f3f4f7;
 
   /* The brand, and the only saturated hue apart from direction.
      Light mode runs white-on-white: `surface` and `ground` are the same value,
@@ -59,7 +63,10 @@
   --down: #c8322f; /* 4.67:1 on --down-tint */
   --down-tint: #fcedec;
 
-  --radius: 1rem;
+  /* 12px. It was 16, which put a 48px input at a 20px radius — a pill in all
+     but name — and a card at 24. Buttons stay fully round on purpose; the
+     containers around them are what needed to firm up. */
+  --radius: 0.75rem;
 
   /* Elevation, and on light it is doing more work than it used to.
      `ground` and `surface` are both white, so anything that must read as
@@ -121,6 +128,7 @@
   --surface-2: #171a20;
   --surface: #101216;
   --ground: #0a0b0d;
+  --canvas: #060709;
 
   /* The fill stays the exact brand hex — it is the one value that should not
      drift between themes. Only the *text* cut lightens, because #2563EB as
@@ -156,6 +164,7 @@
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-ground: var(--ground);
+  --color-canvas: var(--canvas);
   --color-brand: var(--brand);
   --color-brand-hover: var(--brand-hover);
   --color-brand-text: var(--brand-text);

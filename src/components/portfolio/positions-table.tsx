@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeChip } from "@/components/market/change-chip";
+import { ChangeText } from "@/components/market/change-chip";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -119,9 +119,9 @@ export function PositionsTable({
                   )}
                 </TableCell>
                 <TableCell className="text-right">
-                  <ChangeChip value={position.dayChange} size="sm">
+                  <ChangeText value={position.dayChange} className="text-caption font-medium">
                     {formatPercent(position.dayChangePct, { signed: true })}
-                  </ChangeChip>
+                  </ChangeText>
                 </TableCell>
               </TableRow>
             ))}
@@ -157,9 +157,9 @@ function PositionCard({
           <p className="num text-body font-medium text-ink">
             {formatMoney(position.marketValue, base)}
           </p>
-          <ChangeChip value={position.dayChange} size="sm" className="mt-0.5">
+          <ChangeText value={position.dayChange} className="text-caption font-medium mt-0.5">
             {formatPercent(position.dayChangePct, { signed: true })}
-          </ChangeChip>
+          </ChangeText>
         </div>
       </div>
 
@@ -224,7 +224,10 @@ function Cell({
         )}
       >
         {value}
-        {hint && <span className="ml-1 text-micro text-stone">{hint}</span>}
+        {/* Its own line. Inline, a five-figure gain plus its percentage
+            overflowed a third of a phone and truncated to "+$6,109.08 +…",
+            hiding the one number the reader came for. */}
+        {hint && <span className="block text-micro text-stone">{hint}</span>}
       </dd>
     </div>
   );

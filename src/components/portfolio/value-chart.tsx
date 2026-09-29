@@ -1,7 +1,7 @@
 "use client";
 
 import { useId } from "react";
-import { ChangeChip } from "@/components/market/change-chip";
+import { ChangeText } from "@/components/market/change-chip";
 import { Segmented } from "@/components/common/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { BaseCurrency, Range } from "@/lib/api/types";
@@ -72,9 +72,9 @@ export function ValueChart({
             as an ellipsis. Stacked it has the chip's whole column and never
             wraps — and it echoes the hero's figure-and-caption above it. */}
         <div className="min-w-0">
-          <ChangeChip value={change} size="sm">
+          <ChangeText value={change} className="text-caption font-medium">
             {formatMoney(change, base, { signed: true })}
-          </ChangeChip>
+          </ChangeText>
           <p className="mt-1 text-micro text-stone">
             unrealized, over{" "}
             {RANGES.find((r) => r.value === range)?.label.toLowerCase()}

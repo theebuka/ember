@@ -114,11 +114,12 @@ export function AccountSetting() {
           <SettingRow
             label="Keep your book across devices"
             description="Your ledger, watchlist, settings and profile, kept across devices. Never your positions or P&L."
-          >
-            <Button asChild size="default">
-              <Link href="/auth?next=%2Fsettings">Sign in</Link>
-            </Button>
-          </SettingRow>
+            control={
+              <Button asChild size="default">
+                <Link href="/auth?next=%2Fsettings">Sign in</Link>
+              </Button>
+            }
+          />
         )}
       </SettingGroup>
     </section>
