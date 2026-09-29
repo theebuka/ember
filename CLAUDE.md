@@ -389,6 +389,7 @@ The brand is **`#2563EB`**, chosen by the user. It is exactly Tailwind's `blue-6
   equity on earth had its window computed in New York hours and nothing failed.
   The helper is exhaustive over `Instrument` and checked by the compiler
   (decision 142).
+- **A live field older than the last bar is not live.** Yahoo freezes `regularMarketPrice` for some venues (Cairo, at 2024-07-23) while serving current bars beside it. `isCurrent()` in `yahoo.ts` decides; the fallback is the last bar's close, never the stale field (decision 256).
 - **A minor-unit venue divides once, in the provider.** London and Johannesburg
   quote in pence and cents. Anchor prices in `universe.ts` are in major units to
   match. Getting this wrong is a factor of a hundred on somebody's holding.
@@ -860,6 +861,7 @@ See `docs/decisions/` for full ADRs. Summary:
 | 253 | **The window band draws intensity as column height, not opacity** | 72 full-height columns varying only in opacity, inside a grey box, read as a barcode. Height carries the ramp, tone carries the window (ink inside it, the hairline grey outside), and the ember point rests on the crest. Still hourly columns (the model's resolution), still one saturated pixel |
 | 254 | **Change in a list row is text, not a chip** | See §5. Five components moved to `ChangeText`; the chip stays on headline figures |
 | 255 | **Finding rows and signal cards act at `sm`, with no rule inside the row** | Seven stacked layers per finding with a hairline inside a row already bounded by hairlines, ending in 40–48px buttons. The inner rule and one size step are gone; nothing the row says was removed. The settings tab's duplicate heading (the selected tab's own name, 40px below it, with a lowercase tagline) is `sr-only` now, and Sign in is the row's `control` rather than a child dropped in under the text with no gap |
+| 256 | **Yahoo's live price is trusted only when it is newer than the last bar** | Yahoo returns current daily closes for all six Cairo listings beside a `regularMarketPrice` frozen at **2024-07-23**. The quote took the frozen value as live, so Elsewedy read EGP 47.69 −59.76% against a real 113.45 −4.26%, and Home's "Biggest moves" led with five Egyptian names down 31–60%. Nothing failed: the number was well-formed, just two years old. `isCurrent()` compares `regularMarketTime` with the last bar and falls back to that bar's close, in the quote and in the three Yahoo FX rates. Scanned from the disk cache: 6 of 164 equities affected, all Cairo; EGP, TWD and NGN rates were current |
 
 ---
 

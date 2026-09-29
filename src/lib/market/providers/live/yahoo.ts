@@ -177,8 +177,9 @@ export async function quote(symbol: string, at: number): Promise<Quote | null> {
 
   const last = candles[candles.length - 1];
   const previous = candles[candles.length - 2];
+  const live = isCurrent(meta, last);
 
-  const price = meta.regularMarketPrice ?? last.c;
+  const price = live ? meta.regularMarketPrice! : last.c;
   const previousClose = previous.c;
   const change = price - previousClose;
 
@@ -188,10 +189,29 @@ export async function quote(symbol: string, at: number): Promise<Quote | null> {
     change,
     changePct: previousClose === 0 ? 0 : change / previousClose,
     previousClose,
-    dayHigh: meta.regularMarketDayHigh ?? last.h,
-    dayLow: meta.regularMarketDayLow ?? last.l,
-    at: meta.regularMarketTime ? meta.regularMarketTime * 1000 : at,
+    dayHigh: live ? (meta.regularMarketDayHigh ?? last.h) : last.h,
+    dayLow: live ? (meta.regularMarketDayLow ?? last.l) : last.l,
+    at: live ? meta.regularMarketTime! * 1000 : last.t || at,
   };
+}
+
+/**
+ * Whether the metadata's live fields describe the present, or something older
+ * than the bars beside them.
+ *
+ * **Yahoo freezes them for some venues.** Measured 2026-09-29: every Cairo
+ * listing returned current daily closes and a `regularMarketPrice` stamped
+ * 2024-07-23 — Elsewedy at 47.69 beside a last close of 113.45 — so the quote
+ * compared a two-year-old price with last week's close and Home led "Biggest
+ * moves" with five Egyptian names down 31–60% in a day. A live field older than
+ * the last completed bar is not live; the bar's close is the honest price.
+ */
+function isCurrent(meta: ChartMeta, last: Candle): boolean {
+  return (
+    typeof meta.regularMarketPrice === "number" &&
+    typeof meta.regularMarketTime === "number" &&
+    meta.regularMarketTime * 1000 >= last.t
+  );
 }
 
 /* ── Exchange rates the ECB does not publish ───────────────────────────── */
@@ -217,7 +237,9 @@ export async function quote(symbol: string, at: number): Promise<Quote | null> {
 export function fxRate(currency: string): Promise<number | null> {
   return cached("yahoo-fx", currency, { ttl: 3_600, maxAge: 7 * 86_400 }, async () => {
     const { candles, meta } = await chart(`USD${currency}=X`, "5d", "1d");
-    const perUsd = meta.regularMarketPrice ?? candles[candles.length - 1]?.c;
+    const last = candles[candles.length - 1];
+    if (!last) return null;
+    const perUsd = isCurrent(meta, last) ? meta.regularMarketPrice! : last.c;
     return perUsd && perUsd > 0 ? 1 / perUsd : null;
   });
 }
