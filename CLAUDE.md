@@ -1338,12 +1338,17 @@ See `docs/decisions/` for full ADRs. Summary:
   time zone is already synced (decision 110 detects it), so per-timezone delivery
   needs an hourly cron and a filter rather than new data — 24 runs a day against a
   free tier's 2,000 minutes a month, which is a cost to take deliberately.
-- **The NGX collector finally has a scheduler, and the clock still has not
-  started.** `.github/workflows/scheduled.yml` runs it weekdays at 14:00 UTC, half
-  an hour after the Lagos close. It starts counting on the first run against a
-  project with `0003` applied and the service-role key in the repository's secrets
-  — both human steps, both in §9. Nothing has run yet, so the ten months are still
-  ten months away.
+- **The NGX clock has started, for half the Lagos rows.** The workflow runs from
+  the private repository `theebuka/ember`; the first run (2026-09-29, by hand)
+  stored six bars for the 2026-09-28 session. **The other six never get a close
+  from this endpoint**: AIRTELAFRI, BUACEMENT, DANGCEM, MTNN, NESTLE and SEPLAT are
+  Premium Board listings, and the board returns `ClosePrice`, `HighPrice` and
+  `LowPrice` as `null` for them — with volume and trade counts present — hours
+  after the close. 64 of 146 listings that traded that day had no close. The
+  collector refuses them, correctly: `OpeningPrice` there equals the previous
+  close, so storing it would be fabricating a bar. Not yet known whether the
+  fields fill in during the session; check a run at 14:00 UTC before looking for
+  another source.
 - **The warm store is deferred a second time, and the reason has changed.** Phase 22
   deferred it because nothing was scheduled to fill it; the scheduler exists now, so
   that excuse is spent. The actual obstacle is a shape mismatch:
@@ -1530,13 +1535,13 @@ Next, in order of what unblocks the most:
    destroy data, but no two real devices have ever met. Check for duplication
    rather than for loss: the merge is last-write-wins per row, so the failure that
    looks like a bug is a trade appearing twice.
-2. **Turn the scheduler on.** `.github/workflows/scheduled.yml` is written and has
-   never run. It needs eight repository secrets (listed in its header), a deployed
-   app for `EMBER_APP_URL`, a VAPID keypair (`npm run push:keys` — generate once
-   and keep it; a second pair invalidates every subscription already stored), and
-   a Resend domain. Until then the
-   NGX ten-month clock has not started, no push has been delivered, and no digest
-   has been sent — the code for all three is complete and entirely unobserved.
+2. **Finish turning the scheduler on.** The workflow is live on the private
+   repository `theebuka/ember` with seven secrets set, on Node 24, and the NGX
+   collector has run. Push and both digests are still blocked: they need a
+   deployed app for `EMBER_APP_URL`, and the digest needs a From address on a
+   domain verified in Resend (a free-mail address is refused). Until then those
+   jobs fail on their schedule. Keep the VAPID keypair in `.env.local` — a second
+   pair invalidates every stored subscription.
 3. **Deliver one push to a closed app and one email to a real inbox.** The only way
    to verify phase 26 at all; nothing in the gate can drive either. Check in this
    order: that a watchlist still on the "everything" sentinel receives *nothing*
