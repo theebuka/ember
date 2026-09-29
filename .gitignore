@@ -32,6 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# …except the template, which holds no secrets and is how anyone knows which
+# variables exist. Ignoring it is how a project ends up with credentials that
+# only one machine knows the names of.
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +43,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Case-study capture scratch — the reports and screenshots are committed,
+# the intermediate JSON from Lighthouse and ad-hoc probes is not.
+/.tmp/
+.cache/
+
+# per-machine Claude Code settings
+.claude/settings.local.json

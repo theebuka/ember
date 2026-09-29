@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Offline · ember</title>
+    <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0A0B0D" media="(prefers-color-scheme: dark)" />
+    <style>
+      /* Standalone by necessity — this page is served when the network, and
+         therefore the stylesheet, is unavailable. Values mirror the tokens in
+         globals.css; keep them in step if the palette changes. */
+      :root {
+        --ink: #0b0c0f;
+        --stone: #62656f;
+        --ground: #ffffff;
+        --surface: #ffffff;
+        --line: #ecedf1;
+        --brand: #2563eb;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ink: #f4f5f7;
+          --stone: #8e919b;
+          --ground: #0a0b0d;
+          --surface: #101216;
+          --line: #23262e;
+          --brand: #2563eb;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: 2rem 1.5rem;
+        background: var(--ground);
+        color: var(--ink);
+        font-family: Archivo, ui-sans-serif, system-ui, -apple-system, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .card {
+        max-width: 22rem;
+        width: 100%;
+        text-align: center;
+      }
+      .mark {
+        width: 40px;
+        height: 40px;
+        margin: 0 auto 1.5rem;
+        display: grid;
+        place-items: center;
+        position: relative;
+      }
+      .mark::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: radial-gradient(circle, color-mix(in oklab, var(--brand) 55%, transparent) 0%, transparent 70%);
+      }
+      .mark::after {
+        content: "";
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: var(--brand);
+        position: relative;
+      }
+      h1 {
+        margin: 0 0 0.5rem;
+        font-size: 1.25rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      p {
+        margin: 0 0 1.75rem;
+        font-size: 0.9375rem;
+        line-height: 1.55;
+        color: var(--stone);
+      }
+      button {
+        font: inherit;
+        font-size: 0.9375rem;
+        font-weight: 500;
+        height: 2.75rem;
+        padding: 0 1.25rem;
+        border: 0;
+        border-radius: 0.875rem;
+        background: var(--ink);
+        color: var(--ground);
+        cursor: pointer;
+      }
+      button:focus-visible {
+        outline: 2px solid var(--brand);
+        outline-offset: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="mark" aria-hidden="true"></div>
+      <h1>No connection</h1>
+      <!-- Names what's wrong and what to do, in the interface's voice.
+           Screens you've already opened stay readable from the cache. -->
+      <p>
+        ember can't reach the markets right now. Pages you've already opened
+        still work — prices will be from your last connection.
+      </p>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </div>
+  </body>
+</html>

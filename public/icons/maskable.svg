@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="ember">
+  <defs>
+    <radialGradient id="ember-glow-maskable" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#6D9DFF" stop-opacity="0.92" />
+      <stop offset="34%" stop-color="#2563EB" stop-opacity="0.44" />
+      <stop offset="68%" stop-color="#2563EB" stop-opacity="0.11" />
+      <stop offset="100%" stop-color="#2563EB" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <!-- Full bleed: the platform applies its own mask, so corners must not be
+       transparent. The mark sits inside the central 80% safe zone. -->
+  <rect width="512" height="512" fill="#0B0C0F" />
+  <circle cx="256" cy="256" r="164" fill="url(#ember-glow-maskable)" />
+  <circle cx="256" cy="256" r="48" fill="#4C86F5" />
+</svg>

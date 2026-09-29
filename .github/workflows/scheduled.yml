@@ -1,0 +1,124 @@
+name: scheduled
+
+# ember's server-side work, run by GitHub Actions rather than by the host.
+#
+# Deliberately not a Vercel cron or a Supabase pg_cron job. §7 records that
+# Vercel Hobby forbids commercial use and has to change before ember charges
+# anybody, so tying the schedule to the host would make that migration drag the
+# scheduler with it. A workflow in the repository moves when the repository does.
+#
+# **Every job here needs secrets that must never reach `src/`.** The collector
+# and the sender both authenticate with the service-role key, which is why they
+# are scripts invoked directly and not routes the workflow pings. Same boundary
+# as `ngx_daily` and `digest_log`: one scheduled process can write, and the
+# application can only read.
+#
+# Required repository secrets:
+#   NEXT_PUBLIC_SUPABASE_URL     the project URL
+#   SUPABASE_SERVICE_ROLE_KEY    write access — never in the app
+#   EMBER_APP_URL                where the deployed app answers
+#   RESEND_API_KEY               email delivery
+#   EMBER_EMAIL_FROM             the From: header, on a verified domain
+#   VAPID_PUBLIC_KEY             npx web-push generate-vapid-keys
+#   VAPID_PRIVATE_KEY
+#   VAPID_SUBJECT                mailto: address for the push services
+
+on:
+  schedule:
+    # The Nigerian Exchange closes 14:30 WAT (13:30 UTC). Half an hour after,
+    # so the board has settled — the collector refuses to write a session with
+    # no close, so an early run is harmless, just wasted.
+    - cron: "0 14 * * 1-5"
+
+    # Push, every two hours.
+    #
+    # The cadence matches the delivery floor in `send-digests.mjs` exactly, and
+    # that is the derivation rather than a guess: the script will not contact the
+    # same person twice inside two hours, so a tighter cron cannot deliver
+    # anything a looser one misses — it can only burn runner minutes proving it.
+    - cron: "0 */2 * * *"
+
+    # The daily digest, 07:00 UTC.
+    - cron: "0 7 * * *"
+
+    # The weekly digest, Monday 07:00 UTC. Runs alongside the daily one; a user
+    # is on one cadence or the other, never both.
+    - cron: "5 7 * * 1"
+
+  # Every job is also runnable by hand, which is how the first one gets verified
+  # — none of this can be exercised by `npm run verify`.
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Which job to run"
+        required: true
+        default: collect-ngx
+        type: choice
+        options: [collect-ngx, push, digest-daily, digest-weekly]
+
+jobs:
+  collect-ngx:
+    if: github.event.schedule == '0 14 * * 1-5' || github.event.inputs.job == 'collect-ngx'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # One session a day into `ngx_daily`, so that in about ten months the
+      # engine can have an opinion about Lagos. Idempotent: the primary key is
+      # (symbol, session) and a re-run upserts.
+      - run: node scripts/collect-ngx.mjs
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+  push:
+    if: github.event.schedule == '0 */2 * * *' || github.event.inputs.job == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/send-digests.mjs --channel=push
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          EMBER_APP_URL: ${{ secrets.EMBER_APP_URL }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+
+  digest:
+    if: >-
+      github.event.schedule == '0 7 * * *' ||
+      github.event.schedule == '5 7 * * 1' ||
+      github.event.inputs.job == 'digest-daily' ||
+      github.event.inputs.job == 'digest-weekly'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Send digests
+        run: |
+          if [ "${{ github.event.schedule }}" = "5 7 * * 1" ] \
+            || [ "${{ github.event.inputs.job }}" = "digest-weekly" ]; then
+            node scripts/send-digests.mjs --channel=email --cadence=weekly
+          else
+            node scripts/send-digests.mjs --channel=email --cadence=daily
+          fi
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          EMBER_APP_URL: ${{ secrets.EMBER_APP_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMBER_EMAIL_FROM: ${{ secrets.EMBER_EMAIL_FROM }}

@@ -1,0 +1,229 @@
+"use client";
+
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+import type { User } from "@supabase/supabase-js";
+import { Section } from "@/components/common/section";
+import { recordAdminAction } from "@/components/admin/record";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { supabaseBrowser } from "@/lib/supabase/client";
+import {
+  SUSPENSION_CAVEAT,
+  SUSPENSION_DOES_NOT_STOP,
+  SUSPENSION_STOPS,
+} from "@/lib/admin";
+
+interface SuspensionRow {
+  user_id: string;
+  reason: string | null;
+  suspended_at: string;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Switch off an account's sync and delivery.
+ *
+ * ── The control is named after what it does ────────────────────────────────
+ *
+ * Every other admin panel calls this Ban, and here Ban would be a lie. ember
+ * works fully with no account (ADR 0031) — local-first ledger, anonymous engine,
+ * public methodology and track record — so nothing in this table can stop a
+ * person using the product. What it stops is sync, the email digest and push,
+ * and the panel lists both halves so an admin cannot come away believing they
+ * did more than they did.
+ *
+ * ── There is no directory of users, deliberately ───────────────────────────
+ *
+ * An account is suspended by pasting its id, not by picking it out of a list.
+ * Building the list would mean an admin-wide select policy over `profiles`, and
+ * that is a blanket read of every user's name and time zone granted to solve a
+ * problem ember does not have: there is no support queue here, and an admin who
+ * needs to find somebody has the Supabase dashboard, where the read is at least
+ * audited by somebody else's logs.
+ *
+ * A wrong id is caught by the foreign key rather than by a lookup, which is the
+ * property that makes this safe — the database answers "no such account" without
+ * this screen ever being able to ask "which accounts are there".
+ */
+export function SuspensionPanel({ user }: { user: User }) {
+  const [target, setTarget] = useState("");
+  const [reason, setReason] = useState("");
+  const [working, setWorking] = useState(false);
+
+  // Through React Query rather than an effect, so suspending and lifting can
+  // both just `refetch()` and there is one place that knows how the list is
+  // read. The list is only ever seen by an admin, so it is not cached across
+  // mounts — a stale roster of suspended accounts is the one thing this panel
+  // must not show.
+  const list = useQuery({
+    queryKey: ["admin", "suspensions"],
+    gcTime: 0,
+    staleTime: 0,
+    queryFn: async (): Promise<SuspensionRow[]> => {
+      const supabase = supabaseBrowser();
+      if (!supabase) return [];
+      const { data, error } = await supabase
+        .from("suspensions")
+        .select("user_id, reason, suspended_at")
+        .order("suspended_at", { ascending: false })
+        .limit(50);
+      if (error) throw new Error(error.message);
+      return (data as SuspensionRow[] | null) ?? [];
+    },
+  });
+
+  const rows = list.data ?? null;
+
+  async function suspend() {
+    const supabase = supabaseBrowser();
+    const id = target.trim();
+    if (!supabase) return;
+
+    if (!UUID.test(id)) {
+      toast.error("That isn't an account id.", {
+        description: "It's the uuid from the Supabase dashboard's auth table.",
+      });
+      return;
+    }
+
+    setWorking(true);
+    const { error } = await supabase.from("suspensions").insert({
+      user_id: id,
+      reason: reason.trim() || null,
+      suspended_by: user.id,
+    });
+    setWorking(false);
+
+    if (error) {
+      // A foreign-key violation here means no such account, which is the most
+      // likely mistake and worth saying in those words rather than in Postgres's.
+      toast.error(
+        error.code === "23503" ? "No account with that id." : "Not suspended.",
+        { description: error.code === "23503" ? undefined : error.message },
+      );
+      return;
+    }
+
+    await recordAdminAction(supabase, user.id, "account.suspend", id, {
+      reason: reason.trim() || null,
+    });
+    toast.success("Sync and delivery suspended.", {
+      description: "They see the reason in their notifications.",
+    });
+    setTarget("");
+    setReason("");
+    void list.refetch();
+  }
+
+  async function restore(row: SuspensionRow) {
+    const supabase = supabaseBrowser();
+    if (!supabase) return;
+
+    const { error } = await supabase
+      .from("suspensions")
+      .delete()
+      .eq("user_id", row.user_id);
+    if (error) {
+      toast.error("Not restored.", { description: error.message });
+      return;
+    }
+
+    await recordAdminAction(supabase, user.id, "account.restore", row.user_id, {});
+    toast.success("Restored.");
+    void list.refetch();
+  }
+
+  return (
+    <Section title="Accounts" hint="suspend sync and delivery">
+      {/* Two rows of chips and one sentence, where this was six full clauses in
+          a tinted box. The nouns carry the contrast — three things stop, three
+          do not — and the sentence says the part that genuinely needs prose. */}
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
+        <span className="eyebrow text-stone">Stops</span>
+        {SUSPENSION_STOPS.map((label) => (
+          <span
+            key={label}
+            className="rounded-full bg-surface-2 px-2.5 py-1 text-micro font-medium text-graphite"
+          >
+            {label}
+          </span>
+        ))}
+      </div>
+      <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
+        <span className="eyebrow text-stone">Cannot</span>
+        {SUSPENSION_DOES_NOT_STOP.map((label) => (
+          <span
+            key={label}
+            className="rounded-full px-2.5 py-1 text-micro text-stone line-through decoration-faint"
+          >
+            {label}
+          </span>
+        ))}
+      </div>
+      <p className="mt-3 max-w-[48ch] text-caption text-stone">{SUSPENSION_CAVEAT}</p>
+
+      <div className="mt-6 space-y-4">
+        <div>
+          <Label htmlFor="suspend-id">
+            Account id <span className="ml-1.5 font-normal text-stone">uuid</span>
+          </Label>
+          <Input
+            id="suspend-id"
+            value={target}
+            onChange={(e) => setTarget(e.target.value)}
+            className="mt-1.5 font-mono text-caption"
+            placeholder="00000000-0000-0000-0000-000000000000"
+          />
+        </div>
+        <div>
+          <Label htmlFor="suspend-reason">
+            Reason <span className="ml-1.5 font-normal text-stone">they read this</span>
+          </Label>
+          <Input
+            id="suspend-reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            className="mt-1.5"
+            placeholder="Repeated automated sync."
+          />
+        </div>
+        <Button size="lg" variant="outline" onClick={suspend} disabled={working}>
+          {working ? "Suspending…" : "Suspend sync and delivery"}
+        </Button>
+      </div>
+
+      <div className="mt-7">
+        <p className="eyebrow text-stone">
+          {rows === null
+            ? "Loading"
+            : rows.length === 0
+              ? "No accounts suspended"
+              : `${rows.length} suspended`}
+        </p>
+        {rows !== null && rows.length > 0 && (
+          <div className="mt-1.5 divide-y divide-line border-y border-line">
+            {rows.map((row) => (
+              <div key={row.user_id} className="flex items-center gap-3 py-3.5">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-mono text-caption text-ink">
+                    {row.user_id}
+                  </p>
+                  <p className="mt-0.5 text-micro text-stone">
+                    {row.reason ?? "No reason recorded."}
+                  </p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => restore(row)}>
+                  Lift
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Section>
+  );
+}

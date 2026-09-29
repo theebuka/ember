@@ -1,26 +1,462 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ember — token layer
+
+   This is the ONLY file that defines a colour. Values are plain hex rather
+   than oklch so a brand hex can be pasted in directly, and swapping the
+   palette stays a single-file edit.
+
+   One exception the rule cannot cover: `public/offline.html` duplicates these
+   values as literals, because it is served precisely when the stylesheet
+   cannot be fetched. Change the palette, change that file too.
+
+   Two layers:
+     1. ember palette      — the real names we design with (ink, stone, ember…)
+     2. shadcn contract    — mapped onto layer 1 so every shadcn component
+                             inherits the palette with no component edits
+   ══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ── 1. ember palette ─────────────────────────────────────────────────── */
+
+  /* Cool near-neutral ramp — a whisper of blue, nowhere near enough to read as
+     a colour, so it sits *under* the brand rather than beside it.
+     Deliberately NOT Tailwind's slate or gray: the brand hex below is exactly
+     Tailwind's blue-600, so pairing it with their neutrals would reproduce the
+     default palette wholesale, which is the loudest AI tell there is. */
+  --ink: #0b0c0f; /* primary text — near-black, never #000 */
+  --graphite: #2e3038; /* headings, secondary emphasis */
+  --stone: #62656f; /* labels, muted copy, axis ticks */
+  --faint: #9a9ca6; /* gridlines, disabled, placeholder — NEVER text (2.7:1) */
+  --line: #ecedf1; /* hairline borders */
+  --line-strong: #dddfe6; /* dividers that need to carry more weight */
+  --surface-2: #f5f6f8; /* sunken wells, inputs, secondary buttons */
+  --surface: #ffffff; /* cards — same as ground on light, deliberately */
+  --ground: #ffffff; /* the page */
+
+  /* The brand, and the only saturated hue apart from direction.
+     Light mode runs white-on-white: `surface` and `ground` are the same value,
+     so a card does not lift off the page by value and is therefore not the
+     default container. Things that genuinely float use --overlay-shadow.
+     Separation comes from space and hairlines. See CLAUDE.md §5. */
+  --brand: #2563eb; /* fills, marks, active state, primary CTA */
+  --brand-hover: #1d4fd1; /* the fill under the cursor — see note in .dark */
+  --brand-text: #1b4fd0; /* brand as text — 6.2:1 on tint, 6.8:1 on ground */
+  --brand-tint: #eff3ff; /* active nav pill, selection, chips */
+
+  /* Direction. Calibrated against their own tints, not against white — a chip
+     is `text-up` on `bg-up-tint`, and the tint is the darkest ground either
+     ever sits on. Measuring against #FFF is what put every tinted chip in the
+     app just under AA in phase 10 (ADR 0018). Verified by scripts/audit.mjs.
+     The green leans cool so it sits with the blue rather than fighting it. */
+  --up: #0a7c55; /* 4.66:1 on --up-tint */
+  --up-tint: #e8f5f0;
+  --down: #c8322f; /* 4.67:1 on --down-tint */
+  --down-tint: #fcedec;
+
+  --radius: 1rem;
+
+  /* Elevation, and on light it is doing more work than it used to.
+     `ground` and `surface` are both white, so anything that must read as
+     floating *above* the page — popovers, sheets, the nav capsule — cannot
+     borrow separation from value and has to earn it with a shadow. Still
+     never used by a card: a card that needs a shadow to be legible is a
+     section that should not have been a card. */
+  --overlay-shadow:
+    0 1px 2px rgb(11 12 15 / 0.06), 0 8px 16px -6px rgb(11 12 15 / 0.1),
+    0 20px 40px -12px rgb(11 12 15 / 0.16);
+
+  /* ── 2. shadcn contract ───────────────────────────────────────────────── */
+  --background: var(--ground);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+
+  /* Primary is the brand.
+     v1 made it ink, reasoning that a saturated button reads as a sales pitch.
+     That was right for an orange accent in a near-monochrome app; it is wrong
+     here. Every reference in this category — Cash App, Chime, Phantom — puts
+     the brand on the primary action, because that is what makes the brand
+     mean "this is the thing to press" rather than "this is our logo colour". */
+  --primary: var(--brand);
+  --primary-foreground: #ffffff; /* 5.17:1 on --brand */
+
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--graphite);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--stone);
+  --accent: var(--surface-2);
+  --accent-foreground: var(--ink);
+  --destructive: var(--down);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--brand);
+
+  /* Charts stay monochrome; the brand marks the series under advice.
+     No red/green fills anywhere, no candlesticks — see CLAUDE.md §5. */
+  --chart-1: var(--ink);
+  --chart-2: var(--stone);
+  --chart-3: var(--faint);
+  --chart-4: var(--brand);
+  --chart-5: var(--graphite);
+}
+
+/* Dark is a separately calibrated palette, not an inversion. Here `surface`
+   and `ground` do differ, so value separation returns and the shadow does
+   less work. */
+.dark {
+  --ink: #f4f5f7;
+  --graphite: #c9ccd4;
+  --stone: #8e919b;
+  --faint: #5c5f69;
+  --line: #23262e;
+  --line-strong: #30343e;
+  --surface-2: #171a20;
+  --surface: #101216;
+  --ground: #0a0b0d;
+
+  /* The fill stays the exact brand hex — it is the one value that should not
+     drift between themes. Only the *text* cut lightens, because #2563EB as
+     type on a near-black ground is 3.4:1. */
+  --brand: #2563eb;
+  /* Hover *lightens* here. The usual `bg-primary/80` trick can't express that:
+     lowering opacity blends toward whatever is behind, so the same rule
+     darkens a button on light and lightens it on dark only by accident, and
+     over a tinted surface it does neither. An explicit token per theme is one
+     line and always right. */
+  --brand-hover: #3b78f5;
+  --brand-text: #8ab0ff; /* 7.5:1 on tint, 9.1:1 on ground */
+  --brand-tint: #12203f;
+
+  --up: #3ecf8e; /* 8.2:1 on --up-tint */
+  --up-tint: #0e241d;
+  --down: #ff7a75; /* 6.8:1 on --down-tint */
+  --down-tint: #2a1615;
+
+  /* Deeper on dark, where a soft shadow would simply vanish. */
+  --overlay-shadow:
+    0 1px 2px rgb(0 0 0 / 0.5), 0 14px 36px -12px rgb(0 0 0 / 0.7);
 }
 
 @theme inline {
+  /* ember palette → Tailwind utilities: bg-surface, text-stone, border-line… */
+  --color-ink: var(--ink);
+  --color-graphite: var(--graphite);
+  --color-stone: var(--stone);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ground: var(--ground);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-text: var(--brand-text);
+  --color-brand-tint: var(--brand-tint);
+  --color-up: var(--up);
+  --color-up-tint: var(--up-tint);
+  --color-down: var(--down);
+  --color-down-tint: var(--down-tint);
+
+  /* shadcn contract */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Satoshi carries every visible glyph; Plex Mono is tickers and timestamps
+     only. Prices are Satoshi with tabular figures — see .num below. */
+  --font-sans: var(--font-satoshi), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-satoshi), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.7);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.25);
+  --radius-2xl: calc(var(--radius) * 1.5);
+  --radius-3xl: calc(var(--radius) * 2);
+  --radius-4xl: calc(var(--radius) * 2.5);
+
+  /* Type scale: 64 / 40 / 28 / 20 / 17 / 15 / 13.
+     Every step moved up from v1 (56/34/24/17/15/13/11). Body 15→17 and
+     caption 13→15 are the two that do most of the work — the app was legible
+     but small, and "make it feel larger" is mostly this.
+
+     ADDING OR RENAMING A SIZE MEANS EDITING TWO FILES. The `font-size` group
+     registered with tailwind-merge in `lib/utils.ts` has to match, or the
+     class is silently deleted by any colour beside it (ADR 0016). There is a
+     test that reads this file and fails if the two drift. */
+  --text-figure: 4rem;
+  --text-figure--line-height: 1;
+  --text-display: 2.5rem;
+  --text-display--line-height: 1.08;
+  --text-title: 1.75rem;
+  --text-title--line-height: 1.18;
+  --text-heading: 1.25rem;
+  --text-heading--line-height: 1.35;
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.55;
+  --text-caption: 0.9375rem;
+  --text-caption--line-height: 1.45;
+  --text-micro: 0.8125rem;
+  --text-micro--line-height: 1.35;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/60;
+  }
+
+  html {
+    @apply font-sans;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ── Two rules about where a line is allowed to break ─────────────────
+
+     **A long token shortens its own line; it never widens the page.** An
+     email address, a URL, a wallet address and a hyphenated instrument name
+     are all single unbreakable words to a layout engine, and the default
+     answer to one that does not fit is to overflow — which on a phone is a
+     document wider than the viewport and a page that scrolls sideways. This
+     app publishes a 320→1920 overflow sweep, so that failure is a build
+     failure here rather than a cosmetic one.
+
+     `break-word` rather than `anywhere`, deliberately: `anywhere` lets the
+     browser count the broken token when it measures intrinsic width, which
+     silently collapses flex and grid columns that were sized to their
+     content. `break-word` only breaks when the alternative is overflowing,
+     which is exactly the case worth breaking for.
+
+     **And prose fills its lines before it takes another one.** `text-pretty`
+     is what stops a paragraph ending on a single orphaned word — the version
+     of "it wrapped for no reason" a reader actually notices, because the
+     eye reads the short last line as a mistake. Headings are excluded: they
+     get `text-balance` where they want it, and the two rules disagree. */
+  p,
+  li,
+  dd,
+  dt,
+  figcaption {
+    overflow-wrap: break-word;
+    text-wrap: pretty;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  th,
+  td,
+  label,
+  button,
+  a {
+    overflow-wrap: break-word;
+  }
+
+  ::selection {
+    background: var(--brand-tint);
+    color: var(--brand-text);
+  }
+
+  /* Visible, consistent focus. The ring is the one guaranteed brand moment
+     on every screen, so it has to look deliberate rather than borrowed. */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+
+  /* Restrained scrollbars — the app is dense, and default bars are loud. */
+  @supports (scrollbar-width: thin) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--line-strong) transparent;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ══════════════════════════════════════════════════════════════════════════
+   Typographic utilities
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Every price, percentage and quantity in the app. Tabular figures keep
+   columns aligned and stop digits jittering as prices tick. Deliberately
+   NOT mono — mono numerals everywhere is the tell that a finance app was
+   themed rather than designed. */
+@utility num {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings:
+    "tnum" 1,
+    "lnum" 1;
+}
+
+/* The hero balance and other monumental figures.
+
+   v1 got its gravity from Archivo's `wdth` axis at 112%. Satoshi has no width
+   axis, so the signature moves to weight and tracking: 600 with a firm
+   negative letter-spacing, which is what gives a large number the set-in-metal
+   density that a default stack never has. Tighter than v1's −0.03em would
+   start closing the counters on Satoshi's round 0 and 6. */
+@utility figure {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings:
+    "tnum" 1,
+    "lnum" 1;
+}
+
+/* Ticker symbols and timestamps. The only place Plex Mono appears — it reads
+   as a system label rather than as body text. */
+@utility mono-label {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+
+/* The only elevation in the system. Written as a utility rather than through
+   the `--shadow-*` theme namespace, which composes with Tailwind's
+   `--tw-shadow` machinery and silently resolved to nothing here. Used by
+   floating chrome only — never by a card. */
+@utility shadow-overlay {
+  box-shadow: var(--overlay-shadow);
+}
+
+/* Section eyebrows. With no width axis to condense them, they stay quiet
+   through size and tracking instead — and slightly looser tracking than v1,
+   because Satoshi's uppercase is wider than Archivo's was. */
+@utility eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 600;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--stone);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Touch
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* A 44px floor on the tappable region, without touching the visible size.
+
+   The v2 control ramp is 56 / 48 / 40 / 32, so most controls clear 44 on their
+   own — but `sm` (32px) and the icon sizes below it do not, and neither does
+   the switch. A missed tap is indistinguishable from a dead button, which is
+   exactly what was reported in phase 11. This is the floor under the ramp
+   rather than a substitute for it.
+
+   **Vertical only, deliberately.** Expanding horizontally as well is the
+   obvious version and it is wrong: the edit and delete buttons on a
+   transaction row are 28px wide and 4px apart, so two 44px-wide regions
+   overlap by 10px and the one later in the DOM — delete — silently owns the
+   other's right half. Trading "sometimes misses" for "reliably fires the
+   destructive one" is not an improvement. Controls are laid out in rows with
+   padding above and below, so vertical is where both the deficit and the
+   slack are, and it collides with nothing.
+
+   Coarse pointers only, so a mouse keeps a precise, honest target. The
+   pseudo-element carries no paint, so nothing looks different, and it sits
+   inside the control so events land on the control itself. */
+@utility tap-target {
+  position: relative;
+
+  @media (pointer: coarse) {
+    &::after {
+      content: "";
+      position: absolute;
+      inset-inline: 0;
+      top: 50%;
+      translate: 0 -50%;
+      height: max(100%, 2.75rem);
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Motion
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* The onboarding signal ring — a ring leaving the ember point and fading.
+
+   Three of them on staggered delays, which is the only animation in the app
+   that runs on a loop with nothing driving it. It is confined to the welcome
+   panel on purpose: a decorative loop anywhere near a price is the casino
+   register the brief rules out, and a first-run illustration is the one place
+   in this product where nothing is being claimed. The `reduce` block below
+   collapses it to a single 0.01ms pass, which parks the ring at its start
+   scale and leaves the panel a still. */
+@keyframes ember-pulse {
+  0% {
+    inset: 42%;
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.7;
+  }
+  100% {
+    inset: 0%;
+    opacity: 0;
+  }
+}
+
+.ember-pulse {
+  inset: 42%;
+  animation: ember-pulse 4.8s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
+}
+
+/* Honoured everywhere, including the ticking `now` marker on the window band
+   and the live price pulse. Non-negotiable — see CLAUDE.md §5. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Safe-area insets for the installed PWA — the bottom nav sits above the
+   home indicator on iOS rather than under it. */
+:root {
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+  /* The capsule's real footprint: 48px item + 6px padding either side +
+     12px bottom margin. v1 had this at 3.5rem while the object measured
+     ~4.75rem, so the last row of every screen sat under the nav. */
+  --nav-height: 4.5rem;
 }

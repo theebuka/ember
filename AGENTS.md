@@ -1,3 +1,8 @@
+# AGENTS.md
+
+Project context, conventions and the rules that must not be broken live in
+[`CLAUDE.md`](./CLAUDE.md). Read that first.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

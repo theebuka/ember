@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 812" width="1120" height="812" font-family="Archivo, ui-sans-serif, system-ui, sans-serif" role="img" aria-labelledby="title desc">
+  <title id="title">ember data flow: from OHLCV candles to rendered advice</title>
+  <desc id="desc">A market data provider produces candles and fundamentals. The signal engine turns them into indicators, ten strategy verdicts, a weighted ensemble, a regime filter, a position size and a 72-hour execution window. Route handlers serve the result as JSON. Client components render it. The engine never reaches the browser.</desc>
+
+  <style>
+    .ink { fill: #16130F; }
+    .graphite { fill: #3D3833; }
+    .stone { fill: #6B635A; }
+    .ember { fill: #9F5A14; }
+    .box { fill: #FFFFFF; stroke: #E6E2DC; }
+    .well { fill: #F7F5F2; stroke: #E6E2DC; }
+    .band { fill: none; stroke: #D6D0C7; stroke-dasharray: 4 4; }
+    .h { font-size: 13px; font-weight: 600; }
+    .t { font-size: 12px; }
+    .s { font-size: 10.5px; }
+    .eyebrow { font-size: 9.5px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; }
+    .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 10px; letter-spacing: 0.04em; }
+    .flow { fill: none; stroke: #A8A099; stroke-width: 1.25; }
+  </style>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#A8A099" />
+    </marker>
+    <radialGradient id="coal">
+      <stop offset="0%" stop-color="#D9822B" stop-opacity="0.55" />
+      <stop offset="55%" stop-color="#D9822B" stop-opacity="0.12" />
+      <stop offset="100%" stop-color="#D9822B" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <rect width="1120" height="812" fill="#F7F5F2" />
+
+  <!-- Header -->
+  <circle cx="46" cy="44" r="18" fill="url(#coal)" />
+  <circle cx="46" cy="44" r="5" fill="#D9822B" />
+  <text x="74" y="41" class="ink" font-size="17" font-weight="600" style="font-stretch:88%">ember</text>
+  <text x="74" y="58" class="stone t">from a candle to a recommendation, and the boundary that keeps them apart</text>
+
+  <!-- ── Lane 1: server ─────────────────────────────────────────────── -->
+  <rect x="32" y="92" width="1056" height="392" rx="18" class="band" />
+  <text x="52" y="118" class="stone eyebrow">Server only · never shipped to the browser</text>
+
+  <!-- Providers -->
+  <rect x="52" y="134" width="182" height="122" rx="12" class="box" />
+  <text x="70" y="158" class="ink h">Market data provider</text>
+  <text x="70" y="178" class="stone s">One interface, two implementations.</text>
+  <text x="70" y="196" class="graphite s">· mock — GARCH(1,1), seeded</text>
+  <text x="70" y="212" class="graphite s">· live — Finnhub, CoinGecko</text>
+  <text x="70" y="236" class="stone mono">OHLCV · fundamentals · rates</text>
+
+  <path d="M234,195 L280,195" class="flow" marker-end="url(#arrow)" />
+
+  <!-- Engine block -->
+  <rect x="280" y="134" width="500" height="322" rx="12" class="well" />
+  <text x="298" y="158" class="ember eyebrow">lib/signals — the product</text>
+
+  <rect x="298" y="170" width="212" height="62" rx="10" class="box" />
+  <text x="314" y="192" class="ink h">Indicators</text>
+  <text x="314" y="210" class="stone s">RSI · ATR · MACD · slope · vol</text>
+
+  <rect x="530" y="170" width="232" height="62" rx="10" class="box" />
+  <text x="546" y="192" class="ink h">10 strategies</text>
+  <text x="546" y="210" class="stone s">each cited, each votes −1…+1</text>
+
+  <path d="M510,201 L528,201" class="flow" marker-end="url(#arrow)" />
+  <path d="M646,232 L646,252" class="flow" marker-end="url(#arrow)" />
+
+  <rect x="298" y="252" width="464" height="62" rx="10" class="box" />
+  <text x="314" y="274" class="ink h">Ensemble</text>
+  <text x="314" y="292" class="stone s">weighted by strategy confidence × regime × risk profile · dispersion lowers confidence</text>
+
+  <path d="M530,314 L530,334" class="flow" marker-end="url(#arrow)" />
+
+  <rect x="298" y="334" width="150" height="62" rx="10" class="box" />
+  <text x="314" y="356" class="ink h">Regime filter</text>
+  <text x="314" y="374" class="stone s">trend + vol percentile</text>
+
+  <rect x="460" y="334" width="150" height="62" rx="10" class="box" />
+  <text x="476" y="356" class="ink h">Sizing</text>
+  <text x="476" y="374" class="stone s">vol target · ¼ Kelly · stop</text>
+
+  <rect x="622" y="334" width="140" height="62" rx="10" class="box" />
+  <text x="638" y="356" class="ink h">Window</text>
+  <text x="638" y="374" class="stone s">liquidity × events × decay</text>
+
+  <path d="M448,365 L458,365" class="flow" marker-end="url(#arrow)" />
+  <path d="M610,365 L620,365" class="flow" marker-end="url(#arrow)" />
+
+  <text x="298" y="428" class="stone s">Pure functions over candles. The same code serves live advice and the walk-forward backtest,</text>
+  <text x="298" y="444" class="stone s">which is what makes the track record the engine's own output rather than a claim about it.</text>
+
+  <path d="M780,290 L828,290" class="flow" marker-end="url(#arrow)" />
+
+  <!-- Routes -->
+  <rect x="828" y="134" width="212" height="182" rx="12" class="box" />
+  <text x="846" y="158" class="ink h">Route handlers</text>
+  <text x="846" y="178" class="stone s">app/api/* · JSON only</text>
+  <text x="846" y="200" class="graphite s">advice · asset · series · quotes</text>
+  <text x="846" y="216" class="graphite s">track-record · strategies · fx</text>
+  <text x="846" y="232" class="graphite s">instruments · risk-preview</text>
+  <text x="846" y="258" class="stone s">60s memo per risk profile;</text>
+  <text x="846" y="274" class="stone s">track record cached per UTC day.</text>
+  <text x="846" y="300" class="ember mono">import "server-only"</text>
+
+  <!-- ── The boundary ───────────────────────────────────────────────── -->
+  <text x="52" y="512" class="ember eyebrow">the boundary — enforced, not documented</text>
+  <line x1="32" y1="524" x2="1088" y2="524" stroke="#D6D0C7" stroke-width="1" />
+  <text x="52" y="548" class="stone s">`server-only` makes a client import a build error · engine types are re-exported with `export type` and erased at build ·</text>
+  <text x="52" y="564" class="stone s">the production chunks are grepped for strategy names, and contain none.</text>
+
+  <path d="M934,316 L934,616" class="flow" marker-end="url(#arrow)" />
+
+  <!-- ── Lane 2: browser ────────────────────────────────────────────── -->
+  <rect x="32" y="580" width="1056" height="208" rx="18" class="band" />
+  <text x="52" y="606" class="stone eyebrow">Browser</text>
+
+  <rect x="828" y="616" width="212" height="80" rx="12" class="box" />
+  <text x="846" y="640" class="ink h">lib/api/client.ts</text>
+  <text x="846" y="660" class="stone s">the only data entry point</text>
+  <text x="846" y="678" class="stone s">fetchers + query keys</text>
+
+  <path d="M828,656 L790,656" class="flow" marker-end="url(#arrow)" />
+
+  <rect x="558" y="616" width="228" height="80" rx="12" class="box" />
+  <text x="576" y="640" class="ink h">TanStack Query</text>
+  <text x="576" y="660" class="stone s">quotes 20s · advice 5m</text>
+  <text x="576" y="678" class="stone s">instruments and strategies once</text>
+
+  <path d="M558,656 L520,656" class="flow" marker-end="url(#arrow)" />
+
+  <rect x="288" y="616" width="228" height="80" rx="12" class="box" />
+  <text x="306" y="640" class="ink h">Screens</text>
+  <text x="306" y="660" class="stone s">dashboard · advice · watchlist</text>
+  <text x="306" y="678" class="stone s">portfolio · asset · track record</text>
+
+  <rect x="52" y="616" width="212" height="80" rx="12" class="box" />
+  <text x="70" y="640" class="ink h">Zustand, persisted</text>
+  <text x="70" y="660" class="stone s">transactions · preferences</text>
+  <text x="70" y="678" class="stone s">watchlist · handled · alert log</text>
+
+  <path d="M288,656 L268,656" class="flow" marker-end="url(#arrow)" />
+  <path d="M268,676 L288,676" class="flow" marker-end="url(#arrow)" />
+
+  <text x="52" y="734" class="stone s">Holdings are never stored. Quantity, cost basis, realized and unrealized P&amp;L are all derived from the transaction log on every render</text>
+  <text x="52" y="752" class="stone s">by `lib/portfolio/derive.ts`, so no two figures on any screen can drift apart.</text>
+  <text x="52" y="778" class="ember s">Consequence of the whole arrangement: turning on real market data is one environment variable, and not one screen changes.</text>
+</svg>

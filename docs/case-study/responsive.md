@@ -1,0 +1,11 @@
+# Responsive sweep
+
+`scripts/capture.mjs`, 2026-08-18.
+
+15 screens at 320, 375, 414, 640, 768, 1024, 1280, 1440, 1920px — 135 combinations.
+
+The check is that the document never scrolls horizontally. Wide content —
+the positions table, the risk comparison — is allowed to scroll, but only
+inside its own container, never by pushing the page sideways.
+
+**No horizontal overflow at any width.**
