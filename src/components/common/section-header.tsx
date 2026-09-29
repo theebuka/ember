@@ -37,13 +37,19 @@ export function SectionHeader({
       // 12px to its content, everywhere. It was 10px here and overridden to
       // 16px by an `mt-4` on the sibling in two settings blocks, so the same
       // header sat at two different distances on one screen.
-      className={cn("mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1", className)}
+      //
+      // Title and link share the first line; the hint goes *under* the title.
+      // Beside it, on a phone, the three never fit and the link dropped to a
+      // stray line of its own under the count — the most visible piece of
+      // "haphazard" on every screen that had one.
+      className={cn("mb-3 flex items-start gap-3", className)}
     >
-      <h2 className="eyebrow shrink-0">{title}</h2>
+      <div className="min-w-0 flex-1">
+        <h2 className="eyebrow">{title}</h2>
+        {hint && <p className="mt-0.5 text-micro text-stone">{hint}</p>}
+      </div>
 
-      {hint && <span className="min-w-0 text-micro text-stone">{hint}</span>}
-
-      <div className="ml-auto flex shrink-0 items-baseline gap-2">
+      <div className="flex shrink-0 items-baseline gap-2">
         {action}
         {href && (
           <Link

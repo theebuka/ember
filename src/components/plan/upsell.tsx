@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Sparkle } from "@/components/common/icon";
 import { Button } from "@/components/ui/button";
 import { ResponsiveModal } from "@/components/common/responsive-modal";
+import { PlanComparison } from "@/components/plan/pricing";
 import { UPSELL, type Feature } from "@/lib/plan";
 import { cn } from "@/lib/utils";
 
@@ -90,7 +91,7 @@ export function PlanCard({
         className="mt-3"
         onClick={() => setOpen(true)}
       >
-        What Pro includes
+        See plans
       </Button>
       <PlanInterstitial feature={feature} open={open} onOpenChange={setOpen} />
     </div>
@@ -107,8 +108,8 @@ export function PlanCard({
  * because time passed is an interruption, and this app has exactly one
  * interruption budget which the alerts already spend.
  *
- * Reuses `ResponsiveModal`, so it is a sheet on a phone and a dialog on a desktop,
- * with focus trapped and restored explicitly (decision 021).
+ * The body is `PlanComparison` — the same two columns the Plan tab shows — so
+ * the modal and the settings page cannot describe different plans.
  */
 export function PlanInterstitial({
   feature,
@@ -116,71 +117,30 @@ export function PlanInterstitial({
   onOpenChange,
 }: {
   /**
-   * The limit that was hit, which titles the modal and is lit in the list.
-   * Omitted when it is opened from somewhere no limit bit — the rail card, the
-   * Plan tab — which used to pass `unlimited-findings` for want of a choice and
-   * so opened "See every finding" from a button about Pro in general.
+   * The limit that was hit, which titles the modal and is lit in Pro's list.
+   * Omitted when opened from somewhere no limit bit — the rail card, the Plan tab.
    */
   feature?: Feature;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const title = feature ? UPSELL[feature].title : "What Pro includes";
-
   return (
     <ResponsiveModal
       open={open}
       onOpenChange={onOpenChange}
-      title={title}
-      description="Everything below is what changes. Nothing about how ember reaches its answer does."
+      title={feature ? UPSELL[feature].title : "Plans"}
+      description={
+        feature
+          ? UPSELL[feature].body
+          : "The engine answers the same on both. Pro changes how much of it reaches you."
+      }
+      className="sm:max-w-2xl"
     >
-      {/* `ResponsiveModal` sets `p-0` on both branches, so children own their
-          padding — `p-4 md:p-5` is what the transaction form and the symbol picker
-          both use, and matching them is what keeps three modals looking like one
-          component rather than three. Scrolls internally so a long list cannot push
-          the sheet past its own max height. */}
-      <div className="min-h-0 space-y-4 overflow-y-auto p-4 md:p-5">
-        <ul className="space-y-3">
-          {(Object.keys(UPSELL) as Feature[]).map((key) => (
-            <li key={key} className="flex gap-2.5">
-              <Sparkle
-                weight="fill"
-                className={cn(
-                  "mt-0.5 size-4 shrink-0",
-                  !feature || key === feature ? "text-brand" : "text-faint",
-                )}
-              />
-              <div className="min-w-0">
-                <p className="text-caption font-medium text-graphite">
-                  {UPSELL[key].title}
-                </p>
-                <p className="text-micro text-stone">{UPSELL[key].body}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-
-        {/**
-         * The honest state of things, said plainly rather than dressed as a
-         * waitlist.
-         *
-         * There is no checkout: §7 records three unresolved blockers — no merchant
-         * of record with Nigerian payouts, a host that forbids commercial use, and
-         * an unlicensed price feed. A button that collected an email address to
-         * "join the list" would be doing something with that address, and there is
-         * nothing to do with it yet.
-         */}
-        <p className="rounded-xl bg-surface-2 p-3 text-micro text-stone">
-          Pro isn&apos;t for sale yet — there&apos;s no checkout, and ember
-          won&apos;t take a payment it can&apos;t properly settle. Nothing is
-          switched off in the meantime; the free limits are simply what everyone
-          has.
-        </p>
-
-        <p className="text-micro text-stone">
-          The methodology and the track record stay open to everyone, on every plan
-          and without an account. They&apos;re how you check whether any of this
-          works, and that isn&apos;t something to sell.
+      <div className="min-h-0 overflow-y-auto p-4 md:p-5">
+        <PlanComparison feature={feature} />
+        <p className="mt-4 text-micro text-stone">
+          The methodology and the track record are open to everyone, on every plan
+          and without an account.
         </p>
       </div>
     </ResponsiveModal>

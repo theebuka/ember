@@ -68,6 +68,19 @@
      containers around them are what needed to firm up. */
   --radius: 0.75rem;
 
+  /* ── Face tuning ──────────────────────────────────────────────────────
+     Everything the interface typeface needs set per face, in one place, so a
+     change of face is this block plus the loader in `app/layout.tsx`. Live:
+     **Geist**, tracked tighter as it grows, the way Vercel sets it (its own
+     scale runs −0.04em at 32px to −0.06em at 72px). Satoshi's values, kept for
+     a revert, are in docs/design-system.md → "The interface face". */
+  --face-figure-weight: 600;
+  --face-figure-tracking: -0.035em; /* 64px balance — tighter crowds the cents (Satoshi −0.025) */
+  --face-display-tracking: -0.04em; /* 40px              (Satoshi −0.025) */
+  --face-title-tracking: -0.03em; /*   28px page titles  (Satoshi −0.02)  */
+  --face-wordmark-tracking: -0.045em; /* the lockup    (Satoshi −0.03)  */
+  --face-label-tracking: -0.006em; /*  section labels  (Satoshi −0.005) */
+
   /* Elevation, and on light it is doing more work than it used to.
      `ground` and `surface` are both white, so anything that must read as
      floating *above* the page — popovers, sheets, the nav capsule — cannot
@@ -201,9 +214,16 @@
 
   /* Satoshi carries every visible glyph; Plex Mono is tickers and timestamps
      only. Prices are Satoshi with tabular figures — see .num below. */
-  --font-sans: var(--font-satoshi), ui-sans-serif, system-ui, sans-serif;
-  --font-heading: var(--font-satoshi), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  /* Per-face tracking as utilities: `tracking-display`, `tracking-title`,
+     `tracking-wordmark`. Never an arbitrary `tracking-[…]` for these — that is
+     how a face's tuning ends up scattered across nine files. */
+  --tracking-display: var(--face-display-tracking);
+  --tracking-title: var(--face-title-tracking);
+  --tracking-wordmark: var(--face-wordmark-tracking);
 
   --radius-sm: calc(var(--radius) * 0.5);
   --radius-md: calc(var(--radius) * 0.7);
@@ -338,8 +358,8 @@
    density that a default stack never has. Tighter than v1's −0.03em would
    start closing the counters on Satoshi's round 0 and 6. */
 @utility figure {
-  font-weight: 600;
-  letter-spacing: -0.025em;
+  font-weight: var(--face-figure-weight);
+  letter-spacing: var(--face-figure-tracking);
   font-variant-numeric: tabular-nums lining-nums;
   font-feature-settings:
     "tnum" 1,
@@ -363,16 +383,22 @@
   box-shadow: var(--overlay-shadow);
 }
 
-/* Section eyebrows. With no width axis to condense them, they stay quiet
-   through size and tracking instead — and slightly looser tracking than v1,
-   because Satoshi's uppercase is wider than Archivo's was. */
+/* Section labels — sentence case, set in ink.
+
+   They were uppercase, tracked, 12px and `stone`: the terminal/Bloomberg
+   register, and beside a lowercase grey hint it made every section open on two
+   whispers. The modern product register (Linear, Mercury, Stripe) labels a block
+   in plain sentence case at reading weight, and lets the hierarchy come from the
+   page title above and the figures below. Still one size under body so a
+   section label never competes with an `h1` (the reason this is a label and not
+   a heading, per `SectionHeader`). The name is kept so every call site and every
+   skeleton that reserves its line box moves together. */
 @utility eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  font-size: 0.9375rem;
+  line-height: 1.35;
   font-weight: 600;
-  font-size: 0.75rem;
-  line-height: 1.3;
-  color: var(--stone);
+  letter-spacing: var(--face-label-tracking);
+  color: var(--ink);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -464,8 +490,9 @@
 :root {
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-top: env(safe-area-inset-top, 0px);
-  /* The capsule's real footprint: 48px item + 6px padding either side +
-     12px bottom margin. v1 had this at 3.5rem while the object measured
-     ~4.75rem, so the last row of every screen sat under the nav. */
-  --nav-height: 4.5rem;
+  /* The capsule's real footprint: a 56px labelled item, 6px of padding and a
+     1px border either side, and a 12px bottom margin — 82px. v1 had this at
+     3.5rem while the object measured ~4.75rem, so the last row of every screen
+     sat under the nav. The FAB and `main`'s bottom padding both read it. */
+  --nav-height: 5.125rem;
 }

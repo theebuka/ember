@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Section } from "@/components/common/section";
 import { BroadcastComposer } from "@/components/admin/broadcast-composer";
+import { PricingPanel } from "@/components/admin/pricing-panel";
 import { SuspensionPanel } from "@/components/admin/suspension-panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNow } from "@/hooks/use-now";
@@ -46,6 +47,7 @@ export function AdminPanels() {
     <div className="space-y-10">
       <BroadcastComposer user={user} onChanged={refresh} />
       <SuspensionPanel user={user} />
+      <PricingPanel user={user} />
       <AdminLog />
     </div>
   );

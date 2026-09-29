@@ -127,17 +127,60 @@ a card.
 
 ## Type
 
-**Satoshi**, variable 300–900, self-hosted from `src/app/fonts/` — Fontshare,
-free for commercial use. **IBM Plex Mono** for ticker symbols and timestamps
-only.
+**Geist**, variable, through `next/font/google` — downloaded at build time and
+served from ember's own origin, so no reader's browser ever contacts Google.
+**IBM Plex Mono** for ticker symbols and timestamps only.
 
-Chosen by rendering candidates on the app's own strings, at the sizes the
-redesign uses, against the new palette, with the incumbent as a control. It won
-over Switzer on the numerals — the `1`, the `4` and the circular `0` — which is
-the right criterion for an app whose primary content is a column of prices.
+Chosen on 2026-09-29, replacing Satoshi, which the user judged to read as cheap
+beside the category. Geist, Inter, Instrument Sans and Mona Sans were rendered on
+the app's own strings with Satoshi as a control; Geist and Inter were then run
+live in the app one after the other, and Geist won. Mona Sans was out on its
+tabular zero, which is slashed and reads oddly in a price column.
 
 Loaded `display: "block"`, not `"swap"`: a swap would flash a system fallback
 across every figure on screen and then reflow all of them.
+
+### The interface face
+
+Everything a typeface needs tuned lives in one block of `globals.css`, the
+`--face-*` custom properties, and is reached through `figure`, `eyebrow` and the
+`tracking-display` / `tracking-title` / `tracking-wordmark` utilities. Never an
+arbitrary `tracking-[…]` for these — that is how Satoshi's tuning ended up in
+nine files. A change of face is that block plus the loader in `app/layout.tsx`.
+
+| Property | Geist (live) | Satoshi |
+|---|---|---|
+| `--face-figure-weight` | 600 | 600 |
+| `--face-figure-tracking` — 64px balance | −0.035em | −0.025em |
+| `--face-display-tracking` — 40px | −0.04em | −0.025em |
+| `--face-title-tracking` — 28px titles | −0.03em | −0.02em |
+| `--face-wordmark-tracking` — the lockup | −0.045em | −0.03em |
+| `--face-label-tracking` — section labels | −0.006em | −0.005em |
+
+Geist is tracked tighter as it grows, the way Vercel sets it (its own scale runs
+−0.04em at 32px to −0.06em at 72px). The balance stops at −0.035em because
+tighter crowds the cents into the last digit.
+
+**Reverting to Satoshi.** `src/app/fonts/Satoshi-Variable.woff2` is kept. Put the
+Satoshi column's values into the `--face-*` block, and replace the `ui` loader
+in `app/layout.tsx` with:
+
+```ts
+import localFont from "next/font/local";
+
+const ui = localFont({
+  src: "./fonts/Satoshi-Variable.woff2",
+  variable: "--font-ui",
+  weight: "300 900",
+  style: "normal",
+  display: "block",
+  preload: true,
+});
+```
+
+Satoshi is Fontshare's, free for commercial use, and not on Google Fonts, which
+is why it was self-hosted from a file. It had won over Switzer in v2 on its
+numerals — the `1`, the `4` and the circular `0`.
 
 ### Scale
 
@@ -164,11 +207,11 @@ class beside it (ADR 0016). A test reads the CSS and fails if the lists drift.
 
 v1's signature was Archivo's `wdth` axis — figures expanded to 112%, the
 wordmark condensed to 88%, and condensing as the house answer to a column that
-wouldn't fit. Satoshi has no width axis. Three things replace it:
+wouldn't fit. Neither Satoshi nor Geist has one. Three things replace it:
 
-- **Hero figures** get their density from weight 600 and `-0.025em`. Tighter
-  than v1's `-0.03em` would start closing Satoshi's round counters.
-- **The wordmark** is weight 700 at `-0.03em`.
+- **Hero figures** get their density from weight and negative tracking — the
+  `--face-figure-*` values above.
+- **The wordmark** is weight 700 at `--face-wordmark-tracking`.
 - **A column heading that won't fit steps down a size and hyphenates.** Never
   truncate to `Conse…` — that hides which column is which — and never invent
   an abbreviation, which is a legend to learn.
@@ -176,7 +219,7 @@ wouldn't fit. Satoshi has no width axis. Three things replace it:
 ### Numbers
 
 Every price, percentage and quantity uses `.num` — tabular, lining figures in
-Satoshi. Columns stay aligned and digits don't jitter as prices tick.
+the interface face. Columns stay aligned and digits don't jitter as prices tick.
 
 Prices are **not** set in mono. Mono numerals everywhere read as a terminal
 theme applied to a consumer product.

@@ -87,7 +87,7 @@ export function PageHeader({
             with one of them redundant. The accessible name survives. */}
         <h1
           className={cn(
-            "min-w-0 truncate text-title font-semibold tracking-[-0.02em] text-ink",
+            "min-w-0 truncate text-title font-semibold tracking-title text-ink",
             brand && !back && "sr-only",
           )}
         >

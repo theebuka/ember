@@ -84,7 +84,7 @@ export function ValueHero({
         )}
       </div>
 
-      <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line pt-4 sm:grid-cols-3">
+      <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line pt-4 min-[375px]:grid-cols-3">
         <Stat label="Invested" value={formatMoney(summary.totalCost, summary.base)} />
         <Stat
           label="Unrealized"
@@ -129,7 +129,11 @@ function Stat({
   return (
     <div className="min-w-0">
       <dt className="text-micro text-stone">{label}</dt>
-      <dd className={cn("num truncate text-body font-medium", colour)}>{value}</dd>
+      {/* One step down on a phone so all three fit one row from 375px — two
+          columns left Realized alone on a second line beside a hole. */}
+      <dd className={cn("num truncate text-body font-medium max-sm:text-caption", colour)}>
+        {value}
+      </dd>
       {/* The hint gets its own line rather than trailing the figure.
           Inline, at the v2 body size, "+$20,864.31 +28.5%" overflowed a
           165px column on a 375px screen and truncated to "+28…." — which
@@ -189,7 +193,7 @@ export function ValueHeroSkeleton({ className }: { className?: string }) {
           per-label rather than uniform: giving all three a hint line would
           overshoot by one row exactly as surely as giving none of them would
           undershoot. */}
-      <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line pt-4 sm:grid-cols-3">
+      <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line pt-4 min-[375px]:grid-cols-3">
         {(
           [
             ["Invested", false],
@@ -201,7 +205,7 @@ export function ValueHeroSkeleton({ className }: { className?: string }) {
             <dt className="text-micro text-stone">{label}</dt>
             <dd>
               <Skeleton className="w-20">
-                <span className="block text-body text-transparent">0</span>
+                <span className="block text-body text-transparent max-sm:text-caption">0</span>
               </Skeleton>
             </dd>
             {hasHint && (

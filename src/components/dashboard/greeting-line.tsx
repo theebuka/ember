@@ -68,7 +68,7 @@ export function GreetingLine({ className }: { className?: string }) {
        * continuously. The colour is the only thing the split buys, and colour
        * is not semantic.
        */}
-      <p className="text-title font-medium tracking-[-0.02em] text-stone">
+      <p className="text-title font-medium tracking-title text-stone">
         {parts === null ? (
           <span className="invisible">Good afternoon</span>
         ) : (

@@ -305,19 +305,12 @@ export function PortfolioScreen() {
                     )}
                   </div>
                   {isSample && (
-                    <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <p className="text-micro text-stone">
-                        This is the sample book — none of these are your holdings.
-                      </p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleClearSample}
-                        className="h-7 px-2.5 text-micro"
-                      >
+                    <p className="mt-5 text-micro text-stone">
+                      This is the sample book — none of these are your holdings.{" "}
+                      <button type="button" onClick={handleClearSample} className="tap-target font-medium text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
                         Clear it
-                      </Button>
-                    </div>
+                      </button>
+                    </p>
                   )}
                 </>
               )}

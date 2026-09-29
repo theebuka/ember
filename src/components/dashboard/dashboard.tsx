@@ -356,18 +356,13 @@ function EmptyBook({ onLoadSample }: { onLoadSample: () => void }) {
 
 function SampleNotice({ onClear }: { onClear: () => void }) {
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line pt-3.5">
-      <p className="text-micro text-stone">
-        This is the sample book — none of these are your holdings.
-      </p>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onClear}
-        className="h-6 px-2 text-micro"
-      >
+    // One sentence with the action inside it: as a separate button it wrapped
+    // to a line of its own on a phone, orphaned under the text it belonged to.
+    <p className="mt-4 border-t border-line pt-3.5 text-micro text-stone">
+      This is the sample book — none of these are your holdings.{" "}
+      <button type="button" onClick={onClear} className="tap-target font-medium text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
         Clear it
-      </Button>
-    </div>
+      </button>
+    </p>
   );
 }

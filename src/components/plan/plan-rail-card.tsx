@@ -50,27 +50,30 @@ export function PlanRailCard() {
 
   return (
     <div className="px-3 pb-1">
-      <div className="rounded-xl border border-line bg-ground p-3.5">
-        <h2 className="flex items-center gap-2 text-caption font-semibold text-ink">
-          <Sparkle weight="fill" className="size-4 shrink-0 text-brand" />
-          ember Pro
-        </h2>
-
-        {/* One line. This sits above the profile control at the bottom of a
-            240px column, and a paragraph here is decision 212's wall of text
-            arriving in the chrome instead of on the page. */}
-        <p className="mt-1 text-micro text-stone">
-          Every finding, uncapped push, and the digest by email.
-        </p>
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="mt-3 w-full"
-          onClick={() => setOpen(true)}
-        >
-          What Pro includes
-        </Button>
+      {/* The shape every serious product's sidebar uses for this (Vercel,
+          Supabase, Notion): an icon tile, a name, one line, one solid button.
+          The glow is decoration in the brand hue at low opacity — no shadow,
+          no gradient slab, nothing tinted like a gain. */}
+      <div className="relative overflow-hidden rounded-xl border border-line bg-ground p-3.5">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-12 -right-10 size-32 rounded-full bg-brand/15 blur-2xl"
+        />
+        <div className="relative">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-brand text-white">
+            <Sparkle weight="fill" className="size-4" />
+          </span>
+          <h2 className="mt-3 text-caption font-semibold text-ink">ember Pro</h2>
+          {/* One line. This sits above the profile control at the bottom of a
+              240px column, and a paragraph here is decision 212's wall of
+              text arriving in the chrome instead of on the page. */}
+          <p className="mt-0.5 text-micro text-stone">
+            Every finding, uncapped push and the email digest.
+          </p>
+          <Button size="sm" className="mt-3 w-full" onClick={() => setOpen(true)}>
+            See plans
+          </Button>
+        </div>
       </div>
 
       <PlanInterstitial open={open} onOpenChange={setOpen} />

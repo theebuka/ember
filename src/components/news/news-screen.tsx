@@ -283,7 +283,7 @@ export function NewsScreen() {
               }
             >
               {loading ? (
-                <div className="divide-y divide-line border-t border-line">
+                <div className="-mx-3 divide-y divide-line border-t border-line">
                   {Array.from({ length: 5 }, (_, i) => (
                     <HeadlineSkeleton key={i} />
                   ))}
@@ -299,7 +299,10 @@ export function NewsScreen() {
                 />
               ) : (
                 <>
-                  <div className="divide-y divide-line border-t border-line">
+                  {/* The list bleeds, not the row. The row carried `-mx-3` at
+                      `w-full`, so it moved 12px left without growing and every
+                      divider stopped 12px short on the right. */}
+                  <div className="-mx-3 divide-y divide-line border-t border-line">
                     {paged.map((item) => (
                       <Headline
                         key={item.id}
@@ -464,7 +467,7 @@ function Headline({
       onClick={onOpen}
       aria-current={selected ? "true" : undefined}
       className={cn(
-        "-mx-3 block w-full px-3 py-4 text-left transition-colors",
+        "block w-full px-3 py-4 text-left transition-colors",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         // The selected state only means anything beside a detail pane, so it
         // is drawn only where one exists. On a phone the selection *is* the
@@ -583,7 +586,7 @@ function TrendingSkeleton() {
 
 function HeadlineSkeleton() {
   return (
-    <div className="py-4" aria-hidden>
+    <div className="px-3 py-4" aria-hidden>
       <Skeleton className="h-[1lh] w-32 text-micro" />
       <Skeleton className="mt-1.5 h-[1lh] w-3/4 text-body" />
       <Skeleton className="mt-1 h-[1lh] w-full text-caption" />

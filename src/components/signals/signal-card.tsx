@@ -114,7 +114,6 @@ export function SignalCard({
                 </span>
               )}
             </div>
-            <p className="mt-2 text-body text-graphite">{assessment.summary}</p>
           </div>
 
           <div className="shrink-0 text-right">
@@ -127,8 +126,14 @@ export function SignalCard({
           </div>
         </div>
 
+        {/* Full width, under the price row. Inside the left column it shared
+            the row with the price block and wrapped every three words on a
+            phone. */}
+        <p className="mt-3 text-body text-graphite">{assessment.summary}</p>
         <p className="mt-2 text-caption text-stone">{assessment.detail}</p>
-        <p className="mt-1 text-caption text-stone">{regime.summary}</p>
+        {/* The regime's sentence is context the price row already names
+            (`Calm uptrend`); on a phone it is one paragraph too many. */}
+        <p className="mt-1 text-caption text-stone max-md:hidden">{regime.summary}</p>
 
         {/* ── When ─────────────────────────────────────────────────────── */}
         <div className="mt-4">
@@ -142,9 +147,12 @@ export function SignalCard({
                 key={note}
                 className="flex items-start gap-1.5 text-caption text-stone"
               >
-                <Clock
-                  className="mt-0.5 size-3 shrink-0 text-stone"
-                />
+                {/* A box one line tall, so the icon centres on the first
+                    line of whatever face and line height the text is in —
+                    a fixed `mt-0.5` was tuned to Satoshi and drifted. */}
+                <span aria-hidden className="flex h-[1lh] shrink-0 items-center">
+                  <Clock className="size-3.5 text-stone" />
+                </span>
                 <span>{note}</span>
               </li>
             ))}

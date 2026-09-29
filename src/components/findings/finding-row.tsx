@@ -94,7 +94,17 @@ export function FindingRow({
       </div>
 
       {/* ── The finding itself ───────────────────────────────────────────── */}
-      <p className="mt-2.5 text-body font-medium text-ink">{finding.headline}</p>
+      {/* The headline is the way into the full read on a phone, where the
+          "Full read" button is dropped rather than left on a line of its own. */}
+      <p className="mt-2.5 text-body font-medium text-ink">
+        <Link
+          href={`/asset/${encodeURIComponent(finding.symbol)}`}
+          className="rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:pointer-events-none"
+          tabIndex={-1}
+        >
+          {finding.headline}
+        </Link>
+      </p>
       <p className="mt-1 text-caption text-stone">{finding.detail}</p>
 
       {/* ── When, or why ─────────────────────────────────────────────────── */}
@@ -102,7 +112,9 @@ export function FindingRow({
         <div className="mt-3.5">
           <WindowBand window={assessment.window} />
           <p className="mt-1.5 flex items-start gap-1.5 text-caption text-stone">
-            <Clock className="mt-0.5 size-3 shrink-0" />
+            <span aria-hidden className="flex h-[1lh] shrink-0 items-center">
+              <Clock className="size-3.5" />
+            </span>
             <span>
               {finding.ready
                 ? `Open now, until ${now === null ? "—" : formatWindowTime(assessment.window.closesAt)}`
@@ -146,12 +158,14 @@ export function FindingRow({
         ) : null}
       </div>
 
-      <p className="mt-1 text-micro text-stone">
+      {/* The rule's reasoning and its citation are the full read's job on a
+          phone; here they were two more layers under every finding. */}
+      <p className="mt-1 text-micro text-stone max-md:hidden">
         {isRisk && risk ? risk.action.note : (assessment.sizing?.note ?? "")}
       </p>
 
       {/* ── Why ember says so ────────────────────────────────────────────── */}
-      <p className="mt-0.5 text-micro text-stone">
+      <p className="mt-0.5 text-micro text-stone max-md:hidden">
         {isRisk && risk
           ? `${risk.citation.authors} (${risk.citation.year}), ${risk.citation.title}.`
           : (assessment.contributions[0] &&
@@ -188,7 +202,7 @@ export function FindingRow({
               <X />
               Dismiss
             </Button>
-            <Button variant="ghost" size="sm" asChild className="ml-auto">
+            <Button variant="ghost" size="sm" asChild className="ml-auto max-md:hidden">
               <Link href={`/asset/${encodeURIComponent(finding.symbol)}`}>
                 Full read
                 <ArrowRight />

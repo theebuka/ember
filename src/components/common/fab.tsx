@@ -72,7 +72,7 @@ export function Fab({
         className,
       )}
       style={{
-        bottom: "calc(var(--safe-bottom) + 5.25rem)",
+        bottom: "calc(var(--safe-bottom) + var(--nav-height) + 0.75rem)",
       }}
     >
       {icon}

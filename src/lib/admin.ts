@@ -34,7 +34,8 @@ export type AdminAction =
   | "notice.pin"
   | "notice.unpin"
   | "account.suspend"
-  | "account.restore";
+  | "account.restore"
+  | "setting.update";
 
 export const ADMIN_ACTION_LABELS: Record<AdminAction, string> = {
   "notice.publish": "Published a broadcast",
@@ -43,6 +44,7 @@ export const ADMIN_ACTION_LABELS: Record<AdminAction, string> = {
   "notice.unpin": "Unpinned a broadcast",
   "account.suspend": "Suspended sync and delivery",
   "account.restore": "Restored sync and delivery",
+  "setting.update": "Changed an app setting",
 };
 
 /**

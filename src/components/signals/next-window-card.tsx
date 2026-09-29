@@ -69,7 +69,9 @@ export function NextWindowCard({
 
       {execution.notes.length > 0 && (
         <p className="mt-2 flex items-start gap-1.5 text-caption text-stone">
-          <Clock className="mt-0.5 size-3 shrink-0 text-stone" />
+          <span aria-hidden className="flex h-[1lh] shrink-0 items-center">
+            <Clock className="size-3.5 text-stone" />
+          </span>
           <span>{execution.notes.slice(0, 2).join(" ")}</span>
         </p>
       )}

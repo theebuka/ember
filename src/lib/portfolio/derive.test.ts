@@ -302,6 +302,37 @@ describe("portfolioValueSeries", () => {
     expect(live[0]).toEqual(onCloses[0]);
   });
 
+  it("starts where every holding has a price, not where the first series does", () => {
+    const buy = (symbol: string) =>
+      tx({ symbol, side: "buy", quantity: 1, price: 100, date: new Date(d(0)).toISOString() });
+    const points = portfolioValueSeries({
+      transactions: [buy("AAPL"), buy("BTC")],
+      // BTC's range opens two days before AAPL's first bar.
+      candles: new Map([
+        ["BTC", [candle(d(1), 100), candle(d(2), 100), candle(d(3), 100)]],
+        ["AAPL", [candle(d(3), 100)]],
+      ]),
+      instruments: [AAPL, BTC],
+      rates: RATES,
+      base: "USD",
+    });
+    expect(points.map((p) => p.t)).toEqual([d(3)]);
+    expect(points[0].value).toBe(200);
+  });
+
+  it("keeps the chart when one holding never gets a series", () => {
+    const buy = (symbol: string) =>
+      tx({ symbol, side: "buy", quantity: 1, price: 100, date: new Date(d(0)).toISOString() });
+    const points = portfolioValueSeries({
+      transactions: [buy("AAPL"), buy("BTC")],
+      candles: new Map([["BTC", [candle(d(1), 100), candle(d(2), 100)]]]),
+      instruments: [AAPL, BTC],
+      rates: RATES,
+      base: "USD",
+    });
+    expect(points).toHaveLength(2);
+  });
+
   it("falls back to the last close for a symbol with no quote", () => {
     const points = portfolioValueSeries({
       transactions: [

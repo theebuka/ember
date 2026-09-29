@@ -89,7 +89,7 @@ npm run build        # production build
 npm run start        # serve production build
 npm run lint         # eslint
 npx tsc --noEmit     # typecheck — run before declaring any phase done
-npx vitest run       # unit tests — 362 passing (engine, exposure triggers,
+npx vitest run       # unit tests — 370 passing (engine, exposure triggers,
                      #   finding ranking, backtest invariants, mock calendar,
                      #   portfolio math, CSV import + export round-trip, ledger
                      #   validation, watchlist resolve, alert scheduling for both
@@ -294,6 +294,8 @@ supabase/migrations/         0001 schema + RLS · 0002 profile fields ·
                              release so a mid-deploy build still works) ·
                              0008 profiles client stamp (drops the arrival-
                              time trigger — decision 237) ·
+                             0009 app_settings (admin switches, public read,
+                             `is_admin()` write — decision 258) ·
                              0006 announcements + admin ★ (admins is its own
                              select-only table for the *same* reason —
                              decision 190 — plus suspensions, admin_log, and
@@ -343,16 +345,18 @@ The brand is **`#2563EB`**, chosen by the user. It is exactly Tailwind's `blue-6
 - Hairlines instead of shadows. **One exception:** `shadow-overlay`, for chrome that floats *over* scrolling content. Never on a card.
 - **Desktop is a frame: the rail on `canvas`, the page a white panel inset beside it** (`AppShell`). Anything in the rail sits on `canvas`, so it is `ground` with a hairline, never `surface-2` — which is a well *inside* a page and disappears on canvas. The panel is `overflow-clip`, not `overflow-hidden`, so it rounds its corners without becoming a scroll container and sticky headers still stick.
 - **`--radius` is 12px.** Buttons, chips and segmented controls stay fully round; containers and inputs use the scale. At 16px a 48px input was a pill in all but name.
+- **Section labels are sentence case, in ink** (`eyebrow`, 15px semibold). Never uppercase-and-tracked again: beside a lowercase grey hint it opened every block on two whispers, which is the terminal register, not the product one.
+- **A phone gets a shorter version of a dense block, never a squeezed one.** Supporting lines (citations, rule notes, regime sentences) are `max-md:hidden` and live on the full read; nothing is abbreviated or truncated to fit.
 - **A row's actions are `sm`.** A list of findings or calls is several of the same card in a column, and a 40–48px brand pill on each one is a stack of competing calls to action.
 - **Contrast is measured, not guessed.** `node scripts/audit.mjs` is a gate; it exits non-zero on any violation.
 
 ### Typography
-- **Satoshi** variable (300–900), self-hosted from `src/app/fonts/`. Fontshare, free for commercial use.
+- **Geist** (variable) is the interface face, via `next/font/google` (downloaded at build, self-hosted, `--font-ui`). Chosen 2026-09-29 over Inter and Satoshi after running both live. **Every face-specific value is a `--face-*` property in `globals.css`**, reached through `figure`, `eyebrow` and `tracking-display` / `tracking-title` / `tracking-wordmark` — never an arbitrary `tracking-[…]`. **Satoshi is kept for a revert**: its file stays in `src/app/fonts/`, and its values and loader are in `docs/design-system.md` → "The interface face".
 - **IBM Plex Mono** for ticker symbols and timestamps only — uppercase, `+0.04em` tracking.
-- **All money and percentages use `font-variant-numeric: tabular-nums` in Satoshi, never mono.** Mono numerals everywhere is the tell that a finance app was themed rather than designed. Tabular figures also stop digits jittering as prices tick.
+- **All money and percentages use `font-variant-numeric: tabular-nums` in the interface face, never mono.** Mono numerals everywhere is the tell that a finance app was themed rather than designed. Tabular figures also stop digits jittering as prices tick.
 - Scale: `64 / 40 / 28 / 20 / 17 / 15 / 13` → `figure / display / title / heading / body / caption / micro`.
 - **A new size goes in two places**: `@theme` in `globals.css` *and* the `font-size` group in `lib/utils.ts`. tailwind-merge assumes an unrecognised `text-*` is a colour and will silently delete it when a colour follows — ADR 0016. A test reads the CSS and fails if the lists drift.
-- **There is no width axis any more.** Satoshi has none, so hero figures get their density from weight 600 plus `-0.025em`, and a column heading that won't fit steps *down a size* and hyphenates. Never truncate to `Conse…`, never invent an abbreviation. ADR 0023.
+- **There is no width axis any more.** Neither Satoshi nor Geist has one, so hero figures get their density from weight and the `--face-figure-*` tracking, and a column heading that won't fit steps *down a size* and hyphenates. Never truncate to `Conse…`, never invent an abbreviation. ADR 0023.
 
 ### Controls and icons
 - Ramp is **56 / 48 / 40 / 32** (`xl` / `lg` / `default` / `sm`), fully rounded at every size. `tap-target` puts a 44px floor under the hit region on coarse pointers — vertical only, ADR 0021.
@@ -466,6 +470,8 @@ The brand is **`#2563EB`**, chosen by the user. It is exactly Tailwind's `blue-6
 - **Entitlements live in their own select-only table, never on `profiles`.** RLS is
   row-level, so a `plan` column on a table the user may update is a column the user
   may update.
+- **A price is written once, in dollars, in `PRO_PRICE_USD`.** Everything else — the yearly saving, the per-month figure, the local-currency price — is computed from it. The converted price is shown without a "converted from" line, at the user's direction; `Price.converted` still records it for the day a checkout needs to know.
+- **"Get Pro" is unavailable until a checkout exists, and says so.** `PlanComparison` takes an `onGetPro`; absent, the button is disabled with one line under it. Wiring a merchant of record is that prop.
 - **A plan gate that a server enforces must be enforced on the server.** The email
   and push caps live in `scripts/send-digests.mjs`; the UI copy is only copy.
 - **Upsell register: sentence case, names its outcome, at most one per screen, only
@@ -669,7 +675,7 @@ See `docs/decisions/` for full ADRs. Summary:
 | 063 | `up`/`down` replace `moss`/`clay`; `faint` replaces `mist` | The v1 names described warm hues. Semantic names survive a palette change; descriptive ones become lies |
 | 064 | **A card is not the default container** ([ADR 0024](docs/decisions/0024-a-card-is-not-the-default-container.md)) | 31 wrappers across five screens. The tell is the *structure* — a uniform grid of bordered rectangles — so restyling the card would have changed nothing. Default is `Section` + `Rows`; `Card` keeps three jobs |
 | 065 | Desktop caps at **1600px and answers width with a second column** | v1 capped at 1024 with no `lg:`/`xl:` anywhere, so the layout was identical at 768px and 3440px. Text never gets wider; the page gets *more*. Screens that are genuinely one column get `narrow` (896px) instead |
-| 066 | Nav is **four icon-only tabs** ([ADR 0029](docs/decisions/0029-four-tabs-and-a-profile.md)), Settings behind a profile control | A gear as a peer of Home and Portfolio claims configuration is a main surface. Watchlist folded into Portfolio as a segment — under an alpha-finder framing it is an input to the engine, not a destination |
+| 066 | Nav is **four tabs** ([ADR 0029](docs/decisions/0029-four-tabs-and-a-profile.md)), Settings behind a profile control — *labelled since decision 265* | A gear as a peer of Home and Portfolio claims configuration is a main surface. Watchlist folded into Portfolio as a segment — under an alpha-finder framing it is an input to the engine, not a destination |
 | 067 | `/advice` → `/signals`, `/watchlist` → `/portfolio?view=watching`, both permanent redirects | The old paths are in installed PWA shortcuts and in notification payloads sitting in OS queues. The segment lives in the URL so the redirect lands on the right one |
 | 068 | The greeting is **seeded once per visit** and renders `null` until mounted | It reads the local hour and a stored name, neither of which the server knows (ADR 0017). Picking at render time would flicker during hydration and change the wording mid-read |
 | 069 | The chart's end marker is **CSS, not `<svg:circle>`** | The plot is `preserveAspectRatio="none"`, so anything round in that space renders as an ellipse stretched by the chart's width. Invisible at 960px, obvious once the column reached 1160px |
@@ -862,6 +868,16 @@ See `docs/decisions/` for full ADRs. Summary:
 | 254 | **Change in a list row is text, not a chip** | See §5. Five components moved to `ChangeText`; the chip stays on headline figures |
 | 255 | **Finding rows and signal cards act at `sm`, with no rule inside the row** | Seven stacked layers per finding with a hairline inside a row already bounded by hairlines, ending in 40–48px buttons. The inner rule and one size step are gone; nothing the row says was removed. The settings tab's duplicate heading (the selected tab's own name, 40px below it, with a lowercase tagline) is `sr-only` now, and Sign in is the row's `control` rather than a child dropped in under the text with no gap |
 | 256 | **Yahoo's live price is trusted only when it is newer than the last bar** | Yahoo returns current daily closes for all six Cairo listings beside a `regularMarketPrice` frozen at **2024-07-23**. The quote took the frozen value as live, so Elsewedy read EGP 47.69 −59.76% against a real 113.45 −4.26%, and Home's "Biggest moves" led with five Egyptian names down 31–60%. Nothing failed: the number was well-formed, just two years old. `isCurrent()` compares `regularMarketTime` with the last bar and falls back to that bar's close, in the quote and in the three Yahoo FX rates. Scanned from the disk cache: 6 of 164 equities affected, all Cairo; EGP, TWD and NGN rates were current |
+| 257 | **Pro is $12 a month or $120 a year**, shown as a Free/Pro comparison | Chosen by the user; the category is Copilot $13/$95 and Monarch $14.99/$99.99. The shape is the category's — a monthly/yearly switch with a computed saving (−17%), two columns, a checklist each, the reader's plan marked once — kept to ADR 0038's register: no trial clock, no count of other customers, brand not `up`. One `PlanComparison` renders in the modal and inline on the Plan tab, so the two cannot describe different plans. "What Pro includes" became "See plans", because the button now opens plans |
+| 258 | **The price is shown in the reader's base currency, and an admin can turn that off** | Converted at today's rate and rounded to two significant figures (₦16,286.93 → ₦16,000), shown as the price (the "converted from" line was removed at the user's direction). Dollars until hydration, because the base currency is in `localStorage` (decisions 224, 250). The switch is a row in `app_settings` (0009): public read so a signed-out reader gets it, `is_admin()` write like `notices`, a key/value table so the next switch is a row rather than a migration, and every missing row, table or backend reads as the default (ADR 0031). Narrow symbols on the card (₦, €, £) except the other dollars, which keep `CA$`/`A$`/`NT$` so a Canadian price never reads as a US one |
+| 259 | **Section labels are sentence case** | See §5. One utility, so every label and every skeleton reserving its line box moved together |
+| 260 | **The price chart's end marker is CSS** | Decision 069 fixed the value chart and never reached `PriceChart`, which still drew an `<svg:circle>` in a `preserveAspectRatio="none"` plot — an ellipse hanging off the asset chart's right edge |
+| 261 | **The value series starts where every holding has a price** | A range's series open on different days (crypto trades the weekend before an equity's first bar), so the first points valued only what already had a close: the line opened on the chart's floor and the period change was measured from a partial book — +$26,802 over three months against a total unrealized gain of $16,323. Leading incomplete points are dropped; a holding that never gets a series cannot empty the chart. Two tests |
+| 262 | **The news list bleeds, not the row** | The row carried `-mx-3` at `w-full`, so it moved 12px left without growing and every divider stopped 12px short on the right. The sample-book notice's "Clear it" is inline in its sentence rather than a button that wrapped to a line of its own on a phone |
+| 263 | **The rail's Pro card is the standard upgrade card** — supersedes 227's costume, keeps its honesty | Asked for directly: the previous card (a title with a price squeezed beside it, a sentence, an outline button) read as unfinished. It is now the shape Vercel, Supabase and Notion use — a brand icon tile, a name, one line, a solid full-width button, a low-opacity brand glow in the corner. What 227 got right stays: the button says `See plans`, not `Upgrade`, because there is still no checkout. In the modal, "Current plan" is a label shaped like a button rather than a disabled one, the unavailable Get Pro is a crisp brand-tint rather than a 40%-opacity fill, both lists carry a lead so they start level, and the billing switch is centred |
+| 264 | **Geist replaces Satoshi, and a face's tuning lives in one block** | The user judged Satoshi cheap beside the category. Geist, Inter, Instrument Sans and Mona Sans were rendered on ember's own strings with Satoshi as a control (Mona Sans out on its slashed tabular zero); Geist and Inter were then run live and Geist chosen. Its tracking follows Vercel's own scale — tighter as it grows — except the balance, held at −0.035em because tighter crowds the cents. Satoshi's tuning had been hard-coded as `tracking-[…]` in nine files; it is now six `--face-*` properties and three tracking utilities, so a revert is one CSS block and one loader, both written down |
+| 265 | **The mobile nav is labelled, compact and centred** | Asked for directly: icon-only and edge to edge, it read as four loose glyphs in a long lozenge. Each item is now an icon over its name in a 76×56px cell (72 below 375px), the capsule is only as wide as its items and sits centred, and the current one wears the brand-tint pill — the desktop rail's indicator (decision 035), so "where am I" is one vocabulary again. `--nav-height` is 82px and the FAB's offset is now derived from it; it had been hard-coded at 5.25rem while its own comment claimed otherwise |
+| 266 | **A phone gets a shorter version of each dense block, never a squeezed one** | The mobile screens read as cluttered and haphazard. `SectionHeader` puts its link on the title's line and the hint beneath (the link had been falling to a stray line under the count on every phone). A finding drops the sizing note, the citation and the orphaned "Full read" button below `md`, and its headline becomes the link. A signal card's summary runs full width under the price row instead of wrapping every three words beside it, and loses the regime sentence the price row already names. Portfolio's rows are two lines instead of a header over a three-cell grid. The hero's three figures share one row from 375px. "Live prices" is a dot on a phone; "Generated prices" keeps its words, because that one is a disclosure. Cards pad 18px on a phone. Clock icons sit in a one-line box so they centre on any face |
 
 ---
 
@@ -920,6 +936,7 @@ See `docs/decisions/` for full ADRs. Summary:
 *(Maintain rigorously. Anything mocked, stubbed, or knowingly incomplete goes here the moment it's introduced.)*
 
 - **Every screen is real; nothing links to a stub.**
+- **`0009` is written and not yet applied.** Until it is, the admin's local-pricing switch fails with the table's absence (the toast says so) and every reader gets the default — local currency on.
 - **Plans exist, and there is no checkout.** `lib/plan.ts` is the only place a gate
   is decided, `entitlements` is a select-only table, and every account is `free`
   because the only way a Pro row lands today is somebody typing it into the

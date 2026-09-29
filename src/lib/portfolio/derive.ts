@@ -435,6 +435,8 @@ export function portfolioValueSeries({
   const held = new Map<string, { quantity: number; cost: number }>();
 
   const points: ValuePoint[] = [];
+  /** Whether every holding had a close at the matching point. */
+  const completeAt: boolean[] = [];
 
   for (let i = 0; i < timestamps.length; i++) {
     const t = timestamps[i];
@@ -475,18 +477,40 @@ export function portfolioValueSeries({
 
     let value = 0;
     let cost = 0;
+    let complete = true;
     for (const [symbol, lot] of held) {
       if (lot.quantity === 0) continue;
       const instrument = bySymbol.get(symbol);
       const close = lastClose.get(symbol);
-      if (!instrument || close === undefined) continue;
+      if (!instrument || close === undefined) {
+        complete = false;
+        continue;
+      }
 
       value += convert(lot.quantity * close, instrument.currency, base, rates);
       cost += convert(lot.cost, instrument.currency, base, rates);
     }
 
     points.push({ t, value, cost });
+    completeAt.push(complete);
   }
+
+  /**
+   * Start where the whole book is priced.
+   *
+   * A range's series don't begin on the same day — crypto trades the weekend
+   * before an equity's first bar, an FX series starts a day later again — so the
+   * first few grid points valued only whichever holdings already had a close.
+   * The line opened at the floor of the chart and leapt as the rest arrived, and
+   * the period change beside it was measured from that partial book: the sample
+   * read +$26,802 over three months against a total unrealized gain of $16,323.
+   * Leading points are dropped until every holding has a price; after that each
+   * symbol carries forward at its last close as before. A holding that never
+   * gets a series (an instrument still collecting) must not empty the chart, so
+   * if no point is ever complete, nothing is dropped.
+   */
+  const firstComplete = completeAt.indexOf(true);
+  if (firstComplete > 0) points.splice(0, firstComplete);
 
   /**
    * Re-price the last point at the live quote.

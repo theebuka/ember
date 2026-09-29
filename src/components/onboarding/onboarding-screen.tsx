@@ -491,7 +491,7 @@ const MARKET_BLURB: Record<MarketKind, string> = {
 function StepHeading({ title, lede }: { title: string; lede: string }) {
   return (
     <>
-      <h1 className="text-display font-semibold tracking-[-0.025em] text-ink text-balance">
+      <h1 className="text-display font-semibold tracking-display text-ink text-balance">
         {title}
       </h1>
       <p className="mt-3 text-body text-stone text-pretty">{lede}</p>
@@ -525,7 +525,7 @@ function WhatEmberDoes() {
 
   return (
     <section>
-      <h1 className="text-display font-semibold tracking-[-0.025em] text-ink text-balance">
+      <h1 className="text-display font-semibold tracking-display text-ink text-balance">
         Know what to do, and when.
       </h1>
       <p className="mt-3 text-body text-stone text-pretty">

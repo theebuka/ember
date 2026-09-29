@@ -250,7 +250,7 @@ export function PersonalizeScreen() {
               <span className="grid size-11 place-items-center rounded-2xl bg-up-tint text-up">
                 <Check className="size-5" />
               </span>
-              <h1 className="mt-5 text-display font-semibold tracking-[-0.025em] text-ink text-balance">
+              <h1 className="mt-5 text-display font-semibold tracking-display text-ink text-balance">
                 {profile.preferredName
                   ? `You're set, ${profile.preferredName}.`
                   : "You're set."}
@@ -318,7 +318,7 @@ function Heading({ title, lede }: { title: string; lede: string }) {
     <>
       <h1
         className={cn(
-          "text-display font-semibold tracking-[-0.025em] text-ink text-balance",
+          "text-display font-semibold tracking-display text-ink text-balance",
         )}
       >
         {title}

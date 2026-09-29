@@ -141,49 +141,37 @@ function PositionCard({
   base: BaseCurrency;
   onSelect?: (symbol: string) => void;
 }) {
+  // Two lines, the shape Home's positions list already uses. It was a header
+  // plus a three-column grid of labelled cells under every holding — seven
+  // rows of labels repeating "Quantity / Avg cost / Unrealized" down a phone.
+  // Day change is the hero's job on this screen; the row carries the gain.
   const body = (
-    <>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-baseline gap-2">
-            <span className="mono-label text-caption text-ink">{position.symbol}</span>
-            <span className="num text-micro text-stone">
-              {formatPercent(position.weight, { decimals: 1 })}
-            </span>
-          </div>
-          <p className="truncate text-micro text-stone">{position.instrument.name}</p>
-        </div>
-        <div className="text-right">
-          <p className="num text-body font-medium text-ink">
-            {formatMoney(position.marketValue, base)}
-          </p>
-          <ChangeText value={position.dayChange} className="text-caption font-medium mt-0.5">
-            {formatPercent(position.dayChangePct, { signed: true })}
-          </ChangeText>
-        </div>
+    <div className="grid grid-cols-[1fr_auto] items-baseline gap-x-3 gap-y-0.5">
+      <div className="flex min-w-0 items-baseline gap-2">
+        <span className="mono-label text-caption text-ink">{position.symbol}</span>
+        <span className="num text-micro text-stone">
+          {formatPercent(position.weight, { decimals: 1 })}
+        </span>
       </div>
-
-      <dl className="mt-2.5 grid grid-cols-3 gap-2">
-        <Cell
-          label="Quantity"
-          value={formatQuantity(position.quantity, position.instrument.market)}
-        />
-        <Cell
-          label="Avg cost"
-          value={formatQuotePrice(position.instrument, position.averageCost)}
-        />
-        <Cell
-          label="Unrealized"
-          value={formatMoney(position.unrealized, base, { signed: true })}
-          hint={
-            position.unrealizedPct === null
-              ? undefined
-              : formatPercent(position.unrealizedPct, { signed: true })
-          }
-          tone={position.unrealized}
-        />
-      </dl>
-    </>
+      <p className="num text-right text-body font-medium text-ink">
+        {formatMoney(position.marketValue, base)}
+      </p>
+      <p className="num min-w-0 truncate text-micro text-stone">
+        {formatQuantity(position.quantity, position.instrument.market)} @{" "}
+        {formatQuotePrice(position.instrument, position.averageCost)}
+      </p>
+      <p className="num text-right text-micro">
+        <ChangeText value={position.unrealized} className="font-medium">
+          {formatMoney(position.unrealized, base, { signed: true })}
+        </ChangeText>
+        {position.unrealizedPct !== null && (
+          <span className="text-stone">
+            {" · "}
+            {formatPercent(position.unrealizedPct, { signed: true })}
+          </span>
+        )}
+      </p>
+    </div>
   );
 
   if (!onSelect) return <div className="py-3">{body}</div>;
@@ -196,40 +184,6 @@ function PositionCard({
     >
       {body}
     </button>
-  );
-}
-
-function Cell({
-  label,
-  value,
-  hint,
-  tone,
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-  tone?: number;
-}) {
-  return (
-    <div className="min-w-0">
-      <dt className="text-micro text-stone">{label}</dt>
-      <dd
-        className={cn(
-          "num truncate text-caption",
-          tone === undefined || tone === 0
-            ? "text-graphite"
-            : tone > 0
-              ? "text-up"
-              : "text-down",
-        )}
-      >
-        {value}
-        {/* Its own line. Inline, a five-figure gain plus its percentage
-            overflowed a third of a phone and truncated to "+$6,109.08 +…",
-            hiding the one number the reader came for. */}
-        {hint && <span className="block text-micro text-stone">{hint}</span>}
-      </dd>
-    </div>
   );
 }
 

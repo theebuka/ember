@@ -11,26 +11,17 @@ import { cn } from "@/lib/utils";
  *
  * The full-bleed bar with a hairline along the top is the default every
  * framework ships, and it reads as browser chrome: part of the device rather
- * than part of the app. Detaching it and insetting it from all three edges
- * makes it an *object* the content scrolls beneath, which is most of the
- * difference between "assembled" and "designed".
+ * than part of the app. Detached and inset, it is an *object* the content
+ * scrolls beneath.
  *
- * **Icons only, and the active one is filled.**
- *
- * v1 kept labels, on the reasoning that icon-only bars make people learn a
- * legend — and with five items including `Eye` for watchlist and `Compass` for
- * advice, that was true. Three things make it not true here: there are three
- * destinations rather than five, every glyph is conventional (a house, a
- * wallet), and the outline-to-fill transition is a much stronger "you are
- * here" than a colour change on a 13px word. It is still a real trade — the
- * label is gone — so each link carries an `aria-label`, and the desktop rail
- * spells all three out.
- *
- * The pill went with the labels. Around a lone icon a tinted rounded rectangle
- * reads as a button that has somehow been pressed, and it fought the fill for
- * the same job. ADR 0035 chose the pill over a floating tick and that reasoning
- * still holds on desktop, where rows have text to group; here the fill *is*
- * the indicator.
+ * **Labelled, compact and centred.** It was icon-only and ran edge to edge, on
+ * the reasoning that four conventional glyphs need no legend; in use it read as
+ * a row of loose icons in a very long lozenge. Now each item is an icon over its
+ * name, the capsule is only as wide as its four items and sits centred, and the
+ * current one wears a tinted pill — the same indicator the desktop rail uses
+ * (decision 035), which is what makes "where am I" look the same on both.
+ * Taller rather than wider: a 56px item is a comfortable thumb target without
+ * spending the width a phone does not have.
  */
 export function BottomNav() {
   const pathname = usePathname();
@@ -44,56 +35,58 @@ export function BottomNav() {
         // The wrapper spans the viewport but ignores pointer events, so the
         // gap either side of the capsule doesn't swallow taps on the content
         // underneath it.
-        "pointer-events-none fixed inset-x-0 bottom-0 z-40 md:hidden",
+        "pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center md:hidden",
         "transition-transform duration-300 ease-out",
         "data-hidden:translate-y-[calc(100%+1.5rem)]",
         "motion-reduce:transition-none motion-reduce:data-hidden:translate-y-0",
       )}
       style={{ paddingBottom: "var(--safe-bottom)" }}
     >
-      <div
+      <ul
         className={cn(
-          "pointer-events-auto mx-4 mb-3 rounded-full p-1.5",
-          // On light, `surface` and `ground` are the same white, so a
-          // translucent white capsule over a white page is invisible — the
-          // one place the white-on-white palette costs something. It gets a
-          // stronger hairline and the system's shadow, which is exactly what
-          // `--overlay-shadow` exists for: chrome that floats over content
-          // and cannot borrow separation from value.
+          "pointer-events-auto mb-3 flex gap-1 rounded-full p-1.5",
+          // On light, `surface` and `ground` are the same white, so the capsule
+          // cannot lift off the page by value; it gets a stronger hairline and
+          // the system's overlay shadow, which exists for exactly this: chrome
+          // floating over content.
           "border border-line-strong bg-surface/90 shadow-overlay",
-          "supports-backdrop-filter:bg-surface/80 supports-backdrop-filter:backdrop-blur-2xl",
+          "supports-backdrop-filter:bg-surface/75 supports-backdrop-filter:backdrop-blur-2xl",
         )}
       >
-        <ul
-          className="grid"
-          style={{ gridTemplateColumns: `repeat(${NAV_ITEMS.length}, 1fr)` }}
-        >
-          {NAV_ITEMS.map((item) => {
-            const active = isActive(pathname, item.href);
-            const Icon = item.icon;
+        {NAV_ITEMS.map((item) => {
+          const active = isActive(pathname, item.href);
+          const Icon = item.icon;
 
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  aria-label={item.label}
-                  aria-current={active ? "page" : undefined}
+          return (
+            <li key={item.href}>
+              <Link
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  // 76px from 375px up (a 336px capsule); 72px below, so it still
+                  // fits a 320px screen with room either side.
+                  "flex h-14 w-[4.5rem] flex-col items-center justify-center gap-1 rounded-full outline-none min-[375px]:w-[4.75rem]",
+                  "transition-colors duration-150",
+                  "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+                  active
+                    ? "bg-brand-tint text-brand-text"
+                    : "text-stone active:bg-surface-2 active:text-graphite",
+                )}
+              >
+                <Icon size={22} weight={active ? "fill" : "regular"} />
+                <span
                   className={cn(
-                    "flex h-12 items-center justify-center rounded-full outline-none",
-                    "transition-colors",
-                    "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
-                    active
-                      ? "text-brand"
-                      : "text-stone active:text-graphite",
+                    "text-[0.6875rem] leading-none tracking-[0.01em]",
+                    active ? "font-semibold" : "font-medium",
                   )}
                 >
-                  <Icon size={26} weight={active ? "fill" : "regular"} />
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+                  {item.label}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
     </nav>
   );
 }

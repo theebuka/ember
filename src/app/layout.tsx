@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
-import { IBM_Plex_Mono } from "next/font/google";
+import { Geist, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { LAUNCH_SCREENS } from "./launch-screens";
 import { Providers } from "@/components/providers";
@@ -11,26 +10,21 @@ import { AppShell } from "@/components/shell/app-shell";
 import { RegisterServiceWorker } from "@/components/shell/register-service-worker";
 
 /**
- * Satoshi — one variable file, 300–900, self-hosted.
+ * Geist — the interface face, chosen 2026-09-29 over Inter and Satoshi.
  *
- * Self-hosted rather than pulled from Google because it isn't there: Satoshi
- * is Fontshare's, free for commercial use, and the fact that almost nobody
- * self-hosts a webfont is exactly why it reads as a brand decision rather than
- * a default. A neo-grotesque with a geometric bent and genuinely distinctive
- * figures — the 1, the 4 and the circular 0 are what a price column is made
- * of, and they are the reason this won over Switzer.
+ * Served through `next/font/google`, which downloads at build time and
+ * self-hosts from our own origin — no request to Google at runtime. Its tuning
+ * is the `--face-*` block in `globals.css`; Satoshi's values and the loader to
+ * restore it are in docs/design-system.md → "The interface face", and its file
+ * is still in `app/fonts/`.
  *
- * `display: "swap"` would flash a system fallback across every number on the
- * screen; `"block"` holds for up to 3s instead, which on a 43 KB file that is
- * served from our own origin and cached immutably is the better trade.
+ * `display: "block"`: `swap` would flash a system fallback across every number
+ * on the screen.
  */
-const satoshi = localFont({
-  src: "./fonts/Satoshi-Variable.woff2",
-  variable: "--font-satoshi",
-  weight: "300 900",
-  style: "normal",
+const ui = Geist({
+  variable: "--font-ui",
+  subsets: ["latin"],
   display: "block",
-  preload: true,
 });
 
 /** Ticker symbols and timestamps only. */
@@ -80,7 +74,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       // next-themes writes the class before paint; without this React warns
       // about the attribute it didn't render.
       suppressHydrationWarning
-      className={`${satoshi.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${ui.variable} ${plexMono.variable} h-full antialiased`}
     >
       {/* iOS launch screens.
           Android composes one from the manifest's `background_color` and

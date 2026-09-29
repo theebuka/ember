@@ -23,7 +23,7 @@ export function Logo({
     <span className={cn("inline-flex items-center gap-1.5", className)}>
       <EmberPoint size={size} />
       {wordmark && (
-        <span className="text-[1.1875rem] leading-none font-bold tracking-[-0.03em] text-ink">
+        <span className="text-[1.1875rem] leading-none font-bold tracking-wordmark text-ink">
           ember
         </span>
       )}

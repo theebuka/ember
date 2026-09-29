@@ -100,6 +100,23 @@ export const PLAN_RULES: Record<Plan, PlanRules> = {
   },
 };
 
+/**
+ * What Pro costs, in US dollars — the only place a price is written.
+ *
+ * $12 a month or $120 a year, chosen by the user and set against the category:
+ * Copilot is $13 / $95, Monarch $14.99 / $99.99. The yearly figure is two months
+ * free rather than a discount invented to make a toggle look generous, and the
+ * saving shown beside it is computed from these two numbers, never typed.
+ */
+export const PRO_PRICE_USD = { monthly: 12, yearly: 120 } as const;
+
+export type Billing = keyof typeof PRO_PRICE_USD;
+
+/** The yearly plan's saving against twelve monthly payments, as a fraction. */
+export function yearlySaving(): number {
+  return 1 - PRO_PRICE_USD.yearly / (PRO_PRICE_USD.monthly * 12);
+}
+
 /** Whether this plan may use a capability at all. */
 export function canUse(feature: Feature, plan: Plan): boolean {
   const rules = PLAN_RULES[plan];

@@ -80,7 +80,7 @@ export function StoryDetail({
         )}
       </div>
 
-      <h2 className="mt-2 text-title font-semibold tracking-[-0.02em] text-ink text-balance">
+      <h2 className="mt-2 text-title font-semibold tracking-title text-ink text-balance">
         {story.headline}
       </h2>
 

@@ -50,7 +50,7 @@ export function Splash({
     >
       <div className="flex flex-col items-center gap-5">
         <EmberPoint size={112} />
-        <span className="text-title font-bold tracking-[-0.03em] text-[#F4F5F7]">
+        <span className="text-title font-bold tracking-wordmark text-[#F4F5F7]">
           ember
         </span>
       </div>

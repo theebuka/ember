@@ -87,16 +87,17 @@ export function PriceChart({
             strokeLinejoin="round"
             vectorEffect="non-scaling-stroke"
           />
-          <circle
-            cx="100"
-            cy={y(last)}
-            r="3"
-            fill="var(--surface)"
-            stroke="var(--graphite)"
-            strokeWidth="1.5"
-            vectorEffect="non-scaling-stroke"
-          />
         </svg>
+
+        {/* The last close, marked in CSS rather than as an `<svg:circle>`: the
+            plot is `preserveAspectRatio="none"`, so a circle in that space is
+            stretched into an ellipse by the chart's width — decision 069, which
+            fixed the value chart and never reached this one. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] border-graphite bg-surface"
+          style={{ left: "100%", top: `${y(last)}%` }}
+        />
 
         {/* Extremes, pinned where they happened. Nudged inward at the edges so
             a high on the first or last bar doesn't hang off the chart. */}
