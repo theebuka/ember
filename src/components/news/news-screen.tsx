@@ -198,6 +198,15 @@ export function NewsScreen() {
     [shown, openId],
   );
 
+  /**
+   * What the desktop pane shows: the selection, or the top headline.
+   *
+   * An empty "Pick a headline" pane took 55% of the page while the list was
+   * squeezed into the rest. Only the pane defaults — `open` stays null, so a
+   * phone still opens on the list rather than pushed into a story.
+   */
+  const paneStory = open ?? paged[0] ?? null;
+
   const loading = newsQuery.isPending;
   const error = newsQuery.error;
 
@@ -309,7 +318,7 @@ export function NewsScreen() {
                         item={item}
                         now={now}
                         nameBy={nameBy}
-                        selected={item.id === openId}
+                        selected={item.id === paneStory?.id}
                         onOpen={() => setOpenId(item.id)}
                       />
                     ))}
@@ -337,9 +346,9 @@ export function NewsScreen() {
               {/* Sticky, and only tall enough to need it on desktop. The
                   offset clears the page header, which is itself sticky. */}
               <div className="hidden lg:sticky lg:top-[calc(7rem+var(--bar-h,0px))] lg:block">
-                {open ? (
+                {paneStory ? (
                   <StoryDetail
-                    story={open}
+                    story={paneStory}
                     instruments={instrumentBy}
                     quotes={quoteBy}
                   />
@@ -523,7 +532,7 @@ function Quiet({
 }) {
   return (
     <div className="flex flex-col items-start border-t border-line py-8">
-      <div className="mb-4 grid size-11 place-items-center rounded-2xl bg-surface-2 text-stone">
+      <div className="mb-4 grid size-11 place-items-center rounded-xl bg-surface-2 text-stone">
         <Newspaper className="size-5" />
       </div>
       <h3 className="text-heading font-semibold text-ink">Nothing here</h3>

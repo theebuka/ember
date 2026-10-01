@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Eye, EyeOff, Plus } from "@/components/common/icon";
+import { Check, Eye, Plus } from "@/components/common/icon";
 import { SignalCard, SignalCardSkeleton } from "@/components/signals/signal-card";
 import { ErrorState } from "@/components/common/error-state";
 import { PageBody } from "@/components/common/page-body";
@@ -208,6 +208,7 @@ export function AssetScreen({ symbol }: { symbol: string }) {
   return (
     <>
       <PageHeader
+        narrow
         title={symbol}
         back={true}
         actions={
@@ -217,18 +218,21 @@ export function AssetScreen({ symbol }: { symbol: string }) {
                 the one that can go: the metrics notes on this page already say
                 the figures are generated, and it returns at `sm`. */}
             <DataSourceChip className="hidden sm:inline-flex" />
+            {/* Labelled, both. An eye and a plus beside a title were two
+                guesses; the title steps down a size on a phone to make room. */}
             <Button
-              variant="ghost"
-              size="icon-sm"
+              variant="outline"
+              size="sm"
               onClick={toggleWatch}
-              aria-label={isWatched ? `Stop following ${symbol}` : `Follow ${symbol}`}
-              className={isWatched ? "text-brand-text" : "text-stone"}
+              aria-pressed={isWatched}
+              title={isWatched ? `Stop following ${symbol}` : `Follow ${symbol}`}
             >
-              {isWatched ? <Eye /> : <EyeOff />}
+              {isWatched ? <Check /> : <Eye />}
+              {isWatched ? "Watching" : "Watch"}
             </Button>
             <Button size="sm" onClick={() => setLogging(true)}>
               <Plus />
-              <span className="max-sm:sr-only">Log trade</span>
+              Log trade
             </Button>
           </>
         }
@@ -372,8 +376,10 @@ export function AssetScreen({ symbol }: { symbol: string }) {
                   : null
               }
               onExecute={() => setLogging(true)}
-              onDismiss={() => undefined}
               onUndo={() => undefined}
+              // The page is about this instrument; the header and the hero
+              // already name it, and a third time was the call repeating it.
+              identity={false}
             />
           ) : instrument?.dataState === "collecting" ? (
             /**
@@ -387,7 +393,7 @@ export function AssetScreen({ symbol }: { symbol: string }) {
              * as ember having looked, when ember has not been able to look yet
              * and is doing something about it.
              */
-            <div className="rounded-2xl bg-surface-2 px-4 py-3.5">
+            <div className="rounded-xl bg-surface-2 px-4 py-3.5">
               <p className="text-caption font-medium text-ink">
                 ember is still collecting history for {symbol}
               </p>
@@ -503,7 +509,7 @@ export function AssetScreen({ symbol }: { symbol: string }) {
           )}
         </section>
 
-        <p className="px-1 text-micro text-stone">
+        <p className="text-micro text-stone">
           ember gives information, not financial advice.{" "}
           <Link
             href="/signals/methodology"

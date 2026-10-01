@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowRight, Check, Clock, Undo2, X } from "@/components/common/icon";
 import { ActionBadge } from "@/components/signals/action-badge";
+import { CallHeader, useCallDetails } from "@/components/signals/call-parts";
 import { WindowBand } from "@/components/signals/window-band";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -67,40 +68,33 @@ export function FindingRow({
 } & FindingActions) {
   const isRisk = finding.kind === "risk";
   const { assessment, risk } = finding;
+  const href = `/asset/${encodeURIComponent(finding.symbol)}`;
+  const details = useCallDetails();
 
   return (
     <article className={cn("py-5", handled && "opacity-60")}>
       {/* ── What, and how loud ───────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-        {isRisk && risk ? (
-          <SeverityBadge severity={risk.severity} />
-        ) : (
-          <ActionBadge action={assessment.action} />
-        )}
-
-        <Link
-          href={`/asset/${encodeURIComponent(finding.symbol)}`}
-          className="mono-label rounded-sm text-caption text-ink underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        >
-          {finding.symbol}
-        </Link>
-        <span className="min-w-0 truncate text-caption text-stone">
-          {instrument.name}
-        </span>
-
-        <span className="num ml-auto shrink-0 text-caption text-stone">
-          {formatQuotePrice(instrument, assessment.price)}
-        </span>
-      </div>
+      <CallHeader
+        badge={
+          isRisk && risk ? (
+            <SeverityBadge severity={risk.severity} />
+          ) : (
+            <ActionBadge action={assessment.action} />
+          )
+        }
+        symbol={finding.symbol}
+        name={instrument.name}
+        price={formatQuotePrice(instrument, assessment.price)}
+      />
 
       {/* ── The finding itself ───────────────────────────────────────────── */}
-      {/* The headline is the way into the full read on a phone, where the
-          "Full read" button is dropped rather than left on a line of its own. */}
+      {/* The headline is the way into the full read at every width. It was a
+          link on phones only, with `tabIndex={-1}`, which left a keyboard user
+          on a narrow window no way in but the symbol. */}
       <p className="mt-2.5 text-body font-medium text-ink">
         <Link
-          href={`/asset/${encodeURIComponent(finding.symbol)}`}
-          className="rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:pointer-events-none"
-          tabIndex={-1}
+          href={href}
+          className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           {finding.headline}
         </Link>
@@ -158,20 +152,6 @@ export function FindingRow({
         ) : null}
       </div>
 
-      {/* The rule's reasoning and its citation are the full read's job on a
-          phone; here they were two more layers under every finding. */}
-      <p className="mt-1 text-micro text-stone max-md:hidden">
-        {isRisk && risk ? risk.action.note : (assessment.sizing?.note ?? "")}
-      </p>
-
-      {/* ── Why ember says so ────────────────────────────────────────────── */}
-      <p className="mt-0.5 text-micro text-stone max-md:hidden">
-        {isRisk && risk
-          ? `${risk.citation.authors} (${risk.citation.year}), ${risk.citation.title}.`
-          : (assessment.contributions[0] &&
-              `${assessment.contributions[0].name} — ${assessment.contributions[0].citation.authors} (${assessment.contributions[0].citation.year}).`)}
-      </p>
-
       {/* ── Act ──────────────────────────────────────────────────────────── */}
       <div className="mt-4 flex flex-wrap items-center gap-1.5">
         {handled ? (
@@ -202,15 +182,35 @@ export function FindingRow({
               <X />
               Dismiss
             </Button>
-            <Button variant="ghost" size="sm" asChild className="ml-auto max-md:hidden">
-              <Link href={`/asset/${encodeURIComponent(finding.symbol)}`}>
-                Full read
-                <ArrowRight />
-              </Link>
-            </Button>
+            {details.trigger}
           </>
         )}
       </div>
+
+      {/* ── Why ember says so ────────────────────────────────────────────── */}
+      {/* The rule's reasoning and its citation, one press away at every width
+          rather than two more layers under every finding on desktop. */}
+      {details.panel(
+        <>
+          <div className="space-y-1">
+            <p className="text-caption text-stone">
+              {isRisk && risk ? risk.action.note : (assessment.sizing?.note ?? "")}
+            </p>
+            <p className="text-micro text-stone">
+              {isRisk && risk
+                ? `${risk.citation.authors} (${risk.citation.year}), ${risk.citation.title}.`
+                : (assessment.contributions[0] &&
+                    `${assessment.contributions[0].name} — ${assessment.contributions[0].citation.authors} (${assessment.contributions[0].citation.year}).`)}
+            </p>
+          </div>
+          <Button variant="outline" size="sm" asChild>
+            <Link href={href}>
+              Full read
+              <ArrowRight />
+            </Link>
+          </Button>
+        </>,
+      )}
     </article>
   );
 }
@@ -232,8 +232,10 @@ function SeverityBadge({ severity }: { severity: "critical" | "warning" | "watch
     <span
       className={cn(
         "inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-caption font-semibold",
+        // An outline rather than a fill: on the sample book three critical
+        // risks stacked into three red slabs, which is alarm, not ranking.
         severity === "critical"
-          ? "bg-down-tint text-down"
+          ? "text-down ring-1 ring-down/45 ring-inset"
           : "bg-surface-2 text-graphite",
       )}
     >
@@ -246,7 +248,7 @@ export function FindingRowSkeleton() {
   return (
     <div className="py-5" aria-hidden>
       <div className="flex items-center gap-2">
-        <Skeleton className="h-5 w-16 rounded-md" />
+        <Skeleton className="h-6 w-16 rounded-md" />
         <Skeleton className="h-4 w-14" />
         <Skeleton className="h-4 w-24" />
         <Skeleton className="ml-auto h-4 w-16" />
@@ -260,15 +262,11 @@ export function FindingRowSkeleton() {
       <Skeleton className="mt-3.5 h-10 w-full rounded-md" />
       <Skeleton className="mt-1.5 h-[1lh] w-1/2 text-caption" />
 
-      <div className="mt-3.5 border-t border-line pt-3">
-        <Skeleton className="h-[1lh] w-2/3 text-caption" />
-      </div>
-      <Skeleton className="mt-1.5 h-[1lh] w-3/4 text-micro" />
-      <Skeleton className="mt-2 h-[1lh] w-1/2 text-micro" />
+      <Skeleton className="mt-4 h-[1lh] w-2/3 text-caption" />
 
-      <div className="mt-3.5 flex gap-2">
-        <Skeleton className="h-10 w-28 rounded-full" />
-        <Skeleton className="h-10 w-28 rounded-full" />
+      <div className="mt-4 flex gap-1.5">
+        <Skeleton className="h-8 w-20 rounded-full" />
+        <Skeleton className="h-8 w-24 rounded-full" />
       </div>
     </div>
   );

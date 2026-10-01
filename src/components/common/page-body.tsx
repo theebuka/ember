@@ -24,7 +24,8 @@ export function PageBody({
    * Cap at a reading width instead of the full column.
    *
    * For screens that are genuinely one column of prose or form — settings,
-   * the methodology, the track record. "Use the width" is the fix for a
+   * the methodology, the track record. Left-aligned under the title, never
+   * centred: one page grid means one left edge. "Use the width" is the fix for a
    * dashboard, not licence to set a paragraph 1,500px wide, and a settings
    * form with a switch 1,400px from its label is worse than a narrow one.
    */
@@ -37,8 +38,13 @@ export function PageBody({
         // header rather than the body: three action controls beside the
         // lockup pushed the document 7px wide at 320px, and the two have to
         // move together or the page title stops sitting over its content.
-        "mx-auto w-full px-4 py-5 min-[360px]:px-5 md:px-8 md:py-7 xl:px-12",
-        narrow ? "max-w-4xl" : "max-w-[100rem]",
+        // The top step is small on desktop because the header above is 80px
+        // tall: at `py-7` a page title floated ~90px over its first block.
+        "mx-auto w-full max-w-[100rem] px-4 pt-5 pb-5 min-[360px]:px-5 md:px-8 md:pt-3 md:pb-7 xl:px-12",
+        // Narrow caps each block, not the column: the column stays where the
+        // header's is, so a reading-width page starts on the same left edge
+        // as its title instead of centring away from it.
+        narrow && "*:max-w-4xl",
         className,
       )}
       {...props}
@@ -61,6 +67,10 @@ export function PageBody({
  * elements in a different place, which is the only version that stays true as
  * the content changes.
  */
+/** The grid `PageColumns` lays out on, for a block that must span only its main column. */
+export const PAGE_COLUMNS =
+  "grid grid-cols-1 items-start gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,1fr)_20rem] xl:gap-x-14 2xl:grid-cols-[minmax(0,1fr)_24rem]";
+
 export function PageColumns({
   aside,
   children,
@@ -69,10 +79,7 @@ export function PageColumns({
 }: { aside: React.ReactNode } & React.ComponentProps<"div">) {
   return (
     <div
-      className={cn(
-        "grid grid-cols-1 items-start gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,1fr)_20rem] xl:gap-x-14 2xl:grid-cols-[minmax(0,1fr)_24rem]",
-        className,
-      )}
+      className={cn(PAGE_COLUMNS, className)}
       {...props}
     >
       <div className="min-w-0">{children}</div>

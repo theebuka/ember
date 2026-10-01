@@ -195,7 +195,7 @@ function PlanColumn({
     <section
       aria-label={`${name} plan`}
       className={cn(
-        "flex flex-col rounded-2xl border p-5",
+        "flex flex-col rounded-xl border p-5",
         highlighted
           ? "border-brand/35 bg-gradient-to-b from-brand-tint to-ground to-60%"
           : "border-line bg-ground",

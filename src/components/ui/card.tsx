@@ -18,7 +18,7 @@ function Card({
         // alone. If a hairline isn't enough separation, the answer is almost
         // always a `Section` with more space around it, not a card.
         // Still no shadow: that belongs to chrome that floats over content.
-        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-3xl border border-line bg-card py-(--card-spacing) text-caption text-card-foreground [--card-spacing:--spacing(4.5)] md:[--card-spacing:--spacing(6)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(5)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-3xl *:[img:last-child]:rounded-b-3xl",
+        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl border border-line bg-card py-(--card-spacing) text-caption text-card-foreground [--card-spacing:--spacing(4.5)] md:[--card-spacing:--spacing(6)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(5)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-3xl *:[img:last-child]:rounded-b-3xl",
         className
       )}
       {...props}

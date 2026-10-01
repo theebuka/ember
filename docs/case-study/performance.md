@@ -1,6 +1,6 @@
 # Performance and layout shift
 
-`scripts/perf.mjs`, 2026-08-18, against a production build.
+`scripts/perf.mjs`, 2026-10-01, against a production build.
 
 ## Layout shift
 
@@ -13,16 +13,16 @@ Lighthouse table below is where that one shows up.
 
 | Screen | Mobile | Desktop |
 |---|---|---|
-| Home | 0.000 | 0.004 |
-| Portfolio — holdings | 0.004 | 0.001 |
-| Portfolio — watching | 0.004 | 0.001 |
-| Portfolio — activity | 0.004 | 0.001 |
+| Home | 0.006 | 0.009 |
+| Portfolio — holdings | 0.008 | 0.003 |
+| Portfolio — watching | 0.006 | 0.001 |
+| Portfolio — activity | 0.006 | 0.001 |
 | Signals feed | 0.000 | 0.023 |
-| News | 0.001 | 0.000 |
+| News | 0.014 | 0.008 |
 | Track record | 0.000 | 0.000 |
 | Methodology | 0.000 | 0.000 |
-| Asset detail | 0.057 | 0.023 |
-| Settings — account | 0.037 | 0.009 |
+| Asset detail | 0.074 | 0.026 |
+| Settings — account | 0.051 | 0.005 |
 | Settings — your data | 0.000 | 0.000 |
 | Notifications | 0.015 | 0.013 |
 | Sign in | 0.000 | 0.000 |
@@ -54,12 +54,12 @@ does seeded.
 
 | Screen | Profile | Perf | A11y | Best practices | SEO | LCP | TBT | CLS |
 |---|---|---|---|---|---|---|---|---|
-| Home | mobile | 82 | 100 | 100 | 100 | 4.5 s | 75 ms | 0.090 |
-| Signals feed | mobile | 68 | 100 | 100 | 100 | 6.6 s | 117 ms | 0.172 |
-| Asset detail | mobile | 82 | 100 | 100 | 100 | 4.8 s | 90 ms | 0.002 |
-| Home | desktop | 99 | 100 | 100 | 100 | 0.9 s | 0 ms | 0.031 |
+| Home | mobile | 78 | 100 | 100 | 100 | 5.6 s | 37 ms | 0.069 |
+| Signals feed | mobile | 78 | 100 | 100 | 100 | 6.2 s | 22 ms | 0.000 |
+| Asset detail | mobile | 85 | 100 | 100 | 100 | 4.4 s | 19 ms | 0.008 |
+| Home | desktop | 98 | 100 | 100 | 100 | 1.1 s | 0 ms | 0.018 |
 | Signals feed | desktop | 100 | 100 | 100 | 100 | 0.8 s | 0 ms | 0.021 |
-| Asset detail | desktop | 99 | 100 | 100 | 100 | 0.9 s | 0 ms | 0.001 |
+| Asset detail | desktop | 99 | 100 | 100 | 100 | 0.9 s | 0 ms | 0.004 |
 
 Mobile is Lighthouse's throttled profile — simulated slow 4G with a 4×
 CPU penalty. The critical path is the stylesheet and the app's own

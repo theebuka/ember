@@ -87,7 +87,7 @@ export function MethodologyScreen() {
 
   return (
     <>
-      <PageHeader title="Methodology" back="/signals" />
+      <PageHeader narrow title="Methodology" back="/signals" />
 
       <PageBody narrow className="space-y-8 pb-12">
         {query.error ? (
@@ -348,7 +348,7 @@ export function MethodologyScreen() {
               </ul>
             </section>
 
-            <p className="px-1 text-micro text-stone">
+            <p className="text-micro text-stone">
               ember gives information, not financial advice. None of this accounts for
               your circumstances.
             </p>

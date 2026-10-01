@@ -24,6 +24,7 @@ export function Segmented<T extends string>({
   options,
   size = "default",
   className,
+  id,
   "aria-label": ariaLabel,
 }: {
   value: T;
@@ -31,6 +32,7 @@ export function Segmented<T extends string>({
   options: SegmentedOption<T>[];
   size?: "sm" | "default";
   className?: string;
+  id?: string;
   "aria-label"?: string;
 }) {
   // Scopes the shared-layout animation to this instance, so two segmented
@@ -43,6 +45,7 @@ export function Segmented<T extends string>({
 
   return (
     <div
+      id={id}
       role="radiogroup"
       aria-label={ariaLabel}
       className={cn(

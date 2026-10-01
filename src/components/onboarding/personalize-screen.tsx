@@ -247,7 +247,7 @@ export function PersonalizeScreen() {
 
           {step === 2 && (
             <section>
-              <span className="grid size-11 place-items-center rounded-2xl bg-up-tint text-up">
+              <span className="grid size-11 place-items-center rounded-xl bg-up-tint text-up">
                 <Check className="size-5" />
               </span>
               <h1 className="mt-5 text-display font-semibold tracking-display text-ink text-balance">

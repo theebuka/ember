@@ -78,6 +78,7 @@ export {
   Clock,
   BookOpen,
   BellRinging,
+  BellSlash,
   Bell,
   Megaphone,
   Envelope,

@@ -169,7 +169,7 @@ export function StoryDetail({
 export function NoStorySelected() {
   return (
     <div className="flex h-full flex-col items-center justify-center px-6 py-16 text-center">
-      <div className="grid size-11 place-items-center rounded-2xl bg-surface-2 text-stone">
+      <div className="grid size-11 place-items-center rounded-xl bg-surface-2 text-stone">
         <Newspaper className="size-5" />
       </div>
       <p className="mt-4 max-w-xs text-caption text-stone text-pretty">

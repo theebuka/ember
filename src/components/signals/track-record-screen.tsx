@@ -76,7 +76,7 @@ export function TrackRecordScreen() {
 
   return (
     <>
-      <PageHeader title="Track record" back="/signals" />
+      <PageHeader narrow title="Track record" back="/signals" />
 
       <PageBody narrow className="space-y-9 pb-12">
         {query.error ? (
@@ -297,7 +297,7 @@ export function TrackRecordScreen() {
               )}
             </section>
 
-            <p className="px-1 text-micro text-stone">
+            <p className="text-micro text-stone">
               Recomputed daily from the same engine that serves the feed. Nothing here
               is hand-entered.{" "}
               <Link

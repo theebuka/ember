@@ -1,14 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
-import { Sparkles, Wallet } from "@/components/common/icon";
+import { ArrowRight, Sparkles, Wallet } from "@/components/common/icon";
 import { ErrorState } from "@/components/common/error-state";
-import { PageBody, PageColumns } from "@/components/common/page-body";
+import { PAGE_COLUMNS, PageBody, PageColumns } from "@/components/common/page-body";
 import { Section } from "@/components/common/section";
 import { GreetingLine } from "@/components/dashboard/greeting-line";
 import { PinnedBanner } from "@/components/dashboard/pinned-banner";
 import { FindingsInbox } from "@/components/findings/findings-inbox";
+import { ChangeChip } from "@/components/market/change-chip";
 import { DataSourceChip } from "@/components/market/data-source-chip";
 import { NotificationsButton } from "@/components/notifications/notifications-button";
 import { MarketPulse, MarketPulseSkeleton, type PulseRow } from "@/components/market/market-pulse";
@@ -17,18 +18,17 @@ import {
   PositionsList,
   PositionsListSkeleton,
 } from "@/components/portfolio/positions-list";
-import { ValueChart, ValueChartSkeleton } from "@/components/portfolio/value-chart";
-import { ValueHero, ValueHeroSkeleton } from "@/components/portfolio/value-hero";
 import { PageHeader } from "@/components/shell/page-header";
 import { ProfileButton } from "@/components/shell/profile-button";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useInstruments, useQuotes, useRates, useSeries } from "@/hooks/use-market-data";
 import { ApiError } from "@/lib/api/client";
-import type { Candle, Range } from "@/lib/api/types";
 import type { Broadcast } from "@/lib/notifications/inbox";
+import { formatMoney, formatPercent, splitMoney } from "@/lib/market/format";
 import { USD_PER_UNIT } from "@/lib/market/universe";
-import { derivePortfolio, portfolioValueSeries } from "@/lib/portfolio/derive";
+import { derivePortfolio, type PortfolioSummary } from "@/lib/portfolio/derive";
 import { sampleTransactions } from "@/lib/portfolio/sample";
 import { usePortfolio } from "@/store/use-portfolio";
 import { usePreferences } from "@/store/use-preferences";
@@ -43,10 +43,17 @@ import { usePreferences } from "@/store/use-preferences";
  * worth" second, because the value figure is a fact you can look up and a
  * breached stop is a decision that expires.
  *
- * So the order is now: who you are, what ember found, what you're worth, and —
- * in the companion column on desktop — what you hold and what moved. The
- * greeting stays first because it is the one line on the screen that is not
- * asking anything of you.
+ * So the order is: who you are, what you're worth in one line, what ember
+ * found, and — in the companion column on desktop — what you hold and what
+ * moved. The greeting stays first because it is the one line on the screen
+ * that is not asking anything of you.
+ *
+ * **The hero and the chart live on Portfolio only** (decision 267, superseding
+ * 082). Home opened on the same 64px balance, three stats and chart as
+ * Portfolio, which pushed "What ember found" ~900px down on desktop and ~1,100px
+ * on a phone — the product's point below the fold on the screen meant to show
+ * it, and two tabs that opened on the same picture. The balance stays as the
+ * focal figure at display size, with the day's change, and links through.
  *
  * All data arrives through `lib/api/client` (CLAUDE.md §4). This file has no
  * idea whether the prices behind it are generated or live, which is exactly
@@ -68,7 +75,6 @@ export function Dashboard({
   pinned?: Broadcast[];
 }) {
   const hydrated = useHydrated();
-  const [range, setRange] = useState<Range>("3M");
 
   const transactions = usePortfolio((s) => s.transactions);
   const isSample = usePortfolio((s) => s.isSample);
@@ -87,21 +93,12 @@ export function Dashboard({
     [instrumentsQuery.data],
   );
 
-  // Held symbols drive the value chart; a stable sorted key stops React Query
-  // refetching every render because the array identity changed.
-  const heldSymbols = useMemo(() => {
-    if (!hydrated) return [];
-    return [...new Set(transactions.map((t) => t.symbol))].sort();
-  }, [hydrated, transactions]);
-
   const pulseSymbols = useMemo(
     () => instruments.filter((i) => markets[i.market]).map((i) => i.symbol),
     [instruments, markets],
   );
 
-  const historyQuery = useSeries(heldSymbols, range);
-  // One month of closes behind every price in the pulse. Fixed range, so it
-  // stays cached while the user switches the portfolio chart above it.
+  // One month of closes behind every price in the pulse.
   const pulseSeriesQuery = useSeries(pulseSymbols, "1M");
 
   /**
@@ -125,22 +122,6 @@ export function Dashboard({
       }),
     [hydrated, transactions, quotesQuery.data, instruments, rates, base],
   );
-
-  const valuePoints = useMemo(() => {
-    const series = historyQuery.data?.series ?? [];
-    if (series.length === 0) return [];
-
-    const candles = new Map<string, readonly Candle[]>(
-      series.map((s) => [s.symbol, s.candles]),
-    );
-    return portfolioValueSeries({
-      transactions: hydrated ? transactions : [],
-      candles,
-      instruments,
-      rates,
-      base,
-    });
-  }, [historyQuery.data, hydrated, transactions, instruments, rates, base]);
 
   const pulseRows = useMemo<PulseRow[]>(() => {
     const quotes = quotesQuery.data?.quotes ?? [];
@@ -183,56 +164,55 @@ export function Dashboard({
   ) : showEmptyBook ? (
     <EmptyBook onLoadSample={() => loadSample(sampleTransactions())} />
   ) : !hydrated || quotesQuery.isPending || instrumentsQuery.isPending ? (
-    <>
-      <ValueHeroSkeleton />
-      <div className="mt-6">
-        <ValueChartSkeleton />
-      </div>
-    </>
+    <BalanceSkeleton />
   ) : (
-    <>
-      <ValueHero summary={summary} />
-      <div className="mt-6">
-        {historyQuery.isPending ? (
-          <ValueChartSkeleton />
-        ) : (
-          <ValueChart
-            points={valuePoints}
-            range={range}
-            onRangeChange={setRange}
-            base={base}
-          />
-        )}
-      </div>
+    <div>
+      <Balance summary={summary} />
       {isSample && <SampleNotice onClear={clearPortfolio} />}
+    </div>
+  );
+
+  const actions = (
+    <>
+      <DataSourceChip />
+      <NotificationsButton />
     </>
   );
 
   return (
     <>
+      {/* A phone keeps the sticky bar: the lockup, the bell and the profile
+          control have nowhere else to go. On desktop the rail carries the
+          brand and the title is never drawn on Home, so the bar was an empty
+          80px band holding two controls — they sit on the greeting's line. */}
       <PageHeader
         title="Home"
         brand
+        className="md:hidden"
         actions={
           <>
-            <DataSourceChip />
-            <NotificationsButton />
-            {/* Desktop already has one pinned to the bottom of the rail. */}
-            <ProfileButton size="sm" className="md:hidden" />
+            {actions}
+            <ProfileButton size="sm" />
           </>
         }
       />
+      <h1 className="sr-only max-md:hidden">Home</h1>
 
-      <PageBody className="pb-12">
-        {/* Above the greeting, and capped well short of the 1600px page: a
-            banner is a sentence, and a sentence set across a desktop column is
-            unreadable however important it is. Renders nothing on almost every
-            visit, and when it does render it is already in the server's HTML. */}
+      <PageBody className="pb-12 md:pt-7">
+        {/* Above the greeting, and only as wide as the main column: a banner
+            is a sentence, and its edge should be the findings' edge rather
+            than a cap of its own. Renders nothing on almost every visit, and
+            when it does render it is already in the server's HTML. */}
         {pinned.length > 0 && (
-          <PinnedBanner notices={pinned} className="mb-6 max-w-3xl" />
+          <div className={PAGE_COLUMNS}>
+            <PinnedBanner notices={pinned} className="mb-6" />
+          </div>
         )}
 
-        <GreetingLine className="mb-7 md:mb-9" />
+        <div className="mb-7 flex items-start justify-between gap-6 md:mb-9">
+          <GreetingLine className="min-w-0" />
+          <div className="hidden shrink-0 items-center gap-2 md:flex">{actions}</div>
+        </div>
 
         <PageColumns
           aside={
@@ -279,24 +259,8 @@ export function Dashboard({
           }
         >
           <div className="space-y-10">
-            {/* Value first, under the greeting.
-
-                The findings inbox led for one iteration and it was the wrong
-                call: a home screen needs a focal point, and on a finance app
-                that is the balance — it is what the user opened the app to
-                see, it anchors every figure below it, and a screen that opens
-                on a queue of warnings is a to-do list rather than a place you
-                are glad to arrive at. Findings follow immediately, which is
-                still a reordering of v1: they used to sit under the chart,
-                the positions and the movers, behind a "Next window" heading
-                that showed exactly one call.
-
-                It also stays in the main column at every width. Putting it in
-                the companion on desktop and here on mobile would mean
-                rendering it twice and hiding one — two ValueCharts, two sets
-                of geometry, one wasted. And it wants the width: the chart is
-                the one thing on this page that genuinely improves with a
-                wider column. */}
+            {/* The balance, in one block: still the focal figure, no longer a
+                second Portfolio screen. */}
             {value}
 
             {/* Then what needs you. The inbox owns its own query, its own
@@ -323,6 +287,68 @@ export function Dashboard({
 }
 
 /**
+ * The balance and the day's change, linking through to Portfolio.
+ *
+ * Display size rather than the hero's figure size: it is the first number on
+ * the screen, but the screen is about the findings under it.
+ */
+function Balance({ summary }: { summary: PortfolioSummary }) {
+  const { sign, symbol, whole, fraction } = splitMoney(summary.totalValue, summary.base);
+
+  return (
+    <div className="flex items-end justify-between gap-4">
+      <div className="min-w-0">
+        <h2 className="eyebrow">Portfolio value</h2>
+        <p className="figure mt-1 flex items-baseline text-display text-ink max-[374px]:text-title">
+          <span>
+            {sign}
+            {symbol}
+            {whole}
+          </span>
+          {fraction && (
+            <span className="text-heading text-stone max-[374px]:text-body">.{fraction}</span>
+          )}
+        </p>
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <ChangeChip value={summary.dayChange}>
+            {formatMoney(summary.dayChange, summary.base, { signed: true })}
+          </ChangeChip>
+          {summary.dayChangePct !== null && (
+            <span className="num text-caption text-stone">
+              {formatPercent(summary.dayChangePct, { signed: true })} today
+            </span>
+          )}
+        </div>
+      </div>
+      <Button variant="ghost" size="sm" asChild className="shrink-0 text-stone">
+        <Link href="/portfolio">
+          Portfolio
+          <ArrowRight />
+        </Link>
+      </Button>
+    </div>
+  );
+}
+
+/** The same boxes as `Balance`, by type class rather than by guessed height (ADR 0019). */
+function BalanceSkeleton() {
+  return (
+    <div aria-hidden>
+      <h2 className="eyebrow">Portfolio value</h2>
+      <div className="figure mt-1 flex items-center text-display max-[374px]:text-title">
+        <Skeleton className="flex w-[7ch] items-center rounded-lg">
+          <span className="text-transparent">0</span>
+        </Skeleton>
+      </div>
+      <div className="mt-1.5 flex items-center gap-2">
+        <Skeleton className="h-6 w-24 rounded-md" />
+        <Skeleton className="h-4 w-20" />
+      </div>
+    </div>
+  );
+}
+
+/**
  * No transactions yet.
  *
  * Offers the sample book rather than seeding it silently. A finance app that
@@ -331,21 +357,24 @@ export function Dashboard({
  * sample stays labelled everywhere it appears, with one tap to clear.
  */
 function EmptyBook({ onLoadSample }: { onLoadSample: () => void }) {
+  // The balance's own three boxes — eyebrow, one display-height line, one row
+  // of controls — so the block it replaces after hydration is the same height
+  // and the findings under it don't move. The full-size version pushed them
+  // down 130px on a first visit, which is every Lighthouse run.
   return (
-    <div className="flex flex-col items-start py-2">
-      <div className="mb-4 grid size-11 place-items-center rounded-2xl bg-surface-2 text-stone">
-        <Wallet className="size-5" />
+    <div>
+      <h2 className="eyebrow">Portfolio value</h2>
+      <div className="figure mt-1 flex items-center text-display max-[374px]:text-title">
+        <span className="flex items-center gap-2 font-sans text-body font-normal tracking-normal text-stone">
+          <Wallet className="size-4 shrink-0" />
+          Nothing tracked yet.
+        </span>
       </div>
-      <h2 className="text-heading font-semibold text-ink">Nothing tracked yet</h2>
-      <p className="mt-1.5 max-w-sm text-body text-stone">
-        Log what you own and ember values it live, works out your cost basis and P&amp;L,
-        and tells you when to act on it.
-      </p>
-      <div className="mt-5 flex flex-wrap gap-2">
-        <Button size="lg" asChild>
+      <div className="mt-1.5 flex flex-wrap gap-2">
+        <Button size="sm" asChild>
           <Link href="/portfolio">Add your first holding</Link>
         </Button>
-        <Button size="lg" variant="outline" onClick={onLoadSample}>
+        <Button size="sm" variant="outline" onClick={onLoadSample}>
           <Sparkles />
           Explore with sample data
         </Button>

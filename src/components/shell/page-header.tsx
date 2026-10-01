@@ -27,12 +27,15 @@ export function PageHeader({
   /** Render a back control. Pass a href for a known parent, or true for history. */
   back,
   actions,
+  /** Match a `PageBody narrow`: the actions end where the content does. */
+  narrow = false,
   className,
 }: {
   title: string;
   brand?: boolean;
   back?: string | true;
   actions?: React.ReactNode;
+  narrow?: boolean;
   className?: string;
 }) {
   const router = useRouter();
@@ -56,7 +59,13 @@ export function PageHeader({
       {/* Matches PageBody's column exactly — same cap, same padding steps.
           When one moves the other has to, or the title stops sitting over
           the content it names. */}
-      <div className="mx-auto flex h-16 max-w-[100rem] items-center gap-1.5 px-4 min-[360px]:gap-2 min-[360px]:px-5 md:h-20 md:px-8 xl:px-12">
+      <div className="mx-auto max-w-[100rem] px-4 min-[360px]:px-5 md:px-8 xl:px-12">
+      <div
+        className={cn(
+          "flex h-16 items-center gap-1.5 min-[360px]:gap-2 md:h-20",
+          narrow && "max-w-4xl",
+        )}
+      >
         {back && (
           <Button
             variant="ghost"
@@ -88,6 +97,9 @@ export function PageHeader({
         <h1
           className={cn(
             "min-w-0 truncate text-title font-semibold tracking-title text-ink",
+            // A detail page shares the row with a back control and two
+            // labelled actions; at 28px a six-letter symbol truncated.
+            back && "max-md:text-heading",
             brand && !back && "sr-only",
           )}
         >
@@ -99,6 +111,7 @@ export function PageHeader({
             {actions}
           </div>
         )}
+      </div>
       </div>
     </header>
   );

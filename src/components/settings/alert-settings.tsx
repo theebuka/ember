@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BellRing, Send } from "@/components/common/icon";
+import { BellRing, BellSlash, Send } from "@/components/common/icon";
 import { toast } from "sonner";
 import { DeliverySettings } from "@/components/settings/delivery-settings";
 import { SettingGroup, SettingRow } from "@/components/settings/setting-row";
@@ -136,21 +136,43 @@ export function AlertSettings() {
     }
   };
 
+  /**
+   * A switch the browser has refused is not a setting, so neither row shows
+   * one: a ghosted switch read as "off", with the reason in paragraph text two
+   * rows away (decision 047's objection). One status line says what is wrong
+   * and how to fix it, and each row's control says `Blocked`.
+   */
+  const status = unavailable ? (
+    <StatusLabel>{blocked ? "Blocked" : "Unavailable"}</StatusLabel>
+  ) : null;
+
   return (
     <>
+      {unavailable && (
+        <div className="mb-3.5 flex items-start gap-2.5 rounded-xl bg-surface-2 p-3.5">
+          <BellSlash className="mt-0.5 size-4 shrink-0 text-graphite" />
+          <div className="min-w-0">
+            <p className="text-caption font-medium text-ink">
+              {blocked
+                ? "Notifications are blocked in this browser"
+                : "Notifications aren't available here"}
+            </p>
+            <p className="mt-0.5 text-caption text-stone">
+              {blocked
+                ? "Allow them from the padlock beside the address bar, or in this site's settings, then come back."
+                : iosHint()}
+            </p>
+          </div>
+        </div>
+      )}
+
       <SettingGroup>
         <SettingRow
           label="Window opening"
-          description={
-            unsupported
-              ? iosHint()
-              : blocked
-                ? "Your browser is blocking notifications for this site. Only you can undo that — it's in the padlock menu beside the address bar, or in site settings."
-                : "A notification the moment a recommended window starts, carrying the symbol, the action, the size and the stop."
-          }
+          description="A notification the moment a recommended window starts, carrying the symbol, the action, the size and the stop."
           layout="inline"
           control={
-            <Switch
+            status ?? <Switch
               checked={live}
               disabled={unavailable}
               onCheckedChange={toggle(
@@ -168,14 +190,10 @@ export function AlertSettings() {
             probably the more common of the two. */}
         <SettingRow
           label="Something you hold turns"
-          description={
-            unsupported || blocked
-              ? "Same permission as above — ember can't send either kind until your browser allows it."
-              : "A stop breached from your entry, a thesis that has stopped holding, a position that has grown past your cap. Each one carries what happened and how much to take off."
-          }
+          description="A stop breached from your entry, a thesis that has stopped holding, a position that has grown past your cap, with how much to take off."
           layout="inline"
           control={
-            <Switch
+            status ?? <Switch
               checked={riskLive}
               disabled={unavailable}
               onCheckedChange={toggle(
@@ -230,6 +248,15 @@ export function AlertSettings() {
         </p>
       )}
     </>
+  );
+}
+
+/** Where a control would be, when the browser has taken the choice away. */
+function StatusLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center rounded-md bg-surface-2 px-2 py-1 text-micro font-medium text-graphite">
+      {children}
+    </span>
   );
 }
 

@@ -318,6 +318,7 @@ export function PortfolioScreen() {
 
             {/* ── Segments ────────────────────────────────────────────── */}
             <Segmented
+              id="portfolio-views"
               value={view}
               onChange={(next) =>
                 // `replace`, not `push` — a segment is a view of one screen,
@@ -454,6 +455,7 @@ export function PortfolioScreen() {
           onClick={() => setEditing({ mode: "add" })}
           label="Log trade"
           icon={<Plus weight="bold" className="size-5" />}
+          avoid="portfolio-views"
         />
       )}
 
@@ -514,7 +516,7 @@ function EmptyLedger({
 }) {
   return (
     <div className="flex flex-col items-start py-2">
-      <div className="mb-4 grid size-11 place-items-center rounded-2xl bg-surface-2 text-stone">
+      <div className="mb-4 grid size-11 place-items-center rounded-xl bg-surface-2 text-stone">
         <Wallet className="size-5" />
       </div>
       <h2 className="text-heading font-semibold text-ink">Nothing logged yet</h2>

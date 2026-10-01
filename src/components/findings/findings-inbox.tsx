@@ -275,7 +275,7 @@ export function FindingsInbox() {
               : `${assessed} watched`
         }
         href="/signals"
-        linkLabel="Every read"
+        linkLabel="All signals"
       >
         {error ? (
           <ErrorState
@@ -285,7 +285,7 @@ export function FindingsInbox() {
             onRetry={() => findingsQuery.refetch()}
           />
         ) : loading ? (
-          <div className="divide-y divide-line">
+          <div className="divide-y divide-line border-t border-line">
             <FindingRowSkeleton />
             <FindingRowSkeleton />
           </div>
@@ -449,7 +449,7 @@ function trimmed(
 function NothingFound({ assessed, held }: { assessed: number; held: number }) {
   return (
     <div className="flex flex-col items-start border-t border-line py-8">
-      <div className="mb-4 grid size-11 place-items-center rounded-2xl bg-surface-2 text-stone">
+      <div className="mb-4 grid size-11 place-items-center rounded-xl bg-surface-2 text-stone">
         <Compass className="size-5" />
       </div>
       <h3 className="text-heading font-semibold text-ink">Nothing needs you today</h3>

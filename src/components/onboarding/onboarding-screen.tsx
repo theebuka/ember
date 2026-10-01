@@ -446,7 +446,7 @@ function CookiesBlocked({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center bg-ground px-6 text-center">
       <div className="w-full max-w-sm">
-        <span className="mx-auto flex size-11 items-center justify-center rounded-2xl bg-surface-2 text-stone">
+        <span className="mx-auto flex size-11 items-center justify-center rounded-xl bg-surface-2 text-stone">
           <Cookie className="size-5" />
         </span>
 

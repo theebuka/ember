@@ -106,7 +106,7 @@ export function DeleteAccount() {
   }
 
   return (
-    <div className="rounded-2xl border border-down/25 bg-down-tint/40 p-5">
+    <div className="rounded-xl border border-down/25 bg-down-tint/40 p-5">
       <div className="flex items-start gap-3.5">
         <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl bg-down-tint text-down">
           <Warning className="size-4" />

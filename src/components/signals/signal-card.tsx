@@ -2,11 +2,11 @@
 
 import { Check, Clock, Undo2, X } from "@/components/common/icon";
 import { ActionBadge } from "@/components/signals/action-badge";
+import { CallHeader, Tag, useCallDetails } from "@/components/signals/call-parts";
 import { Confidence } from "@/components/signals/confidence";
 import { StrategyBreakdown } from "@/components/signals/strategy-breakdown";
 import { WindowBand } from "@/components/signals/window-band";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Assessment } from "@/lib/api/client";
 import type { BaseCurrency, Instrument } from "@/lib/api/types";
@@ -22,17 +22,16 @@ import { cn } from "@/lib/utils";
 /**
  * One recommendation, in full.
  *
- * Everything needed to act on it *or to argue with it* is on the card: what,
- * when, how much, where to give up, how sure, and which published rules said
- * so. Nothing is behind a "learn more" link, because the reasoning is the
- * product — an app that shows the badge and hides the argument is the gimmick
- * this one is built against.
+ * Everything needed to act on it *or to argue with it* is here: what, when,
+ * how much, where to give up, how sure, and which published rules said so.
+ * What changed is what is visible before a press. A call ran 650–900px on a
+ * phone with nine layers in it, so the compact state is the decision — the
+ * headline, the window, the size, the stop, the confidence — and `Details`
+ * holds the working. Nothing is behind a link to another page, because the
+ * reasoning is the product; it is behind one press on this one.
  *
- * The order is deliberate. Direction first, because that's what was asked.
- * Then the window, because timing is the differentiator. Then size and stop,
- * because a direction without them is how people get hurt. Then the strategy
- * breakdown, because by that point the user knows what they're being told and
- * can decide whether to interrogate it.
+ * Same shape as a finding on Home (`call-parts.tsx`): a row in a hairline
+ * list, not a bordered card.
  */
 
 export interface SuggestedTrade {
@@ -71,6 +70,8 @@ export function SignalCard({
   onExecute,
   onDismiss,
   onUndo,
+  /** Symbol and name in the header — off where the page is about this instrument. */
+  identity = true,
 }: {
   assessment: Assessment;
   instrument: Instrument;
@@ -81,207 +82,194 @@ export function SignalCard({
   handled: HandledCall | null;
   blockedReason: string | null;
   onExecute: () => void;
-  onDismiss: () => void;
+  /** Absent where a call cannot be marked handled (the asset page). */
+  onDismiss?: () => void;
   onUndo: () => void;
+  identity?: boolean;
 }) {
   const { sizing, window: execution, regime } = assessment;
+  const details = useCallDetails();
 
   return (
-    <Card className={cn(handled && "opacity-70")}>
-      <CardContent>
-        {/* ── What ─────────────────────────────────────────────────────── */}
-        <div className="flex items-start gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <ActionBadge
-                action={assessment.action}
-                muted={!actionable}
-                title={
-                  actionable
-                    ? undefined
-                    : "Below your risk profile's bar — ember isn't recommending this."
-                }
-              />
-              <span className="mono-label text-caption text-ink">
-                {assessment.symbol}
+    <article className={cn("py-5", handled && "opacity-60")}>
+      {/* ── What ─────────────────────────────────────────────────────── */}
+      <CallHeader
+        badge={
+          <ActionBadge
+            action={assessment.action}
+            muted={!actionable}
+            title={
+              actionable
+                ? undefined
+                : "Below your risk profile's bar — ember isn't recommending this."
+            }
+          />
+        }
+        symbol={assessment.symbol}
+        name={instrument.name}
+        identity={identity}
+        tag={
+          heldWeight !== null ? (
+            <Tag>
+              <span className="num">
+                you hold {formatPercent(heldWeight, { decimals: 1 })}
               </span>
-              <span className="min-w-0 truncate text-caption text-stone">
-                {instrument.name}
+            </Tag>
+          ) : undefined
+        }
+        price={formatQuotePrice(instrument, assessment.price)}
+      />
+
+      <p className="mt-2.5 text-body font-medium text-ink">{assessment.summary}</p>
+
+      {/* ── When ─────────────────────────────────────────────────────── */}
+      <div className="mt-3.5">
+        <WindowBand window={execution} size="lg" />
+      </div>
+
+      {execution.notes.length > 0 && (
+        <ul className="mt-2 space-y-1">
+          {execution.notes.map((note) => (
+            <li
+              key={note}
+              className="flex items-start gap-1.5 text-caption text-stone"
+            >
+              {/* A box one line tall, so the icon centres on the first
+                  line of whatever face and line height the text is in —
+                  a fixed `mt-0.5` was tuned to Satoshi and drifted. */}
+              <span aria-hidden className="flex h-[1lh] shrink-0 items-center">
+                <Clock className="size-3.5 text-stone" />
               </span>
-              {heldWeight !== null && (
-                <span className="num shrink-0 rounded-md bg-surface-2 px-1.5 py-0.5 text-micro text-stone">
-                  you hold {formatPercent(heldWeight, { decimals: 1 })}
-                </span>
-              )}
-            </div>
-          </div>
+              <span>{note}</span>
+            </li>
+          ))}
+        </ul>
+      )}
 
-          <div className="shrink-0 text-right">
-            <p className="num text-heading font-medium text-ink">
-              {formatQuotePrice(instrument, assessment.price)}
-            </p>
-            <p className="mt-0.5 text-micro text-stone first-letter:uppercase">
-              {regime.label}
-            </p>
-          </div>
-        </div>
-
-        {/* Full width, under the price row. Inside the left column it shared
-            the row with the price block and wrapped every three words on a
-            phone. */}
-        <p className="mt-3 text-body text-graphite">{assessment.summary}</p>
-        <p className="mt-2 text-caption text-stone">{assessment.detail}</p>
-        {/* The regime's sentence is context the price row already names
-            (`Calm uptrend`); on a phone it is one paragraph too many. */}
-        <p className="mt-1 text-caption text-stone max-md:hidden">{regime.summary}</p>
-
-        {/* ── When ─────────────────────────────────────────────────────── */}
-        <div className="mt-4">
-          <WindowBand window={execution} size="lg" />
-        </div>
-
-        {execution.notes.length > 0 && (
-          <ul className="mt-2 space-y-1">
-            {execution.notes.map((note) => (
-              <li
-                key={note}
-                className="flex items-start gap-1.5 text-caption text-stone"
-              >
-                {/* A box one line tall, so the icon centres on the first
-                    line of whatever face and line height the text is in —
-                    a fixed `mt-0.5` was tuned to Satoshi and drifted. */}
-                <span aria-hidden className="flex h-[1lh] shrink-0 items-center">
-                  <Clock className="size-3.5 text-stone" />
-                </span>
-                <span>{note}</span>
-              </li>
-            ))}
-          </ul>
+      {/* ── How much, where to give up, how sure ─────────────────────── */}
+      {/* One wrapping line rather than a four-cell grid: in a quarter-width
+          cell "15.0% ≈ $15,320" truncated to "15.0% ≈ $15,32…". */}
+      <div className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        {sizing ? (
+          <>
+            <span className="text-caption font-medium text-ink">
+              {formatPercent(sizing.weight, { decimals: 1 })} of the book
+            </span>
+            {suggested && (
+              <span className="num text-caption text-stone">
+                ≈ {formatMoney(suggested.value, base)} ·{" "}
+                {formatQuantity(suggested.quantity, instrument.market)}{" "}
+                {instrument.symbol}
+              </span>
+            )}
+            <span className="num text-caption text-stone">
+              stop {formatQuotePrice(instrument, sizing.stopPrice)}
+            </span>
+          </>
+        ) : (
+          <span className="text-caption text-stone">No size — this is a hold</span>
         )}
+        <Confidence value={assessment.confidence} label={assessment.confidenceLabel} />
+      </div>
 
-        {/* ── How much, and where to give up ───────────────────────────── */}
-        <dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-3 border-t border-line pt-3.5 sm:grid-cols-4">
-          <Figure label="Confidence">
-            <Confidence
-              value={assessment.confidence}
-              label={assessment.confidenceLabel}
-            />
-          </Figure>
+      {/* ── Act ──────────────────────────────────────────────────────────
+          Only on calls ember is actually making. Under "All reads" this is
+          the model's working on something it has declined to recommend, and
+          putting an Execute button on that would be the app arguing with
+          itself. `Details` stays, because the working is the point there.
 
-          {sizing ? (
-            <>
-              <Figure label="Size">
+          Not rendered rather than hidden with CSS — a `display:none` button
+          is out of the tab order but still in the DOM, and leaving dead
+          controls around is how they come back. */}
+      <div className="mt-4 flex flex-wrap items-center gap-1.5">
+        {actionable && handled ? (
+          <>
+            <span className="flex items-center gap-1.5 text-caption text-stone">
+              <Check className="size-3.5 text-up" />
+              {handled.kind === "executed" ? "Executed" : "Dismissed"}
+            </span>
+            {/* Deliberately not "Undo".
+              The toast that appears the moment you execute *does* undo —
+              it removes the transaction it just wrote. This button can be
+              pressed days later, and quietly deleting a logged trade at
+              that point would be indefensible. It only puts the call back
+              among the open ones, and the label says exactly that. */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onUndo}
+              title={
+                handled.kind === "executed"
+                  ? "Puts this back in your open calls. The logged trade stays in your portfolio."
+                  : "Puts this back in your open calls."
+              }
+            >
+              <Undo2 />
+              Reopen
+            </Button>
+          </>
+        ) : actionable && blockedReason ? (
+          <>
+            <p className="min-w-0 basis-full text-caption text-stone sm:basis-auto sm:flex-1">
+              {blockedReason}
+            </p>
+            {onDismiss && (
+              <Button variant="ghost" size="sm" onClick={onDismiss}>
+                <X />
+                Dismiss
+              </Button>
+            )}
+          </>
+        ) : actionable ? (
+          <>
+            <Button size="sm" onClick={onExecute}>
+              Execute
+            </Button>
+            {onDismiss && (
+              <Button variant="ghost" size="sm" onClick={onDismiss}>
+                <X />
+                Dismiss
+              </Button>
+            )}
+          </>
+        ) : null}
+        {details.trigger}
+      </div>
+
+      {/* ── Why ──────────────────────────────────────────────────────── */}
+      {details.panel(
+        <>
+          <div className="space-y-1">
+            <p className="text-caption text-graphite">{assessment.detail}</p>
+            <p className="text-caption text-stone">
+              {regime.label.charAt(0).toUpperCase() + regime.label.slice(1)}.{" "}
+              {regime.summary}
+            </p>
+          </div>
+
+          {sizing && (
+            <dl className="grid grid-cols-2 gap-x-5 gap-y-3 sm:grid-cols-3">
+              <Figure label="Stop distance">
                 <span className="num text-caption font-medium text-ink">
-                  {formatPercent(sizing.weight, { decimals: 1 })}
-                </span>
-                {suggested && (
-                  <span className="ml-1 text-micro font-normal text-stone">
-                    ≈ {formatMoney(suggested.value, base)}
-                  </span>
-                )}
-              </Figure>
-
-              <Figure label="Stop">
-                <span className="num text-caption font-medium text-ink">
-                  {formatQuotePrice(instrument, sizing.stopPrice)}
-                </span>
-                <span className="ml-1 text-micro font-normal text-stone">
                   {sizing.stopMultiple.toFixed(1)} ATR
                 </span>
               </Figure>
-
               <Figure label="At risk">
                 <span className="num text-caption font-medium text-ink">
                   {formatPercent(sizing.riskBudget, { decimals: 2 })}
                 </span>
-                <span className="ml-1 text-micro font-normal text-stone">
-                  of book
-                </span>
+                <span className="ml-1 text-micro font-normal text-stone">of book</span>
               </Figure>
-            </>
-          ) : (
-            <Figure label="Size">
-              <span className="text-caption text-stone">
-                No size — this is a hold
-              </span>
-            </Figure>
+              <Figure label="Size rule">
+                <span className="text-caption text-stone">{sizing.note}</span>
+              </Figure>
+            </dl>
           )}
-        </dl>
 
-        {sizing && <p className="mt-2 text-micro text-stone">{sizing.note}</p>}
-
-        {/* ── Why ──────────────────────────────────────────────────────── */}
-        <StrategyBreakdown assessment={assessment} className="mt-4" />
-
-        {/* ── Act ──────────────────────────────────────────────────────────
-            Only on calls ember is actually making. Under "Every read" this
-            card is showing the model's working on something it has declined
-            to recommend, and putting an Execute button on that would be the
-            app arguing with itself.
-
-            Not rendered rather than hidden with CSS — a `display:none` button
-            is out of the tab order but still in the DOM, and leaving dead
-            controls around is how they come back. */}
-        {actionable && (
-          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-3.5">
-            {handled ? (
-              <>
-                <span className="flex items-center gap-1.5 text-caption text-stone">
-                  <Check className="size-3.5 text-up" />
-                  {handled.kind === "executed" ? "Executed" : "Dismissed"}
-                </span>
-                {/* Deliberately not "Undo".
-                  The toast that appears the moment you execute *does* undo —
-                  it removes the transaction it just wrote. This button can be
-                  pressed days later, and quietly deleting a logged trade at
-                  that point would be indefensible. It only puts the call back
-                  among the open ones, and the label says exactly that. */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onUndo}
-                  className="ml-auto"
-                  title={
-                    handled.kind === "executed"
-                      ? "Puts this back in your open calls. The logged trade stays in your portfolio."
-                      : "Puts this back in your open calls."
-                  }
-                >
-                  <Undo2 />
-                  Reopen
-                </Button>
-              </>
-            ) : blockedReason ? (
-              <>
-                <p className="min-w-0 flex-1 text-caption text-stone">
-                  {blockedReason}
-                </p>
-                <Button variant="ghost" size="sm" onClick={onDismiss}>
-                  <X />
-                  Dismiss
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button size="sm" onClick={onExecute}>
-                  Execute
-                </Button>
-                <Button variant="ghost" size="sm" onClick={onDismiss}>
-                  <X />
-                  Dismiss
-                </Button>
-                {suggested && (
-                  <span className="num ml-auto text-micro text-stone">
-                    ≈ {formatQuantity(suggested.quantity, instrument.market)}{" "}
-                    {instrument.symbol}
-                  </span>
-                )}
-              </>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          <StrategyBreakdown assessment={assessment} />
+        </>,
+      )}
+    </article>
   );
 }
 
@@ -295,55 +283,53 @@ function Figure({
   return (
     <div className="min-w-0">
       <dt className="text-micro text-stone">{label}</dt>
-      <dd className="mt-0.5 truncate">{children}</dd>
+      <dd className="mt-0.5">{children}</dd>
     </div>
   );
 }
 
+/**
+ * The compact call's boxes, by type metrics (ADR 0019).
+ *
+ * Line counts are the typical call's, per width: a summary wraps to three lines
+ * on a phone and two beside it on desktop, the three window notes to five and
+ * three, the sizing line to three and two. Measured off real calls, because the
+ * first version of this skeleton reserved the card's *minimum* and the feed
+ * jumped 0.74 when the calls landed.
+ */
 export function SignalCardSkeleton() {
   return (
-    <Card aria-hidden>
-      <CardContent>
-        <div className="flex items-start gap-3">
-          <div className="min-w-0 flex-1 space-y-2">
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-5 w-16 rounded-md" />
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-4 w-24" />
-            </div>
-            <Skeleton className="h-4 w-full max-w-sm" />
-          </div>
-          <div className="shrink-0 space-y-1.5 text-right">
-            <Skeleton className="ml-auto h-5 w-20" />
-            <Skeleton className="ml-auto h-3 w-24" />
-          </div>
-        </div>
+    <div className="py-5" aria-hidden>
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-6 w-16 rounded-md" />
+        <Skeleton className="h-4 w-14" />
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="ml-auto h-4 w-16" />
+      </div>
 
-        <Skeleton className="mt-2 h-4 w-full max-w-md" />
-        <Skeleton className="mt-1 h-4 w-2/3" />
+      <Block className="mt-2.5 text-body" lines="h-[2lh] max-md:h-[3lh]" />
 
-        <Skeleton className="mt-4 h-14 w-full rounded-md" />
-        <div className="mt-2 h-4" />
-        <Skeleton className="mt-2 h-4 w-3/4" />
+      <Skeleton className="mt-3.5 h-14 w-full rounded-md" />
+      <Block className="mt-2 text-caption" lines="h-[1lh] max-md:h-[2lh]" />
+      <Block
+        className="mt-2 text-caption"
+        lines="h-[calc(3lh+0.5rem)] max-md:h-[calc(5lh+0.5rem)]"
+      />
+      <Block className="mt-4 text-caption" lines="h-[2lh] max-md:h-[3lh]" />
 
-        <div className="mt-4 grid grid-cols-2 gap-5 border-t border-line pt-3.5 sm:grid-cols-4">
-          {Array.from({ length: 4 }, (_, i) => (
-            <div key={i} className="space-y-1.5">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-4 w-20" />
-            </div>
-          ))}
-        </div>
+      <div className="mt-4 flex gap-1.5">
+        <Skeleton className="h-8 w-20 rounded-full" />
+        <Skeleton className="h-8 w-24 rounded-full" />
+      </div>
+    </div>
+  );
+}
 
-        <div className="mt-4 border-t border-line pt-3.5">
-          <Skeleton className="h-4 w-56" />
-        </div>
-
-        <div className="mt-4 flex gap-2 border-t border-line pt-3.5">
-          <Skeleton className="h-9 w-24 rounded-xl" />
-          <Skeleton className="h-9 w-24 rounded-xl" />
-        </div>
-      </CardContent>
-    </Card>
+/** A run of text lines: the box is the lines' height, the bar is the first line. */
+function Block({ className, lines }: { className: string; lines: string }) {
+  return (
+    <div className={cn(className, lines)}>
+      <Skeleton className="h-[1lh] w-3/4" />
+    </div>
   );
 }

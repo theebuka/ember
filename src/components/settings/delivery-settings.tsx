@@ -249,7 +249,7 @@ export function DeliverySettings() {
             {!mayEmail && <PlanChip />}
           </span>
         }
-        description="A batched note when a few instruments on your watchlist clear your bar. Never one email per call."
+        description="A batched note when a few instruments on your watchlist match your risk profile. Never one email per call."
         control={
           <Switch
             checked={mayEmail && email?.digest_enabled === true}

@@ -60,10 +60,11 @@ export function DataSourceChip({ className }: { className?: string }) {
       )}
     >
       <span className="size-1.5 rounded-full bg-up" aria-hidden />
-      {/* A dot on a phone, where the header already carries the lockup, the
-          bell and the avatar. The generated state keeps its words: that one
-          is a disclosure, this one is a status. */}
-      <span className="max-sm:sr-only">Live prices</span>
+      {/* One word on a phone, where the header already carries the lockup,
+          the bell and the avatar. A bare green dot read as an unread badge or
+          an online indicator, not as a claim about prices. */}
+      <span className="sm:hidden">Live</span>
+      <span className="max-sm:hidden">Live prices</span>
     </Link>
   );
 }

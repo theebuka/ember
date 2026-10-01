@@ -193,7 +193,7 @@ export const UPSELL: Record<Feature, { title: string; body: string }> = {
   },
   "email-digest": {
     title: "Get the digest by email",
-    body: "A batched note when instruments you follow clear your bar, daily or weekly. It covers your watchlist — warnings about positions you hold stay in the app.",
+    body: "A batched note when instruments you follow match your risk profile, daily or weekly. It covers your watchlist — warnings about positions you hold stay in the app.",
   },
   "no-sponsors": {
     title: "Pro has no sponsor slots",

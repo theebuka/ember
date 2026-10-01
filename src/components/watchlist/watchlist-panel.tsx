@@ -331,7 +331,7 @@ function EmptyWatchlist({
 }) {
   return (
     <div className="flex flex-col items-start">
-      <div className="mb-5 grid size-12 place-items-center rounded-2xl bg-surface-2 text-stone">
+      <div className="mb-5 grid size-12 place-items-center rounded-xl bg-surface-2 text-stone">
         <Eye size={22} />
       </div>
       <h2 className="text-heading font-semibold text-ink">

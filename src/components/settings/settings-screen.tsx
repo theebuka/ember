@@ -233,7 +233,7 @@ export function SettingsScreen() {
                   );
                 })}
               </SettingGroup>
-              <p className="mt-2 px-1 text-micro text-stone">
+              <p className="mt-2 text-micro text-stone">
                 Turning a market off hides it from the watchlist, the market
                 pulse and the signals feed. It doesn&apos;t change the
                 engine — cross-sectional momentum still ranks against the
@@ -257,7 +257,7 @@ export function SettingsScreen() {
                   />
                 }
               />
-              <p className="mt-2 px-1 text-micro text-stone">
+              <p className="mt-2 text-micro text-stone">
                 Realized P&amp;L is converted at today&apos;s rate rather than
                 the rate on the trade date. Only the yen, franc and
                 Canadian-dollar crosses are quoted in anything but dollars, so
@@ -271,16 +271,16 @@ export function SettingsScreen() {
           {tab === "alerts" && (
             <section>
               <AlertSettings />
-              <p className="mt-2 px-1 text-micro text-stone">
-                Both kinds fire while ember is open — in a tab, or from your
-                home screen. Reaching you with it closed needs a server holding
-                a subscription for you; the handlers are already in the service
-                worker waiting for it. ember never alerts twice about the same
-                thing, never about one you&apos;ve executed or dismissed, and
-                never about a window that opened more than ten minutes ago. A
-                warning about something you hold has no window to wait for, so
-                it arrives on detection and repeats at most once a day until it
-                clears.
+              {/* One line. The four-line version is on About, where somebody
+                  asking how alerts behave goes looking for it. */}
+              <p className="mt-3 text-micro text-stone">
+                ember never alerts twice about the same thing.{" "}
+                <Link
+                  href="/settings?tab=about"
+                  className="underline underline-offset-2 hover:text-ink"
+                >
+                  How alerts behave
+                </Link>
               </p>
             </section>
           )}
@@ -310,14 +310,14 @@ export function SettingsScreen() {
                     than never having made one, so it is replaced rather than
                     softened — and it names exactly what goes and exactly what
                     doesn't. ADR 0025. */}
-                <p className="mt-2 px-1 text-micro text-stone">
+                <p className="mt-2 text-micro text-stone">
                   Your transaction log lives in this browser. Signed in, a copy
                   is kept on ember&apos;s server so it survives a cleared
                   browser and follows you to another device; signed out,
                   clearing your browser data clears ember with it — which is
                   the reason export exists.
                 </p>
-                <p className="mt-1.5 px-1 text-micro text-stone">
+                <p className="mt-1.5 text-micro text-stone">
                   One exception, and it applies whether or not you have an
                   account: to warn you about a position that has turned,
                   ember&rsquo;s server needs to know you hold it. When it looks
@@ -362,13 +362,17 @@ export function SettingsScreen() {
                   control={<AboutLink href="/signals/track-record">Track record</AboutLink>}
                 />
                 <SettingRow
+                  label="How alerts behave"
+                  description="In-app alerts fire while ember is open, in a tab or from your home screen; push reaches you with it closed. Never twice about the same thing, never about one you've executed or dismissed, never about a window that opened more than ten minutes ago. A warning about something you hold arrives on detection and repeats at most once a day until it clears."
+                />
+                <SettingRow
                   label="Run through setup again"
                   description="Revisits the three-step introduction. Nothing is cleared."
                   control={<AboutLink href="/onboarding?replay=1">Replay</AboutLink>}
                 />
               </SettingGroup>
 
-              <p className="mt-6 px-1 text-micro text-stone">
+              <p className="mt-6 text-micro text-stone">
                 ember gives information, not financial advice. Every rule it
                 applies is published and cited, the track record is computed
                 rather than authored, and none of it accounts for your

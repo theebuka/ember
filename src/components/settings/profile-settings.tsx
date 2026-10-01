@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useSession } from "@/hooks/use-session";
-import { countries, detectTimezone, fullName } from "@/lib/profile";
+import { countries, detectTimezone } from "@/lib/profile";
 import { useProfile } from "@/store/use-profile";
 
 /**
@@ -56,14 +56,14 @@ export function ProfileSettings() {
     if (detected) setProfile({ timezone: detected });
   }, [hydrated, profile.timezone, setProfile]);
 
-  const name = fullName(profile);
 
   return (
     <div className="space-y-8">
       <section>
         <SectionHeader
           title="Your name"
-          hint={hydrated && name ? name : "all optional"}
+          // Not the name itself: the fields directly beneath already say it.
+          hint="optional"
         />
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -94,7 +94,7 @@ export function ProfileSettings() {
       </section>
 
       <section>
-        <SectionHeader title="Where you are" hint="detected where it can be" />
+        <SectionHeader title="Where you are" />
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>

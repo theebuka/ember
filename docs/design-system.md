@@ -273,8 +273,11 @@ category and Lucide cannot express it.
 
 ## Space, radius, motion
 
-- **Radius** `--radius: 1rem`. Buttons and segmented controls are pills; the
-  few real containers are `rounded-3xl`.
+- **Radius** `--radius: 0.75rem`. Buttons and segmented controls are pills;
+  every container and icon tile is `rounded-xl`, every tag `rounded-md`
+  (`Tag`). The desktop frame's panel is the one other radius.
+- **Grid** one left edge per page, shared by the header and the body. A
+  reading-width page caps its blocks, never centres a column.
 - **Page padding** 20px on mobile — and nothing nested inside a card's own
   padding on top of it.
 - **Vertical rhythm** roughly doubled from v1: sections separated by 40–56px.

@@ -83,7 +83,7 @@ export function PinnedBanner({
     <div
       role="status"
       className={cn(
-        "flex items-start gap-3 rounded-2xl border border-line bg-surface-2 p-4",
+        "flex items-start gap-3 rounded-xl border border-line bg-surface-2 p-4",
         className,
       )}
     >

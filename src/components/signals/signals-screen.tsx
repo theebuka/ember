@@ -56,7 +56,7 @@ const REDUCING = new Set(["sell", "reduce"]);
  * handled calls — and a feed whose placeholder lays out differently from the
  * thing it stands in for is a layout shift with extra steps (ADR 0019).
  */
-const FEED_GRID = "grid items-start gap-5 xl:grid-cols-2";
+const FEED_GRID = "grid items-start gap-x-12 xl:grid-cols-2 *:border-t *:border-line";
 
 interface FeedItem {
   assessment: Assessment;
@@ -263,7 +263,7 @@ export function SignalsScreen() {
           760px card down the middle of a 1600px page. `items-start` because
           two cards in a row are rarely the same height and stretching the
           shorter one to match would invent whitespace inside it. */}
-      <PageBody className="space-y-8 pb-12">
+      <PageBody className="space-y-6 pb-12">
         {error ? (
           <ErrorState
             message={
@@ -273,11 +273,14 @@ export function SignalsScreen() {
           />
         ) : (
           <>
-            <div className="flex max-w-3xl flex-wrap items-center justify-between gap-3">
+            {/* Stacked on a phone in both states: "Assessing the universe…"
+                fit beside the toggle and the count did not, so the toggle
+                dropped a row the moment the calls landed. */}
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-caption text-stone">
                 {loading
                   ? "Assessing the universe…"
-                  : `${open.length} of ${assessed} clear your ${RISK_PROFILES[riskProfile].label.toLowerCase()} bar.`}
+                  : `${open.length} of ${assessed} match your ${RISK_PROFILES[riskProfile].label.toLowerCase()} risk profile.`}
                 {!loading && pending > 0 && (
                   <span className="text-faint"> · </span>
                 )}
@@ -289,8 +292,8 @@ export function SignalsScreen() {
                 value={view}
                 onChange={setView}
                 options={[
-                  { value: "open", label: "Open calls" },
-                  { value: "all", label: "Every read" },
+                  { value: "open", label: "Calls" },
+                  { value: "all", label: "All reads" },
                 ]}
                 size="sm"
                 aria-label="Which recommendations to show"
@@ -352,7 +355,7 @@ export function SignalsScreen() {
               </section>
             )}
 
-            <p className="max-w-3xl px-1 text-micro text-stone">
+            <p className="max-w-3xl text-micro text-stone">
               ember gives information, not financial advice. Every rule above is
               published and cited, the track record is computed rather than authored,
               and none of it accounts for your circumstances.{" "}
@@ -432,7 +435,7 @@ function NothingToday({
 }) {
   return (
     <div className="flex flex-col items-start py-2">
-      <div className="mb-4 grid size-11 place-items-center rounded-2xl bg-surface-2 text-stone">
+      <div className="mb-4 grid size-11 place-items-center rounded-xl bg-surface-2 text-stone">
         <Compass className="size-5" />
       </div>
       <h2 className="text-heading font-semibold text-ink">Nothing to act on today</h2>

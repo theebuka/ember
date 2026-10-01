@@ -441,8 +441,10 @@ export const NAME_MATCHERS: Array<{ symbol: string; pattern: RegExp; topic: stri
         `\\b(?:${alternatives})\\b`,
         shortest.length >= CASE_INSENSITIVE_MIN ? "i" : "",
       ),
-      // The topic reads as a word, so it is the shortest name we match on.
-      topic: shortest.toLowerCase(),
+      // The topic reads as a word, so it is the shortest name we match on —
+      // in its own casing. Lowercased, the strip's first-letter capital
+      // produced "Bank of america".
+      topic: shortest,
     };
   });
 

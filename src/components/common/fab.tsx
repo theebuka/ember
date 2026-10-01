@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useScrollingDown } from "@/hooks/use-scroll-direction";
 import { cn } from "@/lib/utils";
 
@@ -31,12 +32,20 @@ import { cn } from "@/lib/utils";
  * It hides on the same scroll signal the nav uses, so the two move as one
  * object. A FAB that stays while the bar underneath it slides away reads as
  * something that came loose.
+ *
+ * ── What it must not cover ───────────────────────────────────────────────
+ *
+ * `avoid` names an element the FAB steps aside for while that element sits in
+ * the band the FAB occupies. On Portfolio the segmented control lands right
+ * there on a phone, and the button covered "Activity" — a control floating over
+ * the control that switches the list it acts on.
  */
 export function Fab({
   onClick,
   label,
   icon,
   disabled,
+  avoid,
   className,
 }: {
   onClick: () => void;
@@ -44,9 +53,13 @@ export function Fab({
   label: string;
   icon: React.ReactNode;
   disabled?: boolean;
+  /** The id of an element the FAB must not cover. */
+  avoid?: string;
   className?: string;
 }) {
-  const hidden = useScrollingDown();
+  const scrollingDown = useScrollingDown();
+  const covering = useCovers(avoid);
+  const hidden = scrollingDown || covering;
 
   return (
     <button
@@ -79,4 +92,38 @@ export function Fab({
       {label}
     </button>
   );
+}
+
+/**
+ * Whether the element `id` is inside the bottom band of the viewport — the nav,
+ * the FAB and a margin, ~160px. An observer with that band as its root, rather
+ * than a scroll listener reading layout on every frame.
+ */
+function useCovers(id: string | undefined): boolean {
+  const [covers, setCovers] = useState(false);
+
+  useEffect(() => {
+    const target = id ? document.getElementById(id) : null;
+    if (!target) return;
+
+    let observer: IntersectionObserver | null = null;
+    const observe = () => {
+      observer?.disconnect();
+      const band = 160;
+      observer = new IntersectionObserver(
+        ([entry]) => setCovers(entry.isIntersecting),
+        { rootMargin: `-${Math.max(window.innerHeight - band, 0)}px 0px 0px 0px` },
+      );
+      observer.observe(target);
+    };
+
+    observe();
+    window.addEventListener("resize", observe);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", observe);
+    };
+  }, [id]);
+
+  return covers;
 }

@@ -73,7 +73,7 @@ export function AuthScreen() {
   if (!AUTH_CONFIGURED) {
     return (
       <>
-        <PageHeader title="Account" back="/settings" />
+        <PageHeader narrow title="Account" back="/settings" />
         <PageBody narrow className="pb-12">
           <p className="text-body text-stone">
             ember isn&apos;t connected to an account service, so there is
@@ -86,12 +86,12 @@ export function AuthScreen() {
 
   return (
     <>
-      <PageHeader title="Sign in" back="/settings" />
+      <PageHeader narrow title="Sign in" back="/settings" />
 
       <PageBody narrow className="pb-12">
         {state.step === "sent" ? (
           <div className="max-w-md">
-            <span className="grid size-11 place-items-center rounded-2xl bg-up-tint text-up">
+            <span className="grid size-11 place-items-center rounded-xl bg-up-tint text-up">
               <CheckCircle className="size-5" />
             </span>
             <h2 className="mt-5 text-title font-semibold text-ink">Check your email</h2>
@@ -116,7 +116,7 @@ export function AuthScreen() {
           </div>
         ) : (
           <form onSubmit={submit} className="max-w-md">
-            <span className="grid size-11 place-items-center rounded-2xl bg-surface-2 text-stone">
+            <span className="grid size-11 place-items-center rounded-xl bg-surface-2 text-stone">
               <Envelope className="size-5" />
             </span>
 

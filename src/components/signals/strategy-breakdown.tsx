@@ -20,20 +20,20 @@ import { cn } from "@/lib/utils";
  * or not this section is opened; opening it says *why* they object.
  *
  * Stance is about agreement with the call, not about market direction, so it
- * is set in type rather than in moss and clay. The one exception is `dissents`
- * — that carries clay, because a reader skimming for the catch should find it
- * without reading every row.
+ * is set in type and never in `up`/`down`. Dissent used to carry the loss red,
+ * which made "4 against" read as money lost; it is set in weight instead, so a
+ * reader skimming for the catch still finds it without the palette lying.
  */
 
 const STANCE_LABEL: Record<Stance, string> = {
   agrees: "agrees",
-  dissents: "dissents",
+  dissents: "disagrees",
   neutral: "no view",
 };
 
 const STANCE_CLASS: Record<Stance, string> = {
   agrees: "text-stone",
-  dissents: "text-down",
+  dissents: "font-semibold text-graphite",
   neutral: "text-stone",
 };
 
@@ -65,9 +65,11 @@ export function StrategyBreakdown({
         <span className="eyebrow">How this was reached</span>
 
         <span className="num text-micro text-stone">
-          {agreement.agrees} for
+          {agreement.agrees} {agreement.agrees === 1 ? "rule agrees" : "rules agree"}
           {agreement.dissents > 0 && (
-            <span className="text-down"> · {agreement.dissents} against</span>
+            <span className="font-semibold text-graphite">
+              {" "}· {agreement.dissents} {agreement.dissents === 1 ? "disagrees" : "disagree"}
+            </span>
           )}
           {agreement.silent > 0 && ` · ${agreement.silent} of ${total} had no view`}
         </span>
@@ -126,7 +128,7 @@ function StrategyRow({ contribution }: { contribution: Contribution }) {
           ensemble. */}
       <div className="mt-1 h-px w-full bg-line" aria-hidden>
         <div
-          className={cn("h-px", stance === "dissents" ? "bg-down" : "bg-graphite")}
+          className={cn("h-px", stance === "dissents" ? "bg-faint" : "bg-graphite")}
           style={{ width: `${Math.max(weight * 100, 1)}%` }}
         />
       </div>

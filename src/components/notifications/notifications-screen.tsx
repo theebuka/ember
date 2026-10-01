@@ -57,7 +57,7 @@ export function NotificationsScreen({
 
   return (
     <>
-      <PageHeader title="Notifications" back />
+      <PageHeader narrow title="Notifications" back />
 
       <PageBody narrow className="space-y-8 pb-12">
         {/* ── Worth knowing ─────────────────────────────────────────────
@@ -147,7 +147,7 @@ export function NotificationsScreen({
 function Quiet() {
   return (
     <div className="flex flex-col items-start border-t border-line py-8">
-      <div className="mb-4 grid size-11 place-items-center rounded-2xl bg-surface-2 text-stone">
+      <div className="mb-4 grid size-11 place-items-center rounded-xl bg-surface-2 text-stone">
         <Bell className="size-5" />
       </div>
       <h3 className="text-heading font-semibold text-ink">Nothing yet</h3>
