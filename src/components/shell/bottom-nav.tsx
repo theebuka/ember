@@ -68,8 +68,11 @@ export function BottomNav() {
                   "flex h-14 w-[4.5rem] flex-col items-center justify-center gap-1 rounded-full outline-none min-[375px]:w-[4.75rem]",
                   "transition-colors duration-150",
                   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+                  // A neutral pill, not the brand tint, at the user's
+                  // direction: blue on the current tab read as a selected
+                  // button competing with the page's own primary action.
                   active
-                    ? "bg-brand-tint text-brand-text"
+                    ? "bg-surface-2 text-ink"
                     : "text-stone active:bg-surface-2 active:text-graphite",
                 )}
               >

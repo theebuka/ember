@@ -21,8 +21,8 @@ Lighthouse table below is where that one shows up.
 | News | 0.000 | 0.000 |
 | Track record | 0.000 | 0.000 |
 | Methodology | 0.000 | 0.000 |
-| Asset detail | 0.074 | 0.026 |
-| Settings — account | 0.051 | 0.005 |
+| Asset detail | 0.074 | 0.028 |
+| Settings — account | 0.054 | 0.005 |
 | Settings — your data | 0.000 | 0.000 |
 | Notifications | 0.007 | 0.014 |
 | Sign in | 0.000 | 0.000 |
@@ -54,11 +54,11 @@ does seeded.
 
 | Screen | Profile | Perf | A11y | Best practices | SEO | LCP | TBT | CLS |
 |---|---|---|---|---|---|---|---|---|
-| Home | mobile | 75 | 100 | 100 | 100 | 8.9 s | 37 ms | 0.063 |
-| Signals feed | mobile | 78 | 100 | 100 | 100 | 6.2 s | 23 ms | 0.000 |
-| Asset detail | mobile | 84 | 100 | 100 | 100 | 4.6 s | 20 ms | 0.008 |
-| Home | desktop | 98 | 100 | 100 | 100 | 1.1 s | 0 ms | 0.016 |
-| Signals feed | desktop | 98 | 100 | 100 | 100 | 1.2 s | 0 ms | 0.011 |
+| Home | mobile | 79 | 100 | 100 | 100 | 5.6 s | 38 ms | 0.067 |
+| Signals feed | mobile | 78 | 100 | 100 | 100 | 6.2 s | 26 ms | 0.000 |
+| Asset detail | mobile | 86 | 100 | 100 | 100 | 4.3 s | 26 ms | 0.003 |
+| Home | desktop | 98 | 100 | 100 | 100 | 1.1 s | 0 ms | 0.015 |
+| Signals feed | desktop | 97 | 100 | 100 | 100 | 1.2 s | 0 ms | 0.011 |
 | Asset detail | desktop | 99 | 100 | 100 | 100 | 0.9 s | 0 ms | 0.004 |
 
 Mobile is Lighthouse's throttled profile — simulated slow 4G with a 4×

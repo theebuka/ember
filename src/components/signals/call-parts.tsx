@@ -96,7 +96,7 @@ export function useCallDetails() {
       aria-expanded={open}
       aria-controls={id}
       className={cn(
-        "tap-target ml-auto inline-flex h-8 items-center gap-1 rounded-full px-3 text-caption font-medium text-stone",
+        "tap-target ml-auto inline-flex h-9 items-center gap-1 rounded-full px-3 text-caption font-medium text-stone",
         "hover:bg-surface-2 hover:text-ink",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
       )}

@@ -318,8 +318,8 @@ export function SignalCardSkeleton() {
       <Block className="mt-4 text-caption" lines="h-[2lh] max-md:h-[3lh]" />
 
       <div className="mt-4 flex gap-1.5">
-        <Skeleton className="h-8 w-20 rounded-full" />
-        <Skeleton className="h-8 w-24 rounded-full" />
+        <Skeleton className="h-9 w-20 rounded-full" />
+        <Skeleton className="h-9 w-24 rounded-full" />
       </div>
     </div>
   );

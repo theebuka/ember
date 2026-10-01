@@ -30,7 +30,10 @@ const buttonVariants = cva(
         link: "text-brand-text underline-offset-4 hover:underline",
       },
       /**
-       * 56 / 48 / 40 / 32.
+       * 60 / 52 / 44 / 36 for text buttons — each 4px taller than the first
+       * v2 ramp (56 / 48 / 40 / 32), at the user's direction: the labels sat
+       * tight against the top and bottom. Horizontal padding is unchanged, and
+       * icon buttons keep their square sizes.
        *
        * v1 ran 24 / 28 / 32 / 36 / 44 and shipped 28 and 36 almost everywhere,
        * which is what made the app read as small and cramped. Every size moved
@@ -44,10 +47,10 @@ const buttonVariants = cva(
        */
       size: {
         default:
-          "h-10 gap-2 px-4 text-caption has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
-        sm: "h-8 gap-1.5 px-3 text-caption has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5 [&_svg:not([class*='size-'])]:size-4",
-        lg: "h-12 gap-2 px-5 text-body has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4 [&_svg:not([class*='size-'])]:size-[1.125rem]",
-        xl: "h-14 gap-2.5 px-6 text-body has-data-[icon=inline-end]:pr-5 has-data-[icon=inline-start]:pl-5 [&_svg:not([class*='size-'])]:size-5",
+          "h-11 gap-2 px-4 text-caption has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
+        sm: "h-9 gap-1.5 px-3 text-caption has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5 [&_svg:not([class*='size-'])]:size-4",
+        lg: "h-13 gap-2 px-5 text-body has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4 [&_svg:not([class*='size-'])]:size-[1.125rem]",
+        xl: "h-15 gap-2.5 px-6 text-body has-data-[icon=inline-end]:pr-5 has-data-[icon=inline-start]:pl-5 [&_svg:not([class*='size-'])]:size-5",
         icon: "size-10",
         "icon-sm": "size-8 [&_svg:not([class*='size-'])]:size-4",
         "icon-lg": "size-12 [&_svg:not([class*='size-'])]:size-[1.125rem]",

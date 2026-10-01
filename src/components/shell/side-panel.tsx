@@ -151,9 +151,12 @@ export function SidePanel() {
                   "transition-colors duration-150",
                   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
                   isCollapsed ? "justify-center px-0" : "px-3.5",
+                  // Neutral, matching the phone bar. `line` rather than
+                  // `surface-2`: the rail sits on `canvas`, where the in-page
+                  // well colour all but disappears.
                   active
-                    ? "bg-brand-tint font-semibold text-brand-text"
-                    : "text-stone hover:bg-ground hover:text-graphite",
+                    ? "bg-line font-semibold text-ink"
+                    : "text-stone hover:bg-line/60 hover:text-graphite",
                 )}
               >
                 {/* Same vocabulary as the mobile bar: active is filled.

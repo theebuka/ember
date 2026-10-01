@@ -161,7 +161,7 @@ function CurrentPlan({ hidden = false }: { hidden?: boolean }) {
     <div
       aria-hidden={hidden}
       className={cn(
-        "flex h-12 items-center justify-center rounded-full border border-line text-caption font-medium text-stone",
+        "flex h-13 items-center justify-center rounded-full border border-line text-caption font-medium text-stone",
         hidden && "invisible",
       )}
     >
