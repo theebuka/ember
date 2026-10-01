@@ -283,7 +283,7 @@ export function OnboardingScreen() {
             <section>
               <StepHeading
                 title="How much conviction?"
-                lede="The one setting that changes what ember recommends. Move it whenever you like."
+                lede="This decides what ember recommends. You can change it anytime."
               />
               <RiskProfileSetting
                 value={riskProfile}
@@ -297,7 +297,7 @@ export function OnboardingScreen() {
             <section>
               <StepHeading
                 title="What should ember watch?"
-                lede="Switching a market off hides it. It doesn't change how anything is ranked."
+                lede="Turn off any you don't trade."
               />
 
               <ul className="mt-7 divide-y divide-line border-y border-line">
@@ -326,7 +326,7 @@ export function OnboardingScreen() {
               </ul>
 
               <p className="mt-7 text-caption text-stone">
-                ember values what you actually own, so it needs a ledger.
+                Add what you own so ember can value it.
               </p>
 
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -345,7 +345,7 @@ export function OnboardingScreen() {
                 <StartOption
                   icon={Sparkles}
                   title="Explore with sample data"
-                  detail="Labelled throughout, clearable in one tap"
+                  detail="Clearly labelled, removable in one tap"
                   onClick={() => finish({ withSample: true, to: "/portfolio" })}
                   className="sm:col-span-2"
                 />
@@ -454,13 +454,10 @@ function CookiesBlocked({ onRetry }: { onRetry: () => void }) {
           ember needs a cookie to remember you
         </h1>
         <p className="mt-2 text-body text-stone">
-          Just one, on this device, storing nothing but the fact that you&rsquo;ve
-          been through setup. Your browser is currently refusing it, and without
-          it ember would send you back to this screen every time.
+          It only records that you&rsquo;ve finished setup. Your browser is blocking it, so ember would bring you back here every time.
         </p>
         <p className="mt-4 text-caption text-stone">
-          If you opened ember from inside another app, try opening it in Safari
-          or Chrome instead. Otherwise allow cookies for this site and try again.
+          Opened ember inside another app? Try Safari or Chrome. Otherwise, allow cookies for this site and try again.
         </p>
 
         <Button size="xl" className="mt-6 w-full" onClick={onRetry}>
@@ -484,8 +481,8 @@ function CookiesBlocked({ onRetry }: { onRetry: () => void }) {
  */
 const MARKET_BLURB: Record<MarketKind, string> = {
   equity: "Large caps across the US, Europe, Asia and Africa.",
-  crypto: "The majors, priced around the clock.",
-  fx: "Major pairs, valued from the rate differential.",
+  crypto: "Bitcoin, Ethereum and other major coins.",
+  fx: "Major currency pairs.",
 };
 
 function StepHeading({ title, lede }: { title: string; lede: string }) {

@@ -75,7 +75,7 @@ const base = z.object({
   ),
   fees: optionalNonNegativeDecimal("Fees have to be a number, or blank."),
   date: z.string().min(1, "When was this?"),
-  account: z.string().trim().max(40, "That's a long account name — keep it under 40."),
+  account: z.string().trim().max(40, "Keep the account name under 40 characters."),
   note: z.string().trim().max(280, "Notes are capped at 280 characters."),
 });
 
@@ -113,7 +113,7 @@ export function transactionSchema({
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["date"],
-        message: "That's in the future — log it once it's filled.",
+        message: "That date is in the future.",
       });
       return;
     }

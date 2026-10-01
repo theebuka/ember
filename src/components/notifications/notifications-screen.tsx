@@ -75,7 +75,7 @@ export function NotificationsScreen({
             the maximum leaves an empty screen for everyone else. This is
             the ADR 0019 pattern applied to a count rather than a line. */}
         {loading ? (
-          <Section title="Worth knowing" hint="true right now, not events">
+          <Section title="Worth knowing" >
             <div className="divide-y divide-line border-y border-line">
               {Array.from({ length: authAvailable ? 3 : 2 }, (_, i) => (
                 <NoticeSkeleton key={i} />
@@ -84,7 +84,7 @@ export function NotificationsScreen({
           </Section>
         ) : (
           warnings.length > 0 && (
-            <Section title="Worth knowing" hint="true right now, not events">
+            <Section title="Worth knowing" >
               <div className="divide-y divide-line border-y border-line">
                 {warnings.map((notice) => (
                   <NoticeRow key={notice.id} notice={notice} now={null} />
@@ -96,7 +96,7 @@ export function NotificationsScreen({
 
         <Section
           title="History"
-          hint={history.length > 0 ? `${history.length} in total` : undefined}
+          
           action={
             history.length > 0 ? (
               <Button
@@ -128,9 +128,8 @@ export function NotificationsScreen({
         </Section>
 
         <p className="text-micro text-stone">
-          ember can only reach you while it is open — in a tab or from the home
-          screen. Push while closed needs a server holding a subscription for
-          you, and lands with the rest of accounts.{" "}
+          In-app alerts arrive while ember is open. Turn on push to get them
+          when it&apos;s closed.{" "}
           <Link
             href="/settings"
             className="underline underline-offset-2 hover:text-graphite"
@@ -150,11 +149,9 @@ function Quiet() {
       <div className="mb-4 grid size-11 place-items-center rounded-xl bg-surface-2 text-stone">
         <Bell className="size-5" />
       </div>
-      <h3 className="text-heading font-semibold text-ink">Nothing yet</h3>
+      <h3 className="text-heading font-semibold text-ink">No alerts yet</h3>
       <p className="mt-1.5 max-w-md text-body text-stone">
-        Alerts ember sends you land here, so you can read one you missed.
-        Quiet is the usual state — a risk engine that finds something every day
-        is a scaremonger.
+        When ember alerts you, it&apos;s saved here.
       </p>
       <Button variant="outline" size="lg" className="mt-5" asChild>
         <Link href="/settings">Alert settings</Link>

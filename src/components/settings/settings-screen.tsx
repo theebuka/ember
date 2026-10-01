@@ -69,7 +69,7 @@ const MARKET_NOTES: Record<MarketKind, string> = {
   equity:
     "New York, London, Frankfurt, Paris, Tokyo, Hong Kong, Mumbai, Johannesburg, Cairo and Lagos.",
   crypto: "Bitcoin, Ethereum, Solana and the majors, priced around the clock.",
-  fx: "The dollar, euro, yen, franc and commodity crosses, valued from the carry differential.",
+  fx: "Major currency pairs: the dollar, euro, yen, franc and more.",
 };
 
 const CURRENCY_OPTIONS = BASE_CURRENCIES.map((value) => ({
@@ -190,7 +190,7 @@ export function SettingsScreen() {
             <section>
               <SettingRow
                 label="Risk profile"
-                description="Sets how much conviction a call needs before ember will surface it, how large a position it suggests, and which families of rules it leans on."
+                description="How sure ember must be before it recommends a trade, and how large a position it suggests."
                 layout="stack"
               >
                 <RiskProfileSetting
@@ -217,7 +217,7 @@ export function SettingsScreen() {
                       label={MARKET_LABELS[market]}
                       description={
                         locked
-                          ? "Keep at least one market on — everything in ember is a view of one."
+                          ? "Keep at least one market on."
                           : `${MARKET_NOTES[market]}${count > 0 ? ` ${count} instruments.` : ""}`
                       }
                       layout="inline"
@@ -233,12 +233,6 @@ export function SettingsScreen() {
                   );
                 })}
               </SettingGroup>
-              <p className="mt-2 text-micro text-stone">
-                Turning a market off hides it from the watchlist, the market
-                pulse and the signals feed. It doesn&apos;t change the
-                engine — cross-sectional momentum still ranks against the
-                whole universe.
-              </p>
             </section>
           )}
 
@@ -246,7 +240,7 @@ export function SettingsScreen() {
             <section>
               <SettingRow
                 label="Base currency"
-                description={`Every value, cost basis and P&L figure is converted to ${CURRENCY_META[baseCurrency].label} at today's rate. Instruments stay quoted in their own currency.`}
+                description={"Used for totals and P&L. Prices stay in their own currency."}
                 layout="stack"
                 control={
                   <Segmented
@@ -258,12 +252,7 @@ export function SettingsScreen() {
                 }
               />
               <p className="mt-2 text-micro text-stone">
-                Realized P&amp;L is converted at today&apos;s rate rather than
-                the rate on the trade date. Only the yen, franc and
-                Canadian-dollar crosses are quoted in anything but dollars, so
-                this is exact for 101 of the 110. The naira is the one rate
-                ember cannot fetch — the European Central Bank does not
-                publish it — so it is carried as a fixed figure.
+                Realized P&amp;L uses today&apos;s exchange rate, not the rate on the day you traded.
               </p>
             </section>
           )}
@@ -273,15 +262,6 @@ export function SettingsScreen() {
               <AlertSettings />
               {/* One line. The four-line version is on About, where somebody
                   asking how alerts behave goes looking for it. */}
-              <p className="mt-3 text-micro text-stone">
-                ember never alerts twice about the same thing.{" "}
-                <Link
-                  href="/settings?tab=about"
-                  className="underline underline-offset-2 hover:text-ink"
-                >
-                  How alerts behave
-                </Link>
-              </p>
             </section>
           )}
 
@@ -289,7 +269,7 @@ export function SettingsScreen() {
             <section>
               <SettingRow
                 label="Theme"
-                description="Dark is a separately calibrated palette, not an inversion. Matching your system is the default."
+                
                 layout="inline"
                 control={<ThemeToggle />}
               />
@@ -311,31 +291,14 @@ export function SettingsScreen() {
                     softened — and it names exactly what goes and exactly what
                     doesn't. ADR 0025. */}
                 <p className="mt-2 text-micro text-stone">
-                  Your transaction log lives in this browser. Signed in, a copy
-                  is kept on ember&apos;s server so it survives a cleared
-                  browser and follows you to another device; signed out,
-                  clearing your browser data clears ember with it — which is
-                  the reason export exists.
+                  Your trades live in this browser. If you&apos;re not signed in, clearing browser data deletes them.
                 </p>
                 <p className="mt-1.5 text-micro text-stone">
-                  One exception, and it applies whether or not you have an
-                  account: to warn you about a position that has turned,
-                  ember&rsquo;s server needs to know you hold it. When it looks
-                  for findings it sends four derived numbers per open
-                  position — the symbol, the quantity, your average cost and
-                  the date you opened it. Not your trades, not your fees, not
-                  your accounts, not anything you&rsquo;ve closed. Nothing is
-                  stored at the other end. This happens whenever your home
-                  screen loads, and while alerts are watching.
+                  To warn you about a position, ember&rsquo;s server needs to know you hold it. Whenever Home loads or alerts are on, it receives four numbers per open position — symbol, quantity, average cost and opening date — and stores none of them. Nothing else about your trades leaves this device.
                 </p>
               </section>
 
-              <section>
-                <SectionHeader title="Danger" hint="no undo past this point" />
-                <div className="mt-4">
-                  <DeleteAccount />
-                </div>
-              </section>
+              <DeleteAccount />
             </div>
           )}
 
@@ -346,38 +309,35 @@ export function SettingsScreen() {
                   label="Where the prices come from"
                   description={
                     !synthetic
-                      ? "Equities and their filed accounts from Yahoo and Finnhub, crypto from CoinGecko, exchange rates from the European Central Bank. Policy rates, the macro calendar and realised capitalisation are still modelled."
-                      : "Prices, fundamentals and on-chain figures are generated. The engine, the backtest and the track record are real — they're just running on modelled data until a feed is connected."
+                      ? "Stocks from Yahoo and Finnhub, crypto from CoinGecko, exchange rates from the European Central Bank. Central-bank rates and the economic calendar are modelled."
+                      : "Prices and company data are simulated. The engine and track record are real, running on that simulated data."
                   }
                   control={<DataSourceChip />}
                 />
                 <SettingRow
                   label="How the signals are built"
-                  description="Every strategy, with its citation, weight and current reading — generated from the engine, so it can't drift from what runs."
+                  description="Every rule ember uses, with its source and weight."
                   control={<AboutLink href="/signals/methodology">Methodology</AboutLink>}
                 />
                 <SettingRow
-                  label="Whether any of it worked"
-                  description="A walk-forward backtest over the same engine, including the losing calls. Nothing on that page is authored."
+                  label="How past calls performed"
+                  description="Every call the engine has made in testing, losses included."
                   control={<AboutLink href="/signals/track-record">Track record</AboutLink>}
                 />
                 <SettingRow
                   label="How alerts behave"
-                  description="In-app alerts fire while ember is open, in a tab or from your home screen; push reaches you with it closed. Never twice about the same thing, never about one you've executed or dismissed, never about a window that opened more than ten minutes ago. A warning about something you hold arrives on detection and repeats at most once a day until it clears."
+                  description="In-app alerts arrive while ember is open; push reaches you when it's closed. You're never alerted twice about the same thing or about a call you've handled. Warnings about what you hold repeat at most once a day."
                 />
                 <SettingRow
                   label="Run through setup again"
-                  description="Revisits the three-step introduction. Nothing is cleared."
+                  description="Your data isn't affected."
                   control={<AboutLink href="/onboarding?replay=1">Replay</AboutLink>}
                 />
               </SettingGroup>
 
               <p className="mt-6 text-micro text-stone">
-                ember gives information, not financial advice. Every rule it
-                applies is published and cited, the track record is computed
-                rather than authored, and none of it accounts for your
-                circumstances, your tax position or your timeline. What you do
-                with it is yours.
+                ember gives information, not financial advice. It doesn&apos;t
+                account for your circumstances, tax position or timeline.
               </p>
             </section>
           )}

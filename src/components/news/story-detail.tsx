@@ -102,10 +102,7 @@ export function StoryDetail({
         </a>
       ) : (
         <p className="mt-5 rounded-xl bg-surface-2 p-3.5 text-micro text-stone text-pretty">
-          ember shows the headline and the summary and links to the publisher —
-          the article itself is theirs, not ours to reprint. This one is
-          generated, and its outlet does not exist, so there is nowhere to send
-          you.
+          This headline is generated for the demo, so there&apos;s no article to open.
         </p>
       )}
 
@@ -142,10 +139,6 @@ export function StoryDetail({
               );
             })}
           </div>
-          <p className="mt-2.5 text-micro text-stone text-pretty">
-            Prices and ember&apos;s read on these instruments come from the
-            engine, not from this story. Nothing written here moved them.
-          </p>
         </section>
       )}
 
@@ -173,8 +166,7 @@ export function NoStorySelected() {
         <Newspaper className="size-5" />
       </div>
       <p className="mt-4 max-w-xs text-caption text-stone text-pretty">
-        Pick a headline to see the summary, the instruments it touches and where
-        to read it.
+        Pick a headline to read it.
       </p>
     </div>
   );

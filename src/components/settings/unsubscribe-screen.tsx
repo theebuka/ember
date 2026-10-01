@@ -102,9 +102,7 @@ export function UnsubscribeScreen() {
             Unsubscribed
           </h1>
           <p className="mt-2 text-body text-stone">
-            ember won&apos;t email you digests any more. Nothing else changed —
-            your ledger, your watchlist and your in-app alerts are untouched, and
-            you can turn digests back on in settings whenever you like.
+            You won&apos;t get digest emails any more. Nothing else has changed, and you can turn digests back on in settings.
           </p>
         </>
       )}
@@ -115,9 +113,7 @@ export function UnsubscribeScreen() {
             This link is incomplete
           </h1>
           <p className="mt-2 text-body text-stone">
-            It&apos;s missing the part that says which digest to stop. Mail clients
-            sometimes trim long links — opening the original email and clicking
-            again usually fixes it, and the switch in settings always works.
+            Some email apps cut long links short. Open the original email and click the link again, or turn digests off in settings.
           </p>
         </>
       )}
@@ -129,9 +125,7 @@ export function UnsubscribeScreen() {
             Couldn&apos;t reach ember
           </h1>
           <p className="mt-2 text-body text-stone">
-            Something between here and the server didn&apos;t answer, so nothing has
-            changed yet. Try the link again in a minute, or turn digests off in
-            settings — that route doesn&apos;t depend on this one.
+            Nothing has changed yet. Try the link again in a minute, or turn digests off in settings.
           </p>
         </>
       )}

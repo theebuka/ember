@@ -70,8 +70,8 @@ export function WatchlistRow({
               muted={!actionable}
               title={
                 actionable
-                  ? "In the signals feed — this clears your risk profile."
-                  : "Ember's read, but below your risk profile's bar. Not in the feed."
+                  ? "Meets your risk profile, so it's in Signals."
+                  : "Below your risk profile, so it isn't in Signals."
               }
             />
           ) : instrument.dataState === "collecting" ? (
@@ -86,7 +86,7 @@ export function WatchlistRow({
              */
             <span
               className="shrink-0 rounded-md bg-surface-2 px-1.5 py-0.5 text-micro text-stone"
-              title="No price history exists for this exchange, so ember is collecting one. It will form a view after about two hundred sessions."
+              title="ember is collecting this price history. It forms a view after about two hundred trading days."
             >
               Collecting
             </span>
@@ -161,7 +161,7 @@ export function WatchlistRow({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild>
-            <Link href={`/asset/${instrument.symbol}`}>See the full read</Link>
+            <Link href={`/asset/${instrument.symbol}`}>Full read</Link>
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={onRemove}>
             <EyeOff />

@@ -132,16 +132,12 @@ export function PlanInterstitial({
       description={
         feature
           ? UPSELL[feature].body
-          : "The engine answers the same on both. Pro changes how much of it reaches you."
+          : "Both plans get the same analysis. Pro shows you more of it."
       }
       className="sm:max-w-2xl"
     >
       <div className="min-h-0 overflow-y-auto p-4 md:p-5">
         <PlanComparison feature={feature} />
-        <p className="mt-4 text-micro text-stone">
-          The methodology and the track record are open to everyone, on every plan
-          and without an account.
-        </p>
       </div>
     </ResponsiveModal>
   );

@@ -15,7 +15,7 @@ import { useNow } from "@/hooks/use-now";
 import { useFindings, useInstruments, useQuotes, useRates } from "@/hooks/use-market-data";
 import { ApiError, type Finding } from "@/lib/api/client";
 import type { Instrument, Transaction } from "@/lib/api/types";
-import { ACTION_LABELS, RISK_PROFILES } from "@/lib/api/types";
+import { ACTION_LABELS } from "@/lib/api/types";
 import { formatQuantity, quantityPrecision } from "@/lib/market/format";
 import { findingLimit } from "@/lib/plan";
 import { USD_PER_UNIT } from "@/lib/market/universe";
@@ -190,8 +190,8 @@ export function FindingsInbox() {
       {
         description:
           finding.kind === "risk"
-            ? "It'll come back tomorrow if the position still looks like this."
-            : "It'll come back if ember's read changes.",
+            ? "It returns tomorrow if nothing changes."
+            : "It returns if ember's read changes.",
         onUndo: () => clearHandled(finding.id),
       },
     );
@@ -272,7 +272,7 @@ export function FindingsInbox() {
             ? undefined
             : shownRisks > 0
               ? `${shownRisks} on what you hold`
-              : `${assessed} watched`
+              : undefined
         }
         href="/signals"
         linkLabel="All signals"
@@ -322,27 +322,20 @@ export function FindingsInbox() {
           <PlanCard feature="unlimited-findings" className="mt-4" />
         )}
 
-        {/* The screen's credibility, and the place a reader actually asks for
-            it: at the end of the list, not above it. Naming the size of the
-            search is the difference between "ember looked at everything and
-            found three things" and "this page has three things on it" — and
-            when the page limit bites, saying so beats presenting twelve as the
-            whole answer. */}
+        {/* Only when there is something the list itself doesn't show: that it
+            was cut to the most urgent, or that instruments are still loading.
+            "That's everything. Checked 214 instruments…" under every list was
+            the app describing its own process. */}
         {!loading && !error && open.length > 0 && (
-          <p className="mt-4 text-micro text-stone">
-            {trimmed(found, unhandled.length + done.length)} ember assessed{" "}
-            {assessed}{" "}
-            instruments against your{" "}
-            {RISK_PROFILES[riskProfile].label.toLowerCase()} profile
-            {pending > 0
-              ? `, and is still loading ${pending} more.`
-              : "."}
-          </p>
+          <Footnote
+            trimmed={trimmed(found, unhandled.length + done.length)}
+            pending={pending}
+          />
         )}
       </Section>
 
       {done.length > 0 && (
-        <Section title="Handled" hint="until these expire" className="mt-10">
+        <Section title="Handled" className="mt-10">
           <div className="divide-y divide-line border-t border-line">
             {done.map((finding) => {
               const instrument = bySymbol.get(finding.symbol);
@@ -370,9 +363,9 @@ export function FindingsInbox() {
         open={executing !== null}
         onOpenChange={(next) => !next && setExecuting(null)}
         title={
-          executing?.finding.kind === "risk" ? "Log the reduction" : "Log this trade"
+          executing?.finding.kind === "risk" ? "Log reduction" : "Log this trade"
         }
-        description="Pre-filled from ember's sizing. Change anything that doesn't match your fill."
+        description="Pre-filled from ember's suggestion. Enter what you actually paid."
       >
         {executing && (
           <TransactionForm
@@ -431,11 +424,22 @@ function noteFor(finding: Finding): string {
 function trimmed(
   found: { opportunity: number; risk: number },
   shown: number,
-): string {
+): string | null {
   const total = found.opportunity + found.risk;
   return total > shown
-    ? `Showing the ${shown} most urgent of ${total} found.`
-    : `That's all ${total === 1 ? "of it" : "of them"}.`;
+    ? `Showing the ${shown} most urgent of ${total}.`
+    : null;
+}
+
+function Footnote({ trimmed, pending }: { trimmed: string | null; pending: number }) {
+  if (trimmed === null && pending === 0) return null;
+  return (
+    <p className="mt-4 text-micro text-stone">
+      {[trimmed, pending > 0 ? `${pending} instruments still loading.` : null]
+        .filter(Boolean)
+        .join(" ")}
+    </p>
+  );
 }
 
 /**
@@ -455,18 +459,18 @@ function NothingFound({ assessed, held }: { assessed: number; held: number }) {
       <h3 className="text-heading font-semibold text-ink">Nothing needs you today</h3>
       <p className="mt-1.5 max-w-md text-body text-stone">
         {assessed > 0
-          ? `ember assessed ${assessed} instruments and none reached the conviction and confidence your risk profile asks for.${
+          ? `ember checked ${assessed} instruments and none meet your risk profile.${
               held > 0
-                ? ` Your ${held} ${held === 1 ? "position is" : "positions are"} inside their stops, their theses intact.`
+                ? ` Your ${held} ${held === 1 ? "position is" : "positions are"} within ${held === 1 ? "its stop" : "their stops"}.`
                 : ""
-            } That's the answer, not an absence of one.`
-          : "No instruments could be assessed this cycle."}
+            }`
+          : "ember couldn't check any instruments this time. Try again shortly."}
       </p>
       <Link
         href="/signals"
         className="mt-5 rounded-sm text-caption font-medium text-brand-text underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
-        See every read, holds included
+        See all reads
       </Link>
     </div>
   );

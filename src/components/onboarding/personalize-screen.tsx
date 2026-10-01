@@ -177,7 +177,7 @@ export function PersonalizeScreen() {
             <section>
               <Heading
                 title="What should we call you?"
-                lede="Just for the greeting. Both are optional and both are editable later."
+                lede="Used for your greeting. Optional."
               />
 
               <div className="mt-7 grid gap-4 sm:grid-cols-2">
@@ -215,7 +215,7 @@ export function PersonalizeScreen() {
             <section>
               <Heading
                 title="Where are you?"
-                lede="It sets a sensible base currency and tells ember which market hours are yours."
+                lede="Sets your currency and time zone."
               />
 
               <div className="mt-7 max-w-sm">
@@ -234,12 +234,11 @@ export function PersonalizeScreen() {
                 </Select>
 
                 <p className="mt-3 text-caption text-stone">
-                  Figures will be shown in{" "}
+                  Totals will show in{" "}
                   <span className="font-medium text-ink">
                     {CURRENCY_META[baseCurrency].label}
                   </span>
-                  . Instruments stay quoted in their own currency, and you can
-                  change this in settings.
+                  .
                 </p>
               </div>
             </section>
@@ -256,9 +255,7 @@ export function PersonalizeScreen() {
                   : "You're set."}
               </h1>
               <p className="mt-3 text-body text-stone text-pretty">
-                Your ledger, watchlist, settings and profile now follow you to
-                any device you sign in on. Everything else ember shows is worked out
-                fresh each time.
+                Your trades, watchlist, settings and profile now sync to any device you sign in on.
               </p>
 
               <ul className="mt-6 space-y-2.5">

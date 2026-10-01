@@ -3,7 +3,7 @@ import { AuthScreen } from "@/components/auth/auth-screen";
 
 export const metadata = {
   title: "Sign in",
-  description: "Keep your ledger, preferences and watchlist across devices.",
+  description: "Keep your trades, settings and watchlist across devices.",
 };
 
 export default function AuthPage() {

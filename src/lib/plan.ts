@@ -185,18 +185,18 @@ export function planFrom(
 export const UPSELL: Record<Feature, { title: string; body: string }> = {
   "unlimited-findings": {
     title: "See every finding",
-    body: "Free shows the three most urgent. Pro shows all of them, including the quieter ones ember is still watching.",
+    body: `Free shows the ${PLAN_RULES.free.findings} most urgent. Pro shows every finding.`,
   },
   "unlimited-alerts": {
     title: "Push without a daily cap",
-    body: "Free sends three pushes a day, most urgent first. Pro sends every window as it opens. Alerts inside the app aren't capped on either plan — they cost nothing to show, so there'd be nothing honest to charge for.",
+    body: `Free sends up to ${PLAN_RULES.free.alertsPerDay} push alerts a day, most urgent first. Pro sends every one. In-app alerts are unlimited on both.`,
   },
   "email-digest": {
     title: "Get the digest by email",
-    body: "A batched note when instruments you follow match your risk profile, daily or weekly. It covers your watchlist — warnings about positions you hold stay in the app.",
+    body: "A daily or weekly email when instruments you follow match your risk profile. Warnings about what you hold stay in the app.",
   },
   "no-sponsors": {
     title: "Pro has no sponsor slots",
-    body: "ember serves its own, one per screen, with no third-party script and nothing that tracks you. Pro removes them entirely.",
+    body: "Free shows one ember-run sponsor per screen, with no tracking. Pro removes them.",
   },
 };

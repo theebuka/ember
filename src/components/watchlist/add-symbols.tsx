@@ -57,7 +57,7 @@ export function AddSymbols({
         onOpenChange(next);
       }}
       title="Follow an instrument"
-      description="Everything you've stopped following. Adding is instant — the modal stays open so you can add several."
+      description="Instruments you've stopped following."
     >
       <div className="border-b border-line p-4 md:p-5">
         <div className="relative">

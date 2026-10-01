@@ -119,8 +119,8 @@ export function DataSettings() {
           label="Export your transactions"
           description={
             nothingLogged
-              ? "Nothing logged yet. Once you have trades, you can take them out in either format."
-              : "CSV opens in a spreadsheet and imports straight back into ember. JSON keeps everything, ids included."
+              ? "Nothing to export yet."
+              : "CSV for spreadsheets, JSON for a full backup."
           }
           control={
             <div className="flex gap-2">
@@ -151,7 +151,7 @@ export function DataSettings() {
           description={
             nothingLogged
               ? "Your ledger is already empty."
-              : `Removes all ${count} ${count === 1 ? "trade" : "trades"} and everything derived from them. Your settings and watchlist stay. You can undo this.`
+              : `Deletes all ${count} ${count === 1 ? "trade" : "trades"}. Your settings and watchlist stay. You can undo this.`
           }
           control={
             <Button
@@ -168,7 +168,7 @@ export function DataSettings() {
 
         <SettingRow
           label="Reset everything"
-          description="Wipes your ledger, watchlist, handled calls and every preference, then takes you back to setup. This one can't be undone."
+          description="Deletes your trades, watchlist and settings, and restarts setup. This can't be undone."
           control={
             <Button variant="destructive" size="sm" onClick={() => setConfirming(true)}>
               <RotateCcw />
@@ -182,7 +182,7 @@ export function DataSettings() {
         open={confirming}
         onOpenChange={setConfirming}
         title="Reset everything?"
-        description="The only action in ember an undo can't cover."
+        description="This can't be undone."
       >
         <div className="p-5">
           <ul className="space-y-1.5 text-caption text-graphite">
@@ -202,8 +202,7 @@ export function DataSettings() {
             </li>
             <li className="flex gap-2">
               <span className="text-stone">·</span>
-              Which calls you&apos;ve executed or dismissed, and which ember has
-              already alerted you about
+              Calls you&apos;ve acted on or dismissed, and alerts already sent
             </li>
           </ul>
 
@@ -214,8 +213,7 @@ export function DataSettings() {
               />
               <div className="min-w-0">
                 <p className="text-caption text-graphite">
-                  Take your ledger with you first — it&apos;s the only thing here you
-                  wrote.
+                  Export your trades first — they&apos;re the one thing you can&apos;t get back.
                 </p>
                 <Button
                   variant="outline"

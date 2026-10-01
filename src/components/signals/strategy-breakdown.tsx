@@ -62,7 +62,7 @@ export function StrategyBreakdown({
           "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         )}
       >
-        <span className="eyebrow">How this was reached</span>
+        <span className="eyebrow">Why ember says this</span>
 
         <span className="num text-micro text-stone">
           {agreement.agrees} {agreement.agrees === 1 ? "rule agrees" : "rules agree"}
@@ -95,11 +95,7 @@ export function StrategyBreakdown({
 
           {agreement.silent > 0 && (
             <p className="mt-3 border-t border-line pt-3 text-micro text-stone">
-              {agreement.silent} more{" "}
-              {agreement.silent === 1 ? "strategy applies" : "strategies apply"} to this
-              market but had nothing to say — either the setup isn&apos;t there or there
-              wasn&apos;t enough history. Silence lowers coverage rather than counting as
-              agreement.
+              {agreement.silent} more {agreement.silent === 1 ? "rule" : "rules"} had no view.
             </p>
           )}
         </div>

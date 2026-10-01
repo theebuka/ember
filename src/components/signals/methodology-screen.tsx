@@ -38,11 +38,11 @@ import { cn } from "@/lib/utils";
 const RULED_OUT: { rejected: string; why: string }[] = [
   {
     rejected: "Stock-to-flow",
-    why: "Broke badly out of sample. Keeping it would undermine everything beside it.",
+    why: "Failed badly on data it wasn't built on.",
   },
   {
     rejected: "Chart patterns",
-    why: "Head-and-shoulders, flags and the rest are widely believed, poorly evidenced, and unfalsifiable as usually stated.",
+    why: "Head-and-shoulders, flags and the like are widely believed but poorly evidenced.",
   },
   {
     rejected: "Sentiment scraping",
@@ -51,11 +51,11 @@ const RULED_OUT: { rejected: string; why: string }[] = [
     // "sentiment scraping" would have read as an argument about *scrapers*
     // rather than about news — leaving a reader to reasonably assume the tab
     // full of headlines feeds the engine. It doesn't. ADR 0027.
-    why: "Not reproducible, not citable, and trivially gamed. The News tab is unaffected by this and does not affect it: headlines are context you can read, never an input ember scores. Nothing on that page reaches the engine.",
+    why: "Not reproducible, not citable, and easy to manipulate. Headlines on the News tab are for reading only.",
   },
   {
     rejected: "An opaque model score",
-    why: "The point is that you can read why. A number you can't interrogate is the gimmick with extra steps.",
+    why: "You should be able to see why. A score you can't question isn't worth trusting.",
   },
 ];
 
@@ -108,16 +108,12 @@ export function MethodologyScreen() {
               Every signal traces to published work
             </h2>
             <p className="mt-1.5 text-body text-graphite">
-              No invented heuristics, no unpublished rule sets, no opaque model
-              score. If a rule can&apos;t be cited, it doesn&apos;t ship. All{" "}
-              {query.data.strategies.length} of them are below, with the paper or
-              book each comes from.
+              If a rule can&apos;t be cited, ember doesn&apos;t use it. All{" "}
+              {query.data.strategies.length} are below, each with its source.
             </p>
             {synthetic ? (
               <p className="mt-3 text-caption text-stone">
-                Prices in this build are generated, so the numbers those rules
-                are currently reading are simulated. The rules themselves are
-                the real ones.{" "}
+                Prices here are simulated, so the rules are reading simulated numbers. The rules themselves are real.{" "}
                 <Link
                   href="/signals/track-record"
                   className="underline underline-offset-2 hover:text-graphite"
@@ -128,12 +124,7 @@ export function MethodologyScreen() {
               </p>
             ) : (
               <p className="mt-3 text-caption text-stone">
-                Prices are live. Equities and their filed accounts come from
-                Yahoo and Finnhub, crypto from CoinGecko, and exchange rates
-                are the European Central Bank&rsquo;s daily reference set.
-                Three things are still modelled and say so where they appear:
-                central-bank policy rates, the macro release calendar, and a
-                coin&rsquo;s realised capitalisation.{" "}
+                Prices are live: stocks from Yahoo and Finnhub, crypto from CoinGecko, exchange rates from the European Central Bank. Three inputs are still modelled and labelled where they appear: central-bank rates, the economic calendar and a coin&rsquo;s realised capitalisation.{" "}
                 <Link
                   href="/signals/track-record"
                   className="underline underline-offset-2 hover:text-graphite"
@@ -150,30 +141,30 @@ export function MethodologyScreen() {
               <ol className="space-y-3">
                 <Step
                   name="Indicators"
-                  body="Pure functions over daily OHLCV bars — moving averages, RSI, ATR, Donchian channels, regression slope. Each returns a value per bar with nulls through its warm-up, so nothing downstream can read an indicator before it has enough history."
+                  body="Standard measures from daily prices — moving averages, RSI, ATR, Donchian channels and trend slope. Each waits until it has enough history."
                 />
                 <Step
                   name="Strategies"
-                  body={`Each of the ${query.data.strategies.length} published rules reads that history and returns a score from −1 to +1, its own confidence, a holding horizon, and a sentence of plain-English reasoning. A rule with no view says so rather than guessing.`}
+                  body={`Each of the ${query.data.strategies.length} published rules gives a score from −1 to +1, its confidence, a holding period and a one-line reason. A rule with no view says so.`}
                 />
                 <Step
                   name="Ensemble"
-                  body="Scores are blended by weight — each rule's own confidence, times how much this regime trusts its family, times your risk profile's multiplier. Disagreement between rules lowers the blended confidence rather than cancelling out silently."
+                  body="Scores are weighted by each rule's confidence, how well its family suits the current market, and your risk profile. Disagreement lowers the overall confidence."
                 />
                 <Step
                   name="Regime filter"
-                  body="Volatility is judged as a percentile of the instrument's own history, not against a fixed threshold — 60% annualised is a crisis in EURUSD and an ordinary Tuesday in SOL. The filter can only ever reduce confidence; a favourable regime is not evidence."
+                  body="Volatility is judged against the instrument's own history — 60% is a crisis for EURUSD and a normal day for SOL. The market regime can lower confidence, never raise it."
                 />
                 <Step
                   name="Sizing"
-                  body="Volatility targeting to your profile's annualised target, scaled by conviction and cut by a fixed quarter. A wild instrument gets a smaller position than a placid one at identical conviction, which is what makes a signal on SOL and a signal on EURUSD comparable."
+                  body="Positions are sized to your profile's volatility target and the call's conviction, so a volatile asset gets a smaller position than a calm one."
                 />
                 <Step
                   name="Window"
                   // The span is read from the engine, not written here. This
                   // said "across three days" for a phase after crypto's
                   // horizon became 36 hours.
-                  body={`Market liquidity times scheduled-event avoidance times the signal's own decay, hour by hour across ${horizonSentence(query.data.horizonHours)} — long enough to reach the next liquid session and no longer. The band on each card is that product drawn directly.`}
+                  body={`Liquidity, scheduled announcements and how fast the signal fades, hour by hour across ${horizonSentence(query.data.horizonHours)}. The band on each call draws it.`}
                 />
               </ol>
             </section>
@@ -231,14 +222,12 @@ export function MethodologyScreen() {
             <section>
               <SectionHeader
                 title="What each regime does to each family"
-                hint="computed by calling the engine"
               />
               <p className="mb-4 text-caption text-stone">
-                Every rule is <em>conditionally</em> good. Breakouts work in trends
-                and bleed in ranges; mean reversion works in ranges and is ruinous
-                in a downtrend; carry earns steadily until it doesn&apos;t.
-                Weighting them identically in all conditions would average a good
-                rule and an actively harmful one into mush.
+                Every rule works only in some markets. Breakouts work in trends;
+                mean reversion works in ranges and fails in downtrends; carry earns
+                steadily until it doesn&apos;t. So each family is weighted by the
+                current market.
               </p>
 
               <WeightTable
@@ -247,11 +236,7 @@ export function MethodologyScreen() {
               />
 
               <p className="mt-3 border-t border-line pt-3 text-micro text-stone">
-                These multipliers are <strong>reasoned judgement calls, not fitted
-                parameters</strong>. They are stated here, and in the source, so
-                they can be argued with. The figures above are produced by calling
-                the engine&apos;s own function, so this table cannot drift from the
-                code.
+                These weights are <strong>judgement calls, not fitted to data</strong>.
               </p>
             </section>
 
@@ -334,7 +319,7 @@ export function MethodologyScreen() {
             <section>
               <SectionHeader
                 title="Ruled out"
-                hint="and why — so it isn't relitigated"
+                hint="and why"
               />
               <ul className="divide-y divide-line">
                 {RULED_OUT.map((entry) => (

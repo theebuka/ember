@@ -403,7 +403,7 @@ export const RISK_PROFILES: Record<RiskProfile, RiskProfileConfig> = {
   conservative: {
     label: "Conservative",
     consequence:
-      "Fewer signals, smaller positions, and nothing at all in choppy markets. You'll miss some moves.",
+      "Fewer, smaller trades, and none in choppy markets. You'll miss some moves.",
     volTarget: 0.08,
     maxWeight: 0.08,
     actionThreshold: 0.35,
@@ -439,7 +439,7 @@ export const RISK_PROFILES: Record<RiskProfile, RiskProfileConfig> = {
   balanced: {
     label: "Balanced",
     consequence:
-      "Signals across all three markets at moderate size, stepped down when volatility spikes.",
+      "Moderate-sized trades, scaled back when markets turn volatile.",
     volTarget: 0.14,
     maxWeight: 0.15,
     actionThreshold: 0.22,
@@ -451,7 +451,7 @@ export const RISK_PROFILES: Record<RiskProfile, RiskProfileConfig> = {
   aggressive: {
     label: "Aggressive",
     consequence:
-      "More signals, larger positions, and shorter holds. Expect deeper drawdowns along the way.",
+      "More and larger trades. Expect bigger swings along the way.",
     volTarget: 0.22,
     maxWeight: 0.25,
     actionThreshold: 0.15,

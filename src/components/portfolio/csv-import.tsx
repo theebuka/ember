@@ -78,7 +78,7 @@ export function CsvImport({
       open={open}
       onOpenChange={(next) => (next ? onOpenChange(true) : close())}
       title="Import transactions"
-      description="Paste from a spreadsheet or upload a CSV. Nothing is added until you've seen it."
+      description="Paste from a spreadsheet or upload a CSV. You'll review it before anything is added."
       className="md:max-w-2xl"
     >
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 md:p-5">
@@ -115,9 +115,8 @@ export function CsvImport({
         />
 
         <p className="text-micro text-stone">
-          Column names are matched loosely — <code>Qty</code>, <code>Shares</code> and{" "}
-          <code>Units</code> all work, as do <code>Type</code> and <code>Action</code> for
-          the side.
+          Common names like <code>Qty</code>, <code>Shares</code> and <code>Type</code> work
+          too.
         </p>
 
         {result && <Preview result={result} oversell={oversell} />}
@@ -173,7 +172,7 @@ function Preview({
   }
 
   if (result.rows.length === 0) {
-    return <Notice tone="warn">A header row, but no data underneath it.</Notice>;
+    return <Notice tone="warn">The file has a header row but no data.</Notice>;
   }
 
   return (
@@ -182,11 +181,8 @@ function Preview({
         <Notice tone="warn">
           <p className="font-medium text-ink">Which way round are these dates?</p>
           <p className="mt-1">
-            Every date in this file works both as day-first and as month-first, so ember
-            won&apos;t guess — a wrong guess moves trades into the wrong month and changes
-            your cost basis without saying so. Re-export as{" "}
-            <code>YYYY-MM-DD</code>, or edit one date to that format and the rest will
-            follow.
+            Every date here could be day-first or month-first, and a wrong guess would put trades in the wrong month. Re-export as{" "}
+            <code>YYYY-MM-DD</code>, or change one date to that format and ember will follow it.
           </p>
         </Notice>
       )}
@@ -197,7 +193,7 @@ function Preview({
           <p className="mt-1">
             On {formatShortDate(Date.parse(oversell.date))} the file sells{" "}
             {oversell.requested} {oversell.symbol} against {oversell.available} held.
-            Import will go ahead, but check whether a buy is missing.
+            You can still import — check for a missing buy.
           </p>
         </Notice>
       )}

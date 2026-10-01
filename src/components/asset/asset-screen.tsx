@@ -197,7 +197,7 @@ export function AssetScreen({ symbol }: { symbol: string }) {
               href="/portfolio?view=watching"
               className="mt-3 inline-block rounded-sm text-caption font-medium text-brand-text underline-offset-4 hover:underline"
             >
-              See what ember does follow
+              See what ember follows
             </Link>
           )}
         </PageBody>
@@ -370,11 +370,7 @@ export function AssetScreen({ symbol }: { symbol: string }) {
               heldWeight={position?.weight ?? null}
               suggested={null}
               handled={null}
-              blockedReason={
-                asset.actionable
-                  ? "Act on this from the signals feed, where it can be marked handled."
-                  : null
-              }
+              blockedReason={null}
               onExecute={() => setLogging(true)}
               onUndo={() => undefined}
               // The page is about this instrument; the header and the hero
@@ -395,20 +391,15 @@ export function AssetScreen({ symbol }: { symbol: string }) {
              */
             <div className="rounded-xl bg-surface-2 px-4 py-3.5">
               <p className="text-caption font-medium text-ink">
-                ember is still collecting history for {symbol}
+                ember is still collecting price history for {symbol}
               </p>
               <p className="mt-1.5 text-caption text-stone text-pretty">
-                The Nigerian Exchange publishes today&rsquo;s prices and no past
-                ones, and no free source carries them — so ember stores a
-                session a day itself and will form a view once it has about two
-                hundred of them. The price above is live; there is simply
-                nothing yet to measure it against.
+                It forms a view after about two hundred trading days.
               </p>
             </div>
           ) : (
             <p className="py-2 text-caption text-stone">
-              Not enough history to form a view on {symbol} yet. The regime filter
-              needs about a year of bars before it will say anything.
+              Not enough price history for a view on {symbol} yet.
             </p>
           )}
         </section>
@@ -462,7 +453,7 @@ export function AssetScreen({ symbol }: { symbol: string }) {
         <section>
           <SectionHeader
             title="Past calls on this asset"
-            hint="from the walk-forward backtest"
+            hint="simulated"
             href="/signals/track-record"
             linkLabel="Full record"
           />
@@ -470,9 +461,7 @@ export function AssetScreen({ symbol }: { symbol: string }) {
             <Skeleton className="h-20 w-full" />
           ) : pastCalls.length === 0 ? (
             <p className="py-2 text-caption text-stone">
-              The engine never issued a call on {symbol} in the backtest window.
-              That&apos;s a real result, not missing data — it never cleared the
-              bar.
+              No past calls on {symbol}.
             </p>
           ) : (
             <ul className="divide-y divide-line">
@@ -525,7 +514,7 @@ export function AssetScreen({ symbol }: { symbol: string }) {
         open={logging}
         onOpenChange={setLogging}
         title="Log a trade"
-        description={`Pre-filled for ${symbol}. Everything stays editable.`}
+        
       >
         <TransactionForm
           instruments={instrumentsQuery.data?.instruments ?? []}

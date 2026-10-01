@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   // The root layout appends " · ember" via its title template.
   title: "Track record",
   description:
-    "Walk-forward output from the same engine that serves the advice feed — every call, including the losers.",
+    "Every call ember's engine has made in testing, losses included.",
 };
 
 export default function TrackRecordPage() {

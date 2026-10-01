@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, CheckCircle, Envelope } from "@/components/common/icon";
 import { PageBody } from "@/components/common/page-body";
@@ -76,8 +75,7 @@ export function AuthScreen() {
         <PageHeader narrow title="Account" back="/settings" />
         <PageBody narrow className="pb-12">
           <p className="text-body text-stone">
-            ember isn&apos;t connected to an account service, so there is
-            nothing to sign in to. Everything you enter stays on this device.
+            Accounts aren&apos;t available in this version of ember. Everything you enter stays on this device.
           </p>
         </PageBody>
       </>
@@ -96,13 +94,8 @@ export function AuthScreen() {
             </span>
             <h2 className="mt-5 text-title font-semibold text-ink">Check your email</h2>
             <p className="mt-2 text-body text-stone">
-              A one-time link is on its way to{" "}
-              <span className="font-medium text-ink">{state.email}</span>. Open
-              it on this device and you&apos;ll come straight back here.
-            </p>
-            <p className="mt-4 text-caption text-stone">
-              Nothing has changed yet — your ledger is still exactly where it
-              was, on this device. It gets copied up the first time you sign in.
+              A sign-in link is on its way to{" "}
+              <span className="font-medium text-ink">{state.email}</span>. Open it on this device to continue.
             </p>
             <Button
               variant="ghost"
@@ -121,12 +114,10 @@ export function AuthScreen() {
             </span>
 
             <h2 className="mt-5 text-title font-semibold text-ink">
-              Keep your book across devices
+              Keep your data across devices
             </h2>
             <p className="mt-2 text-body text-stone">
-              An account copies your transaction log, watchlist, settings and
-              profile to ember&apos;s server so they survive a cleared browser
-              and follow you to a second device.
+              Back up your trades, watchlist and settings, and use them on any device.
             </p>
 
             <div className="mt-7">
@@ -161,18 +152,7 @@ export function AuthScreen() {
                 in settings. "We take privacy seriously" is what an app says
                 when it would rather not enumerate. */}
             <p className="mt-5 text-micro text-stone">
-              No password. ember stores your email, your transaction log, your
-              settings, your watchlist and the profile fields you fill in —
-              nothing else. Not your positions,
-              not your P&amp;L, not anything the engine works out; those are
-              recomputed on every request and never written down.{" "}
-              <Link
-                href="/settings"
-                className="underline underline-offset-2 hover:text-graphite"
-              >
-                What leaves this device
-              </Link>
-              .
+              No password needed — ember emails you a link.
             </p>
           </form>
         )}

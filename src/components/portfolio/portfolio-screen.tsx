@@ -221,7 +221,7 @@ export function PortfolioScreen() {
     }));
 
     clearPortfolio();
-    undoableToast("Sample book cleared", {
+    undoableToast("Sample data cleared", {
       onUndo: () => loadSample(previous),
     });
   };
@@ -306,7 +306,7 @@ export function PortfolioScreen() {
                   </div>
                   {isSample && (
                     <p className="mt-5 text-micro text-stone">
-                      This is the sample book — none of these are your holdings.{" "}
+                      Sample data — not your holdings.{" "}
                       <button type="button" onClick={handleClearSample} className="tap-target font-medium text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
                         Clear it
                       </button>
@@ -346,8 +346,7 @@ export function PortfolioScreen() {
                   <PositionsListSkeleton rows={5} />
                 ) : summary.positions.length === 0 ? (
                   <p className="text-caption text-stone">
-                    Everything you&apos;ve traded has been closed out. The realized
-                    P&amp;L under Activity is what came of it.
+                    Every position is closed. Your realized P&amp;L is under Activity.
                   </p>
                 ) : (
                   <>
@@ -369,7 +368,7 @@ export function PortfolioScreen() {
                 {realized.length > 0 && (
                   <Section
                     title="Realized"
-                    hint="booked on sales, lifetime"
+                    
                     action={
                       <span className={cnTone(summary.realized)}>
                         {formatMoney(summary.realized, base, { signed: true })}
@@ -426,9 +425,7 @@ export function PortfolioScreen() {
             )}
 
             <p className="text-micro text-stone">
-              Cost basis is average-cost. Everything here is computed from your
-              transactions — nothing is stored twice, so these figures can&apos;t drift
-              apart.{" "}
+              Cost basis uses average cost.{" "}
               <Link
                 href="/settings"
                 className="underline underline-offset-2 hover:text-stone"
@@ -463,11 +460,7 @@ export function PortfolioScreen() {
         open={editing !== null}
         onOpenChange={(open) => !open && setEditing(null)}
         title={editing?.mode === "edit" ? "Edit trade" : "Log a trade"}
-        description={
-          editing?.mode === "edit"
-            ? "Changing this recalculates every figure derived from it."
-            : "Cost basis, P&L and allocation all fall out of what you enter here."
-        }
+        
       >
         {editing && (
           <TransactionForm
@@ -521,9 +514,7 @@ function EmptyLedger({
       </div>
       <h2 className="text-heading font-semibold text-ink">Nothing logged yet</h2>
       <p className="mt-1.5 max-w-md text-body text-stone">
-        Add a trade and ember works out the rest — quantity, average cost, market value,
-        and profit both realized and on paper. Holdings are never entered directly;
-        they&apos;re derived from what you actually bought and sold.
+        Log a trade and ember tracks its value, cost and profit.
       </p>
       <div className="mt-5 flex flex-wrap gap-2">
         <Button size="lg" onClick={onAdd}>

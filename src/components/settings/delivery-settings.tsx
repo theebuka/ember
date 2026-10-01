@@ -5,12 +5,11 @@ import { toast } from "sonner";
 import { DeviceMobile, Envelope } from "@/components/common/icon";
 import { SettingGroup, SettingRow } from "@/components/settings/setting-row";
 import { Segmented } from "@/components/common/segmented";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { usePlan } from "@/hooks/use-plan";
 import { useSession } from "@/hooks/use-session";
 import { PlanCard, PlanChip } from "@/components/plan/upsell";
-import { canUse } from "@/lib/plan";
+import { canUse, PLAN_RULES } from "@/lib/plan";
 import {
   isPushBlocked,
   PushError,
@@ -66,35 +65,7 @@ export function DeliverySettings() {
   // an async check, on browsers that support it perfectly well.
   const [push, setPush] = useState<PushState | null>(null);
   const [pushBusy, setPushBusy] = useState(false);
-  const [testing, setTesting] = useState(false);
 
-  /**
-   * Draw one notification through the service worker, locally.
-   *
-   * `registration.showNotification` rather than `new Notification(...)`: on
-   * Android and in an installed PWA the constructor is unavailable, and the
-   * worker is the path a real push actually takes — so this exercises the same
-   * display code rather than a sibling of it.
-   */
-  const sendTest = useCallback(async () => {
-    setTesting(true);
-    try {
-      const registration = await navigator.serviceWorker?.ready;
-      if (!registration) throw new Error("No service worker.");
-      await registration.showNotification("ember can reach this device", {
-        body: "That is the browser and the OS working. Delivery from the server is a separate thing.",
-        icon: "/icons/icon-192.png",
-        badge: "/icons/icon-192.png",
-        tag: "ember-test",
-      });
-    } catch {
-      toast.error("Couldn't show one.", {
-        description: "The browser refused. Check notifications are allowed for this site.",
-      });
-    } finally {
-      setTesting(false);
-    }
-  }, []);
   const [email, setEmail] = useState<EmailPrefs | null>(null);
 
   useEffect(() => {
@@ -161,7 +132,7 @@ export function DeliverySettings() {
       if (next === "blocked") {
         toast.error("Your browser is blocking notifications", {
           description:
-            "Browsers don't offer a second prompt — it has to be undone in this site's settings.",
+            "Allow them in this site's settings, then try again.",
         });
       }
     } catch (error) {
@@ -214,32 +185,8 @@ export function DeliverySettings() {
         }
       />
 
-      {/* **Two different things can be broken, so there are two tests.**
-          This one proves the half the browser owns — permission, the service
-          worker, and the OS actually drawing a notification. It does *not* prove
-          the server can reach this device, because it never leaves it. Saying so
-          is the point: a green "test passed" that only exercised the easy half is
-          worse than no test, and push has enough moving parts that somebody would
-          reasonably read it as end-to-end.
-
-          The other half needs a real send, which needs the VAPID private key and
-          therefore a script — `npm run push:test`. */}
-      {push === "on" && (
-        <SettingRow
-          label="Check this device can show one"
-          description="Draws a notification locally. It doesn't leave this device, so it proves the browser and the OS, not the server."
-          control={
-            <Button
-              variant="outline"
-              size="default"
-              disabled={testing}
-              onClick={() => void sendTest()}
-            >
-              {testing ? "Sending…" : "Send a test"}
-            </Button>
-          }
-        />
-      )}
+      {/* The in-app test lives with the alert switches above; it exercises the
+          same display code. A real send needs the VAPID key — `npm run push:test`. */}
 
       <SettingRow
         label={
@@ -249,7 +196,7 @@ export function DeliverySettings() {
             {!mayEmail && <PlanChip />}
           </span>
         }
-        description="A batched note when a few instruments on your watchlist match your risk profile. Never one email per call."
+        description="A summary email when instruments on your watchlist match your risk profile."
         control={
           <Switch
             checked={mayEmail && email?.digest_enabled === true}
@@ -274,19 +221,16 @@ export function DeliverySettings() {
             />
             <p className="text-caption text-stone">
               {email.frequency === "daily"
-                ? "At most one a day, and only on days there is something to say."
-                : "At most one a week, and only if there is something to say."}{" "}
-              Nothing goes out below {email.min_findings}{" "}
-              {email.min_findings === 1 ? "call" : "calls"}.
+                ? "At most once a day"
+                : "At most once a week"}
+              , when at least {email.min_findings}{" "}
+              {email.min_findings === 1 ? "call matches" : "calls match"}.
             </p>
             <p className="rounded-xl bg-surface-2 p-3 text-caption text-stone">
               <strong className="font-medium text-graphite">
-                A digest covers your watchlist, not your positions.
+                Digests cover your watchlist.
               </strong>{" "}
-              Warnings about something you hold need your holdings, and ember
-              doesn&apos;t keep those on the server — so those stay in the app and
-              in push. This is a real difference between the two channels, not a
-              setting you can change.
+              Warnings about what you hold come in the app and by push.
             </p>
           </div>
         )}
@@ -309,7 +253,7 @@ const DEV = process.env.NODE_ENV !== "production";
 function pushDescription(state: PushState, uncapped: boolean): string {
   switch (state) {
     case "blocked":
-      return "Blocked by this browser. Undo it in this site's settings — browsers don't offer a second prompt.";
+      return "Blocked by this browser. Allow notifications in this site's settings.";
     // The fix a developer needs is not a sentence a customer should read. These
     // named `npm run dev:https` and an environment variable to anybody whose
     // worker failed to register — which in production is a real reader in, say,
@@ -319,16 +263,16 @@ function pushDescription(state: PushState, uncapped: boolean): string {
       // and tells a reader on a phone nothing they can do about it.
       return DEV
         ? "Not on HTTPS, so the browser won't allow push. A LAN address never qualifies; use a tunnel with a real certificate."
-        : "This page isn't on a secure connection, so the browser won't allow push. Open ember over https://.";
+        : "Push needs a secure connection. Open ember over https://.";
     case "no-worker":
       return DEV
         ? "No service worker registered. Set NEXT_PUBLIC_EMBER_SW_IN_DEV=1 and restart."
-        : "Background delivery couldn't start in this browser. Reload, or try without a private window.";
+        : "Push couldn't start in this browser. Reload, or leave private browsing.";
     case "unavailable":
-      return "This browser doesn't support push. On iOS it only works once ember is added to the home screen.";
+      return "This browser doesn't support push. On iPhone, add ember to your home screen first.";
     default:
       return uncapped
-        ? "Alerts with ember closed. Once per device."
-        : "Alerts with ember closed. Once per device, three a day on Free.";
+        ? "Alerts when ember is closed. Turn on for each device."
+        : `Alerts when ember is closed. Turn on for each device. Up to ${PLAN_RULES.free.alertsPerDay} a day on Free.`;
   }
 }

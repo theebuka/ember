@@ -29,7 +29,7 @@ export function Confidence({
   return (
     <span
       className={cn("inline-flex items-baseline gap-1.5 text-caption", className)}
-      title="Blended across every strategy with a view, reduced by disagreement and by an unsupportive regime."
+      title="How strongly the rules agree. Lower when they disagree or the market is unfavourable."
     >
       <span className="font-medium text-graphite">{label}</span>
       <span aria-hidden className="text-stone">

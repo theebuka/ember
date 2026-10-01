@@ -14,17 +14,17 @@ Lighthouse table below is where that one shows up.
 | Screen | Mobile | Desktop |
 |---|---|---|
 | Home | 0.006 | 0.009 |
-| Portfolio — holdings | 0.008 | 0.003 |
+| Portfolio — holdings | 0.009 | 0.003 |
 | Portfolio — watching | 0.006 | 0.001 |
 | Portfolio — activity | 0.006 | 0.001 |
-| Signals feed | 0.000 | 0.023 |
-| News | 0.014 | 0.008 |
+| Signals feed | 0.000 | 0.012 |
+| News | 0.000 | 0.000 |
 | Track record | 0.000 | 0.000 |
 | Methodology | 0.000 | 0.000 |
 | Asset detail | 0.074 | 0.026 |
 | Settings — account | 0.051 | 0.005 |
 | Settings — your data | 0.000 | 0.000 |
-| Notifications | 0.015 | 0.013 |
+| Notifications | 0.007 | 0.014 |
 | Sign in | 0.000 | 0.000 |
 | Onboarding | 0.000 | 0.000 |
 
@@ -54,11 +54,11 @@ does seeded.
 
 | Screen | Profile | Perf | A11y | Best practices | SEO | LCP | TBT | CLS |
 |---|---|---|---|---|---|---|---|---|
-| Home | mobile | 78 | 100 | 100 | 100 | 5.6 s | 37 ms | 0.069 |
-| Signals feed | mobile | 78 | 100 | 100 | 100 | 6.2 s | 22 ms | 0.000 |
-| Asset detail | mobile | 85 | 100 | 100 | 100 | 4.4 s | 19 ms | 0.008 |
-| Home | desktop | 98 | 100 | 100 | 100 | 1.1 s | 0 ms | 0.018 |
-| Signals feed | desktop | 100 | 100 | 100 | 100 | 0.8 s | 0 ms | 0.021 |
+| Home | mobile | 75 | 100 | 100 | 100 | 8.9 s | 37 ms | 0.063 |
+| Signals feed | mobile | 78 | 100 | 100 | 100 | 6.2 s | 23 ms | 0.000 |
+| Asset detail | mobile | 84 | 100 | 100 | 100 | 4.6 s | 20 ms | 0.008 |
+| Home | desktop | 98 | 100 | 100 | 100 | 1.1 s | 0 ms | 0.016 |
+| Signals feed | desktop | 98 | 100 | 100 | 100 | 1.2 s | 0 ms | 0.011 |
 | Asset detail | desktop | 99 | 100 | 100 | 100 | 0.9 s | 0 ms | 0.004 |
 
 Mobile is Lighthouse's throttled profile — simulated slow 4G with a 4×

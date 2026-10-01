@@ -176,7 +176,7 @@ export function FindingRow({
                 column, and a 40px brand pill on every one turned the inbox
                 into a stack of competing calls to action. */}
             <Button size="sm" onClick={onExecute}>
-              {isRisk ? "Log the reduction" : "Execute"}
+              {isRisk ? "Log reduction" : "Execute"}
             </Button>
             <Button variant="ghost" size="sm" onClick={onDismiss}>
               <X />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BellRing, BellSlash, Send } from "@/components/common/icon";
+import { BellSlash, Send } from "@/components/common/icon";
 import { toast } from "sonner";
 import { DeliverySettings } from "@/components/settings/delivery-settings";
 import { SettingGroup, SettingRow } from "@/components/settings/setting-row";
@@ -14,7 +14,6 @@ import {
 } from "@/hooks/use-notification-permission";
 import { isIos, isStandalone, showAlert } from "@/lib/notifications/permission";
 import { PREFERENCE_DEFAULTS, usePreferences } from "@/store/use-preferences";
-import { cn } from "@/lib/utils";
 
 /**
  * Alerts, and an honest account of which of them exist.
@@ -111,7 +110,7 @@ export function AlertSettings() {
           description:
             granted === "denied"
               ? "Your browser is blocking notifications for this site."
-              : "ember needs permission before it can show a notification.",
+              : "Allow notifications to send a test.",
         });
         return;
       }
@@ -128,8 +127,8 @@ export function AlertSettings() {
 
       toast(shown ? "Test alert sent" : "Couldn't show it", {
         description: shown
-          ? "A real one carries the symbol, the action, the size and the stop."
-          : "Your browser accepted the permission but refused the notification.",
+          ? undefined
+          : "Your browser allowed notifications but didn't show this one.",
       });
     } finally {
       setTesting(false);
@@ -168,8 +167,8 @@ export function AlertSettings() {
 
       <SettingGroup>
         <SettingRow
-          label="Window opening"
-          description="A notification the moment a recommended window starts, carrying the symbol, the action, the size and the stop."
+          label="A trade window opens"
+          description="When a recommended trade is ready to act on, with its size and stop."
           layout="inline"
           control={
             status ?? <Switch
@@ -189,8 +188,8 @@ export function AlertSettings() {
             be pitched a new idea, is a coherent thing to ask for — and it is
             probably the more common of the two. */}
         <SettingRow
-          label="Something you hold turns"
-          description="A stop breached from your entry, a thesis that has stopped holding, a position that has grown past your cap, with how much to take off."
+          label="A position turns against you"
+          description="When something you hold hits its stop, loses ember's support or grows too large, with how much to sell."
           layout="inline"
           control={
             status ?? <Switch
@@ -208,7 +207,7 @@ export function AlertSettings() {
         {(live || riskLive) && (
           <SettingRow
             label="Send a test alert"
-            description="Fires a real notification now, with the shape a real one has. The fastest way to confirm your browser and your operating system will actually show them."
+            description="Check that notifications show on this device."
             control={
               <Button
                 variant="outline"
@@ -223,12 +222,6 @@ export function AlertSettings() {
           />
         )}
 
-        <SettingRow
-          label="Price levels"
-          description="Levels you set yourself, separate from anything ember recommends."
-          layout="inline"
-          control={<NotYet />}
-        />
       </SettingGroup>
 
       {/* Delivery. Its own group because it answers a different question from
@@ -237,16 +230,6 @@ export function AlertSettings() {
           and a VAPID key, so a deployment with neither looks exactly as it did. */}
       <DeliverySettings />
 
-      {permission === "default" && !unavailable && (
-        <p className="mt-3.5 flex items-start gap-2 rounded-xl bg-surface-2 p-3 text-caption text-stone">
-          <BellRing className="mt-0.5 size-4 shrink-0 text-stone" />
-          <span>
-            Turning this on asks your browser for permission. ember asks once —
-            browsers don&apos;t offer a second prompt, so if you decline it has to be
-            undone in site settings.
-          </span>
-        </p>
-      )}
     </>
   );
 }
@@ -260,25 +243,6 @@ function StatusLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-/**
- * The control for a feature that doesn't exist yet.
- *
- * A disabled switch would read as "off", which is a claim about a setting. A
- * chip reads as "not a setting yet", which is the truth.
- */
-function NotYet() {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-md bg-surface-2 px-2 py-1",
-        "text-micro font-medium text-stone",
-      )}
-      title="Needs a server that can reach you with ember closed"
-    >
-      Not yet
-    </span>
-  );
-}
 
 function iosHint(): string {
   if (typeof window === "undefined") return "Notifications aren't available here.";

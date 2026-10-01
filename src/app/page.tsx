@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   // The root layout appends " · ember" via its title template.
   title: "Home",
   description:
-    "What you're worth, what to do about it, and the window to act in.",
+    "What needs your attention today.",
 };
 
 /**

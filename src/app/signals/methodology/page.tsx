@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   // The root layout appends " · ember" via its title template.
   title: "Methodology",
   description:
-    "Every rule ember follows, the published work it comes from, and what each market regime does to it.",
+    "Every rule ember uses and the research behind it.",
 };
 
 export default function MethodologyPage() {

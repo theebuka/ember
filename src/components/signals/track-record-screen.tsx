@@ -122,7 +122,7 @@ export function TrackRecordScreen() {
             <section>
               <SectionHeader
                 title="Every call the engine made"
-                hint={`${RISK_PROFILES[riskProfile].label.toLowerCase()} profile · walk-forward`}
+                hint={`${RISK_PROFILES[riskProfile].label.toLowerCase()} profile`}
               />
               <dl className="grid grid-cols-2 gap-x-5 gap-y-4 sm:grid-cols-4">
                 <Stat label="Calls" value={String(result.calls)} />
@@ -160,7 +160,7 @@ export function TrackRecordScreen() {
                 <Stat
                   label="Stopped out"
                   value={formatPercent(result.stoppedOutRate, { decimals: 1 })}
-                  hint="hit the ATR stop"
+                  hint="hit the stop"
                 />
                 <Stat
                   label="Average hold"
@@ -194,11 +194,7 @@ export function TrackRecordScreen() {
                 </p>
                 <p className="mt-1 text-caption text-stone">
                   Average per call, filled{" "}
-                  {result.averageEntryLagBars.toFixed(1)} bars after it was made.
-                  ember quotes the close it computed from; the first price you
-                  could actually trade is the next session&apos;s open, or later
-                  still if the window opens later. Every return above is measured
-                  from that fill, not from the price on the card.
+                  {result.averageEntryLagBars.toFixed(1)} bars after it was made. Returns are measured from the first price you could actually trade, not the price on the card.
                 </p>
               </div>
 
@@ -218,7 +214,7 @@ export function TrackRecordScreen() {
               <section>
                 <SectionHeader
                   title="By strategy"
-                  hint="credited to every rule that drove the call"
+                  
                 />
                 <ul className="divide-y divide-line">
                   {[...result.byStrategy]
@@ -261,10 +257,7 @@ export function TrackRecordScreen() {
                     ))}
                 </ul>
                 <p className="mt-3 border-t border-line pt-3 text-micro text-stone">
-                  A call driven by four rules is credited to all four, so these
-                  counts add up to more than the total above. They measure which
-                  rules were present when things went well, not which one was
-                  responsible.
+                  A call counts for every rule behind it, so these add up to more than the total.
                 </p>
               </section>
             )}
@@ -298,8 +291,7 @@ export function TrackRecordScreen() {
             </section>
 
             <p className="text-micro text-stone">
-              Recomputed daily from the same engine that serves the feed. Nothing here
-              is hand-entered.{" "}
+              Updated daily.{" "}
               <Link
                 href="/signals/methodology"
                 className="underline underline-offset-2 hover:text-stone"

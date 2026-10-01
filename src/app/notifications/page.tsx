@@ -3,7 +3,7 @@ import { getBroadcasts } from "@/lib/notifications/server";
 
 export const metadata = {
   title: "Notifications",
-  description: "Alerts ember has sent you, broadcasts, and what's worth knowing.",
+  description: "Your alerts and announcements from ember.",
 };
 
 /**

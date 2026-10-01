@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash, Warning } from "@/components/common/icon";
+import { SectionHeader } from "@/components/common/section-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -105,8 +106,12 @@ export function DeleteAccount() {
     setStep("closed");
   }
 
+  // The section's heading lives here, so it disappears with the control: a
+  // "Danger" heading over nothing was what a signed-out reader saw.
   return (
-    <div className="rounded-xl border border-down/25 bg-down-tint/40 p-5">
+    <section>
+    <SectionHeader title="Danger" />
+    <div className="mt-4 rounded-xl border border-down/25 bg-down-tint/40 p-5">
       <div className="flex items-start gap-3.5">
         <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl bg-down-tint text-down">
           <Warning className="size-4" />
@@ -114,9 +119,7 @@ export function DeleteAccount() {
         <div className="min-w-0 flex-1">
           <h3 className="text-body font-semibold text-ink">Delete your account</h3>
           <p className="mt-1 text-caption text-stone text-pretty">
-            Removes your profile, your synced transaction log, your preferences
-            and your watchlist from ember&apos;s server, and signs you out
-            everywhere. There is no undo and no grace period.
+            Deletes your profile, synced trades, settings and watchlist from ember&apos;s server, and signs you out everywhere. This can&apos;t be undone.
           </p>
         </div>
       </div>
@@ -148,9 +151,7 @@ export function DeleteAccount() {
             What stays until you clear it
           </p>
           <p className="mt-2 text-caption text-stone text-pretty">
-            The copy in this browser. Deleting the account does not reach
-            it — so unless you say otherwise, you will still have your book here
-            afterwards.
+            The copy in this browser stays unless you clear it below.
           </p>
 
           <label className="mt-3 flex cursor-pointer items-start gap-2.5">
@@ -230,5 +231,6 @@ export function DeleteAccount() {
         </div>
       )}
     </div>
+    </section>
   );
 }

@@ -200,10 +200,10 @@ export function standingWarnings({
       // for an account state blurs the one distinction the palette exists to
       // keep. It leads the list, which is the hierarchy that costs nothing.
       tone: "neutral",
-      title: "Syncing and delivery are paused on this account",
+      title: "Sync and delivery are paused",
       body: suspension.reason
-        ? `${suspension.reason} Your ledger is untouched — it stays on this device and stays readable from the server. Nothing new syncs up, and digests and push are held.`
-        : "Your ledger is untouched — it stays on this device and stays readable from the server. What has stopped is anything new syncing up, plus digests and push.",
+        ? `${suspension.reason} Your data is safe and still readable. New changes won't sync, and email and push are paused.`
+        : "Your data is safe and still readable. New changes won't sync, and email and push are paused.",
       at: 0,
       href: "/settings",
       action: "Your data",
@@ -216,7 +216,7 @@ export function standingWarnings({
       kind: "warning",
       tone: "neutral",
       title: "Prices are generated",
-      body: "The engine, the windows and the record are real. The prices they run on come from a model.",
+      body: "The engine and track record are real. The prices they run on are simulated.",
       at: 0,
       href: "/signals/methodology",
       action: "What's modelled",
@@ -228,8 +228,8 @@ export function standingWarnings({
       id: "warning:local-only",
       kind: "warning",
       tone: "neutral",
-      title: "Your ledger lives on this device",
-      body: "Nothing is backed up. Clearing site data, or opening ember elsewhere, starts from an empty book.",
+      title: "Your data is only on this device",
+      body: "Sign in to back it up.",
       at: 0,
       href: "/settings",
       action: "Sign in",

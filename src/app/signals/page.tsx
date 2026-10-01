@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   // The root layout appends " · ember" via its title template.
   title: "Signals",
   description:
-    "What ember thinks is worth acting on, the window to act in, and every rule behind it.",
+    "What to act on, when, and why.",
 };
 
 export default function SignalsPage() {

@@ -199,7 +199,7 @@ export function computeWindow({
       closesAt: from,
       hasWindow: false,
       notes: [
-        `No tradeable window in the next ${describeSpan(span)} — the market is closed throughout.`,
+        `The market is closed for the next ${describeSpan(span)}.`,
       ],
       events: horizonEvents,
     };
@@ -237,7 +237,6 @@ export function computeWindow({
       halfLifeDays,
       narrowed: dissent > 0.15,
       events: horizonEvents,
-      opensImmediately: open === 0,
     }),
     events: horizonEvents,
   };
@@ -297,49 +296,47 @@ function buildNotes({
   halfLifeDays,
   narrowed,
   events,
-  opensImmediately,
 }: {
   market: MarketKind;
   peakAt: number;
   halfLifeDays: number;
   narrowed: boolean;
   events: readonly MarketEvent[];
-  opensImmediately: boolean;
 }): string[] {
   const notes: string[] = [];
 
   if (market === "equity") {
     const t = zonedTime(peakAt, "America/New_York");
     if (t.minutes >= 14 * 60 + 30) {
-      notes.push("Depth is deepest into the New York close.");
+      notes.push("Trading is deepest into the New York close.");
     } else if (t.minutes >= 10 * 60 && t.minutes < 12 * 60) {
-      notes.push("Spreads settle after the opening auction clears.");
+      notes.push("Prices settle after the opening auction.");
     } else {
-      notes.push("Best available depth in the session.");
+      notes.push("The deepest trading of the session.");
     }
   } else if (market === "fx") {
     const t = zonedTime(peakAt, "UTC");
     if (t.hour >= 13 && t.hour < 17) {
       notes.push("London and New York overlap — the tightest spreads of the day.");
     } else if (t.hour >= 7 && t.hour < 13) {
-      notes.push("London session, well ahead of the New York thin patch.");
+      notes.push("London hours, before New York trading thins out.");
     } else {
-      notes.push("Best available depth before the New York close.");
+      notes.push("The deepest trading before the New York close.");
     }
   } else {
     const t = zonedTime(peakAt, "UTC");
     const weekend = t.weekday === 0 || t.weekday === 6;
     notes.push(
       weekend
-        ? "Weekend books are thinner; this is the best depth available."
-        : "European and US hours overlap, where the book is deepest.",
+        ? "Weekend trading is thin; this is its deepest point."
+        : "European and US hours overlap, when trading is deepest.",
     );
   }
 
   if (events.length > 0) {
     const next = events[0];
     notes.push(
-      `Clear of ${inSentence(EVENT_LABELS[next.kind])} — the signal makes no claim about that outcome.`,
+      `Avoids ${inSentence(EVENT_LABELS[next.kind])}, which the signal doesn't predict.`,
     );
   }
 
@@ -351,7 +348,7 @@ function buildNotes({
   const days = Math.max(1, Math.round(halfLifeDays));
   if (halfLifeDays <= 3.5) {
     notes.push(
-      `This edge has a ${days === 1 ? "one-day" : `${days}-day`} half-life, so the window closes quickly.`,
+      `The signal fades fast (a ${days === 1 ? "one-day" : `${days}-day`} half-life), so the window is short.`,
     );
   } else if (halfLifeDays >= 60) {
     notes.push("A slow signal — the timing here is about execution, not urgency.");
@@ -361,11 +358,12 @@ function buildNotes({
   // model being twitchy rather than as the rules being split.
   if (narrowed) {
     notes.push(
-      "The rules are split on this one, so the window is held to the best hours only.",
+      "The rules disagree, so the window is limited to the best hours.",
     );
   }
 
-  if (opensImmediately) notes.push("Open now.");
+    // No "Open now." note: the band's own scale already says so.
+
 
   return notes;
 }

@@ -68,7 +68,7 @@ describe("field validation", () => {
   it("rejects a future date", () => {
     const nextYear = new Date(Date.now() + 400 * 86_400_000).toISOString().slice(0, 10);
     expect(check(form({ date: nextYear })).messages).toEqual([
-      "That's in the future — log it once it's filled.",
+      "That date is in the future.",
     ]);
   });
 });

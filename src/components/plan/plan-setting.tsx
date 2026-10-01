@@ -28,11 +28,6 @@ export function PlanSetting() {
   return (
     <section className="space-y-4">
       <PlanComparison />
-      <p className="text-micro text-stone">
-        The methodology and the track record are open to everyone on every plan,
-        without an account. They&apos;re how you check whether any of this works,
-        and that isn&apos;t something to sell.
-      </p>
     </section>
   );
 }

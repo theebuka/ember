@@ -5,7 +5,7 @@ import { PortfolioScreen } from "@/components/portfolio/portfolio-screen";
 export const metadata: Metadata = {
   // The root layout appends " · ember" via its title template.
   title: "Portfolio",
-  description: "Your holdings, what you're watching, and every figure derived from them.",
+  description: "Your holdings, watchlist and trades.",
 };
 
 export default function PortfolioPage() {

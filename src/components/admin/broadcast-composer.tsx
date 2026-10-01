@@ -165,7 +165,7 @@ export function BroadcastComposer({
     // would be a lie about what happened: the notice has already been read by
     // whoever had the app open, and putting the row back does not unsend it.
     toast("Withdrawn.", {
-      description: "It stops appearing. Anyone who already saw it, saw it.",
+      description: "It's hidden from now on, but it can't be unsent.",
     });
     void live.refetch();
     onChanged();

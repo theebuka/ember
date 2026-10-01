@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   // The root layout appends " · ember" via its title template.
   title: "News",
   description:
-    "What's being written about the instruments ember watches — context, never a signal.",
+    "News about the instruments ember watches.",
 };
 
 export default function NewsPage() {

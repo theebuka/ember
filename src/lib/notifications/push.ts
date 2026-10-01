@@ -228,14 +228,14 @@ async function recordSubscription(subscription: PushSubscription): Promise<void>
   const json = subscription.toJSON();
   const keys = json.keys ?? {};
   if (!json.endpoint || !keys.p256dh || !keys.auth) {
-    throw new PushError("The browser returned an incomplete subscription.");
+    throw new PushError("Your browser didn't finish setting up push. Try again.");
   }
 
   const supabase = supabaseBrowser();
-  if (!supabase) throw new PushError("There's no account service to record it with.");
+  if (!supabase) throw new PushError("Accounts aren't available in this version of ember.");
 
   const { data } = await supabase.auth.getUser();
-  if (!data.user) throw new PushError("Sign in first — push is delivered to an account.");
+  if (!data.user) throw new PushError("Sign in to turn on push.");
 
   const { error } = await supabase.from("push_subscriptions").upsert(
     {

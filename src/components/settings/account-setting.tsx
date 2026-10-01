@@ -40,7 +40,7 @@ export function AccountSetting() {
     await supabase.auth.signOut();
     setSigningOut(false);
     toast.success("Signed out", {
-      description: "Your ledger is still here, on this device.",
+      description: "Your data is still on this device.",
     });
   }
 
@@ -90,7 +90,7 @@ export function AccountSetting() {
             {status === "held" ? (
               <SettingRow
                 label="This device has another account's data"
-                description="Nothing has synced. Choose what happens to it."
+                description="Nothing has synced yet. Choose what to do with it."
                 layout="stack"
                 control={
                   <div className="flex flex-wrap gap-2">
@@ -112,8 +112,8 @@ export function AccountSetting() {
           </>
         ) : (
           <SettingRow
-            label="Keep your book across devices"
-            description="Your ledger, watchlist, settings and profile, kept across devices. Never your positions or P&L."
+            label="Sync across devices"
+            description="Back up your trades, watchlist, settings and profile, and use them on any device."
             control={
               <Button asChild size="default">
                 <Link href="/auth?next=%2Fsettings">Sign in</Link>

@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
   if (!result) {
     const provider = getProvider();
     const universe = await loadUniverse(provider, at);
-    result = runBacktest({ universe, riskProfile });
+    result = runBacktest({ universe, riskProfile, synthetic: provider.synthetic });
 
     // Only today's runs are worth holding; the grid rolls and yesterday's key
     // can never be asked for again.

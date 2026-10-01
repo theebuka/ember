@@ -4,7 +4,7 @@ import { Splash } from "@/components/onboarding/splash";
 
 export const metadata = {
   title: "Set up ember",
-  description: "Three steps: what ember does, how you invest, what you follow.",
+  description: "Set up ember in a minute.",
 };
 
 export default function OnboardingPage() {

@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { Newspaper } from "@/components/common/icon";
 import { ErrorState } from "@/components/common/error-state";
 import { SponsorRow } from "@/components/plan/sponsor-row";
@@ -238,13 +237,13 @@ export function NewsScreen() {
           <>
             <Section
               title="Trending"
-              hint={loading ? undefined : "by how often it's written about"}
+              
             >
               {loading ? (
                 <TrendingSkeleton />
               ) : trending.length === 0 ? (
                 <p className="text-caption text-stone">
-                  Nothing has come up more than once in the last two days.
+                  Nothing is trending right now.
                 </p>
               ) : (
                 <TrendingStrip
@@ -276,7 +275,7 @@ export function NewsScreen() {
               hint={
                 loading
                   ? undefined
-                  : `${shown.length} of ${items.length} in the last two days`
+                  : shown.length === items.length ? "last two days" : `${shown.length} of ${items.length}`
               }
               action={
                 <Segmented
@@ -375,17 +374,7 @@ export function NewsScreen() {
                 that quietly feeds a sentiment score into its model and calls
                 the result a signal. */}
             <p className="max-w-3xl text-micro text-stone">
-              Headlines are context, never evidence. Nothing on this page enters
-              the signal engine: ember scores instruments from published,
-              citable rules over price and fundamentals, and news sentiment is
-              not one of them.{" "}
-              <Link
-                href="/signals/methodology"
-                className="underline underline-offset-2 hover:text-stone"
-              >
-                What is and isn&apos;t a signal
-              </Link>
-              .
+              News doesn&apos;t affect ember&apos;s signals.
             </p>
 
             {/* The one sponsor slot on this screen, and it is at the bottom.
@@ -535,11 +524,11 @@ function Quiet({
       <div className="mb-4 grid size-11 place-items-center rounded-xl bg-surface-2 text-stone">
         <Newspaper className="size-5" />
       </div>
-      <h3 className="text-heading font-semibold text-ink">Nothing here</h3>
+      <h3 className="text-heading font-semibold text-ink">No stories</h3>
       <p className="mt-1.5 max-w-md text-body text-stone">
         {topic !== null
-          ? `No stories about ${topic}${view === "yours" ? " touching what you hold" : ""} in the last two days.`
-          : "Nothing has been written about your instruments in the last two days. Quiet is the usual state."}
+          ? `No stories about ${topic}${view === "yours" ? " that you hold" : ""} in the last two days.`
+          : "No news about your instruments in the last two days."}
       </p>
       <button
         type="button"

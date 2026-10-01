@@ -57,7 +57,7 @@ export function PlanComparison({
     `The ${free.findings} most urgent findings`,
     `${free.alertsPerDay} push alerts a day`,
     "Every in-app alert, uncapped",
-    "The full engine — windows, sizing, stops",
+    "Full analysis on every call",
   ];
   const proItems: { text: string; feature: Feature }[] = [
     { text: "Every finding, ranked by urgency", feature: "unlimited-findings" },

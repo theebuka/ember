@@ -280,7 +280,7 @@ export function TransactionForm({
                         }
                         className="rounded-sm underline underline-offset-2 hover:text-stone focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                       >
-                        Use today&apos;s {quote.price.toFixed(instrument?.precision ?? 2)}
+                        Use today&apos;s price, {quote.price.toFixed(instrument?.precision ?? 2)}
                       </button>
                     </FormDescription>
                   )}
@@ -337,7 +337,7 @@ export function TransactionForm({
                     {...field}
                     className="h-9"
                     autoComplete="off"
-                    placeholder="Brokerage, exchange, wherever it sits"
+                    placeholder="e.g. your broker or exchange"
                   />
                 </FormControl>
                 <FormMessage />
@@ -355,7 +355,7 @@ export function TransactionForm({
                   <Textarea
                     {...field}
                     rows={2}
-                    placeholder="Why you did it — useful when you look back."
+                    placeholder="Why you made this trade"
                   />
                 </FormControl>
                 <FormMessage />

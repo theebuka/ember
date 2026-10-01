@@ -110,11 +110,18 @@ export function runBacktest({
   universe,
   riskProfile,
   symbols,
+  synthetic = true,
 }: {
   universe: Universe;
   riskProfile: RiskProfile;
   /** Defaults to the whole universe. */
   symbols?: readonly string[];
+  /**
+   * Whether the prices are generated. The two caveats about simulated data
+   * were stated unconditionally, so a live build's track record opened by
+   * telling its reader the numbers came from a random walk.
+   */
+  synthetic?: boolean;
 }): BacktestResult {
   const trades: BacktestTrade[] = [];
   const targets = symbols ?? universe.instruments.map((i) => i.symbol);
@@ -247,20 +254,23 @@ export function runBacktest({
   }
 
   trades.sort((a, b) => a.entryAt - b.entryAt);
-  return summarise(trades);
+  return summarise(trades, synthetic);
 }
 
-function summarise(trades: BacktestTrade[]): BacktestResult {
+function summarise(trades: BacktestTrade[], synthetic: boolean): BacktestResult {
   const caveats = [
     // The one that matters most, and the one every app in this category
     // leaves out. Say it first.
-    "Generated prices are a random walk with clustered volatility. There is no trend or reversal structure in them to find, so results near chance are the expected outcome here and say nothing about how these strategies perform on real markets.",
-    "Runs on synthetic data, not real market history. Every number below describes a simulated universe.",
-    "Entries are the open of the first session after the call, or later if the execution window opens later — you cannot trade the close you were shown. The cost of that delay is reported separately.",
-    "No slippage, spread or commission is modelled, so real-world returns would be lower still.",
-    "The instrument universe is fixed and known in advance — there is no survivorship adjustment.",
-    "Strategy parameters are the published ones, fitted by their authors to real data. That makes this not fully out-of-sample.",
-    "Positions exit at the engine's suggested horizon or its ATR stop, whichever comes first, one per instrument at a time.",
+    ...(synthetic
+      ? [
+          "These prices are simulated as a random walk, so results near chance are expected. They say nothing about real markets.",
+        ]
+      : []),
+    "Trades enter at the next session's open, not the price you were shown. The cost of that delay is shown below.",
+    "Slippage, spreads and fees aren't included, so real returns would be lower.",
+    "The list of instruments is fixed, so companies that failed or delisted aren't counted.",
+    "Each rule uses the settings its authors published, fitted to past data, so this isn't a fully independent test.",
+    "Positions close at the suggested holding period or the stop, whichever comes first.",
   ];
 
   if (trades.length === 0) {

@@ -230,8 +230,7 @@ export function Dashboard({
                   <PositionsListSkeleton rows={TOP_POSITIONS} />
                 ) : summary.positions.length === 0 ? (
                   <p className="text-caption text-stone">
-                    Nothing held yet. Log a trade and it appears here with its
-                    cost basis and P&amp;L.
+                    Nothing held yet. Log a trade and it shows up here.
                   </p>
                 ) : (
                   <>
@@ -249,7 +248,7 @@ export function Dashboard({
                   <MarketPulseSkeleton rows={PULSE_ROWS} />
                 ) : pulseRows.length === 0 ? (
                   <p className="text-caption text-stone">
-                    No markets switched on. Turn one back on in settings.
+                    All markets are switched off. Turn one on in settings.
                   </p>
                 ) : (
                   <MarketPulse rows={pulseRows} />
@@ -388,7 +387,7 @@ function SampleNotice({ onClear }: { onClear: () => void }) {
     // One sentence with the action inside it: as a separate button it wrapped
     // to a line of its own on a phone, orphaned under the text it belonged to.
     <p className="mt-4 border-t border-line pt-3.5 text-micro text-stone">
-      This is the sample book — none of these are your holdings.{" "}
+      Sample data — not your holdings.{" "}
       <button type="button" onClick={onClear} className="tap-target font-medium text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
         Clear it
       </button>

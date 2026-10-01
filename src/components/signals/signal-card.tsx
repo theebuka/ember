@@ -101,7 +101,7 @@ export function SignalCard({
             title={
               actionable
                 ? undefined
-                : "Below your risk profile's bar — ember isn't recommending this."
+                : "Below your risk profile — not a recommendation."
             }
           />
         }
@@ -167,7 +167,7 @@ export function SignalCard({
             </span>
           </>
         ) : (
-          <span className="text-caption text-stone">No size — this is a hold</span>
+          <span className="text-caption text-stone">Hold — no position to size</span>
         )}
         <Confidence value={assessment.confidence} label={assessment.confidenceLabel} />
       </div>
@@ -200,8 +200,8 @@ export function SignalCard({
               onClick={onUndo}
               title={
                 handled.kind === "executed"
-                  ? "Puts this back in your open calls. The logged trade stays in your portfolio."
-                  : "Puts this back in your open calls."
+                  ? "Moves this back to your calls. Your logged trade stays."
+                  : "Moves this back to your calls."
               }
             >
               <Undo2 />

@@ -124,8 +124,7 @@ export function CommandMenu() {
       <CommandInput placeholder="Go to a screen, or type a ticker…" />
       <CommandList>
         <CommandEmpty>
-          Nothing matches. ember follows a fixed universe for now — the watchlist
-          has the full list.
+          No matches.
         </CommandEmpty>
 
         <CommandGroup heading="Go to">

@@ -309,7 +309,7 @@ export function WatchlistPanel() {
       )}
 
       {adviceQuery.isPending && (
-        <p className="text-micro text-stone">Working out where ember stands…</p>
+        <p className="text-micro text-stone">Loading ember&apos;s reads…</p>
       )}
 
       <AddSymbols
@@ -338,8 +338,7 @@ function EmptyWatchlist({
         You&apos;ve unfollowed everything
       </h2>
       <p className="mt-2 max-w-sm text-body text-stone">
-        Follow the instruments you care about to see live prices and where ember stands
-        on each — including the ones it says to leave alone.
+        Follow instruments to see their prices and ember&apos;s read on each.
       </p>
       <div className="mt-6 flex flex-wrap gap-2.5">
         <Button size="lg" onClick={onAdd}>

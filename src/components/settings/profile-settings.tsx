@@ -115,7 +115,7 @@ export function ProfileSettings() {
               </SelectContent>
             </Select>
             <p className="mt-2 text-micro text-stone">
-              Suggests a base currency. Never re-denominates your book.
+              Used to suggest your base currency.
             </p>
           </div>
 
@@ -129,7 +129,7 @@ export function ProfileSettings() {
               onChange={(event) => setProfile({ timezone: event.target.value })}
             />
             <p className="mt-2 text-micro text-stone">
-              Detected. Every execution window is quoted in it.
+              Trade windows are shown in this time zone.
             </p>
           </div>
         </div>
@@ -141,7 +141,7 @@ export function ProfileSettings() {
           to action on one screen is one of them being ignored. */}
       {available && user && (
         <section>
-          <SectionHeader title="Email" hint="how you sign in" />
+          <SectionHeader title="Email" />
 
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3 border-y border-line py-4">
             <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-surface-2 text-stone">
@@ -151,9 +151,6 @@ export function ProfileSettings() {
             <div className="min-w-0 flex-1">
               <p className="num text-body font-medium break-all text-ink">
                 {user.email}
-              </p>
-              <p className="mt-0.5 text-caption text-stone">
-                Where sign-in links go.
               </p>
             </div>
 

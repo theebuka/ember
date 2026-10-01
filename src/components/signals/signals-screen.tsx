@@ -203,7 +203,7 @@ export function SignalsScreen() {
       until: execution.to,
     });
     undoableToast(`Dismissed ${ACTION_LABELS[action]} ${symbol}`, {
-      description: "It'll come back if ember's read changes.",
+      description: "It returns if ember's read changes.",
       onUndo: () => clearHandled(idOf(item)),
     });
   };
@@ -267,7 +267,7 @@ export function SignalsScreen() {
         {error ? (
           <ErrorState
             message={
-              error instanceof ApiError ? error.message : "Advice didn't load."
+              error instanceof ApiError ? error.message : "Signals didn't load."
             }
             onRetry={() => adviceQuery.refetch()}
           />
@@ -332,7 +332,7 @@ export function SignalsScreen() {
               <section>
                 <SectionHeader
                   title="Handled"
-                  hint="until these windows close"
+                  
                 />
                 <div className={FEED_GRID}>
                   {done.map((item) => (
@@ -356,9 +356,8 @@ export function SignalsScreen() {
             )}
 
             <p className="max-w-3xl text-micro text-stone">
-              ember gives information, not financial advice. Every rule above is
-              published and cited, the track record is computed rather than authored,
-              and none of it accounts for your circumstances.{" "}
+              ember gives information, not financial advice. It doesn&apos;t know
+              your circumstances.{" "}
               <Link
                 href="/signals/methodology"
                 className="underline underline-offset-2 hover:text-stone"
@@ -370,7 +369,7 @@ export function SignalsScreen() {
                 href="/signals/track-record"
                 className="underline underline-offset-2 hover:text-stone"
               >
-                How they&apos;ve done
+                Track record
               </Link>
             </p>
 
@@ -383,7 +382,7 @@ export function SignalsScreen() {
         open={executing !== null}
         onOpenChange={(next) => !next && setExecuting(null)}
         title="Log this trade"
-        description="Pre-filled from ember's sizing. Change anything that doesn't match your fill."
+        description="Pre-filled from ember's suggestion. Enter what you actually paid."
       >
         {executing && (
           <TransactionForm
@@ -441,15 +440,15 @@ function NothingToday({
       <h2 className="text-heading font-semibold text-ink">Nothing to act on today</h2>
       <p className="mt-1.5 max-w-md text-body text-stone">
         {assessed > 0
-          ? `All ${assessed} instruments were assessed. None reached the conviction and confidence your risk profile asks for, so ember isn't recommending a trade — that's the answer, not an absence of one.`
-          : "No instruments could be assessed this cycle."}
+          ? `ember checked all ${assessed} instruments and none meet your risk profile, so there's no trade to make.`
+          : "ember couldn't check any instruments this time. Try again shortly."}
       </p>
       <button
         type="button"
         onClick={onSeeAll}
         className="mt-5 rounded-sm text-caption font-medium text-brand-text underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
-        See every read, holds included
+        See all reads
       </button>
     </div>
   );

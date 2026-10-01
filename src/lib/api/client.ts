@@ -80,7 +80,7 @@ async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
   if (!response.ok) {
     const body = await response.json().catch(() => null);
     throw new ApiError(
-      body?.error ?? `Request failed (${response.status}).`,
+      body?.error ?? `Something went wrong (${response.status}). Try again.`,
       response.status,
     );
   }
@@ -112,7 +112,7 @@ async function post<T>(path: string, body: unknown, signal?: AbortSignal): Promi
   if (!response.ok) {
     const problem = await response.json().catch(() => null);
     throw new ApiError(
-      problem?.error ?? `Request failed (${response.status}).`,
+      problem?.error ?? `Something went wrong (${response.status}). Try again.`,
       response.status,
     );
   }

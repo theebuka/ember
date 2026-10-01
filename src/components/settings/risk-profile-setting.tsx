@@ -89,8 +89,7 @@ export function RiskProfileSetting({
           <Comparison profiles={profiles} selected={value} />
         ) : (
           <p className="p-3.5 text-caption text-stone">
-            The live comparison didn&apos;t load, so the figures below are the
-            settings themselves rather than what they&apos;d recommend today.
+            Today&apos;s comparison didn&apos;t load, so these are the profile settings only.
             {" "}
             {STATIC_SUMMARY[value]}
           </p>
@@ -223,10 +222,6 @@ function Comparison({
         </tbody>
       </table>
 
-      <p className="border-t border-line px-3 py-2 text-micro text-stone">
-        Measured now, by running the engine once per profile — not an
-        illustration. The feed count moves with the market.
-      </p>
     </>
   );
 }
@@ -277,10 +272,6 @@ function ComparisonSkeleton() {
           ))}
         </tbody>
       </table>
-      <p className="border-t border-line px-3 py-2 text-micro text-transparent">
-        Measured now, by running the engine once per profile — not an
-        illustration. The feed count moves with the market.
-      </p>
     </div>
   );
 }
