@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Sparkles, Wallet } from "@/components/common/icon";
 import { ErrorState } from "@/components/common/error-state";
@@ -8,6 +8,7 @@ import { PAGE_COLUMNS, PageBody, PageColumns } from "@/components/common/page-bo
 import { Section } from "@/components/common/section";
 import { GreetingLine } from "@/components/dashboard/greeting-line";
 import { PinnedBanner } from "@/components/dashboard/pinned-banner";
+import { PlanCard } from "@/components/plan/upsell";
 import { FindingsInbox } from "@/components/findings/findings-inbox";
 import { ChangeChip } from "@/components/market/change-chip";
 import { DataSourceChip } from "@/components/market/data-source-chip";
@@ -75,6 +76,7 @@ export function Dashboard({
   pinned?: Broadcast[];
 }) {
   const hydrated = useHydrated();
+  const [withheld, setWithheld] = useState(0);
 
   const transactions = usePortfolio((s) => s.transactions);
   const isSample = usePortfolio((s) => s.isSample);
@@ -215,6 +217,24 @@ export function Dashboard({
         </div>
 
         <PageColumns
+          footer={
+            // 8px on the grid's 32px gap keeps the page's 40px block rhythm.
+            <div className="space-y-8 pt-2">
+              {/* The gate, said where it bit. Only when the cap actually held
+                  something back (ADR 0038). */}
+              {withheld > 0 && <PlanCard feature="unlimited-findings" />}
+              <p className="text-micro text-stone">
+                ember gives information, not financial advice.{" "}
+                <Link
+                  href="/signals/methodology"
+                  className="underline underline-offset-2 hover:text-stone"
+                >
+                  How the signals are built
+                </Link>
+                .
+              </p>
+            </div>
+          }
           aside={
             <div className="space-y-10">
               <Section
@@ -266,18 +286,7 @@ export function Dashboard({
                 handled state and its own execute flow — this screen composes
                 it rather than orchestrating it, because the same list is what
                 a notification deep-links into. */}
-            <FindingsInbox />
-
-            <p className="text-micro text-stone">
-              ember gives information, not financial advice.{" "}
-              <Link
-                href="/signals/methodology"
-                className="underline underline-offset-2 hover:text-stone"
-              >
-                How the signals are built
-              </Link>
-              .
-            </p>
+            <FindingsInbox onWithheld={setWithheld} />
           </div>
         </PageColumns>
       </PageBody>

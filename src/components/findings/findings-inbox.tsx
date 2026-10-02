@@ -1,13 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Compass } from "@/components/common/icon";
 import { ErrorState } from "@/components/common/error-state";
 import { Section } from "@/components/common/section";
 import { ResponsiveModal } from "@/components/common/responsive-modal";
 import { FindingRow, FindingRowSkeleton } from "@/components/findings/finding-row";
-import { PlanCard } from "@/components/plan/upsell";
 import { TransactionForm } from "@/components/portfolio/transaction-form";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { usePlan } from "@/hooks/use-plan";
@@ -50,7 +49,16 @@ interface Executing {
   quantity: number | null;
 }
 
-export function FindingsInbox() {
+export function FindingsInbox({
+  onWithheld,
+}: {
+  /**
+   * How many findings the plan cap held back, once the list has answered. The
+   * plan card that explains it belongs at the end of the page, not inside this
+   * section, so the screen draws it.
+   */
+  onWithheld?: (count: number) => void;
+} = {}) {
   const hydrated = useHydrated();
   const now = useNow(60_000);
   const [executing, setExecuting] = useState<Executing | null>(null);
@@ -258,6 +266,11 @@ export function FindingsInbox() {
   const open = cap === null ? unhandled : unhandled.slice(0, cap);
   const withheld = unhandled.length - open.length;
   const shownRisks = open.filter((f) => f.kind === "risk").length;
+  const gated = !loading && !error ? withheld : 0;
+
+  useEffect(() => {
+    onWithheld?.(gated);
+  }, [gated, onWithheld]);
 
   return (
     <>
@@ -312,14 +325,6 @@ export function FindingsInbox() {
               );
             })}
           </div>
-        )}
-
-        {/* The gate, said where it bit and nowhere else.
-            Only when it actually withheld something — a free reader with two
-            findings is not missing anything, and an upsell there would be an
-            advertisement rather than an explanation. ADR 0038. */}
-        {!loading && !error && withheld > 0 && (
-          <PlanCard feature="unlimited-findings" className="mt-4" />
         )}
 
         {/* Only when there is something the list itself doesn't show: that it

@@ -1,6 +1,6 @@
 # Performance and layout shift
 
-`scripts/perf.mjs`, 2026-10-01, against a production build.
+`scripts/perf.mjs`, 2026-10-02, against a production build.
 
 ## Layout shift
 
@@ -54,11 +54,11 @@ does seeded.
 
 | Screen | Profile | Perf | A11y | Best practices | SEO | LCP | TBT | CLS |
 |---|---|---|---|---|---|---|---|---|
-| Home | mobile | 79 | 100 | 100 | 100 | 5.6 s | 38 ms | 0.067 |
-| Signals feed | mobile | 78 | 100 | 100 | 100 | 6.2 s | 26 ms | 0.000 |
-| Asset detail | mobile | 86 | 100 | 100 | 100 | 4.3 s | 26 ms | 0.003 |
+| Home | mobile | 79 | 100 | 100 | 100 | 5.5 s | 43 ms | 0.067 |
+| Signals feed | mobile | 78 | 100 | 100 | 100 | 6.2 s | 28 ms | 0.000 |
+| Asset detail | mobile | 86 | 100 | 100 | 100 | 4.3 s | 21 ms | 0.003 |
 | Home | desktop | 98 | 100 | 100 | 100 | 1.1 s | 0 ms | 0.015 |
-| Signals feed | desktop | 97 | 100 | 100 | 100 | 1.2 s | 0 ms | 0.011 |
+| Signals feed | desktop | 98 | 100 | 100 | 100 | 1.2 s | 0 ms | 0.011 |
 | Asset detail | desktop | 99 | 100 | 100 | 100 | 0.9 s | 0 ms | 0.004 |
 
 Mobile is Lighthouse's throttled profile — simulated slow 4G with a 4×

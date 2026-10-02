@@ -73,20 +73,43 @@ export const PAGE_COLUMNS =
 
 export function PageColumns({
   aside,
+  footer,
   children,
   className,
   ...props
-}: { aside: React.ReactNode } & React.ComponentProps<"div">) {
+}: {
+  aside: React.ReactNode;
+  /**
+   * What closes the page — a disclaimer, a plan card. Under the main column on
+   * desktop, and after the aside on a phone, so the stack never puts the end of
+   * the page in its middle.
+   */
+  footer?: React.ReactNode;
+} & React.ComponentProps<"div">) {
   return (
     <div
-      className={cn(PAGE_COLUMNS, className)}
+      className={cn(
+        PAGE_COLUMNS,
+        // Row 2 is `1fr` so the aside spanning both rows pushes its extra
+        // height there, and the footer sits directly under the main column.
+        footer != null && "lg:grid-rows-[auto_1fr]",
+        className,
+      )}
       {...props}
     >
       <div className="min-w-0">{children}</div>
       {/* `lg:sticky` keeps the companion in view while a long feed scrolls
           past it, which is the whole reason it earns a column rather than
           being a block at the bottom. */}
-      <aside className="min-w-0 lg:sticky lg:top-[calc(6rem+var(--bar-h,0px))]">{aside}</aside>
+      <aside
+        className={cn(
+          "min-w-0 lg:sticky lg:top-[calc(6rem+var(--bar-h,0px))]",
+          footer != null && "lg:col-start-2 lg:row-span-2 lg:row-start-1",
+        )}
+      >
+        {aside}
+      </aside>
+      {footer != null && <div className="min-w-0 lg:col-start-1 lg:row-start-2">{footer}</div>}
     </div>
   );
 }

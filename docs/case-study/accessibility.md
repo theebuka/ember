@@ -1,6 +1,6 @@
 # Accessibility audit
 
-axe-core via `scripts/audit.mjs`, 2026-10-01.
+axe-core via `scripts/audit.mjs`, 2026-10-02.
 
 16 screens × 2 themes × 2 widths = **64 page audits**,
 against WCAG 2.1 A and AA plus axe's best-practice rules, on a production build.
