@@ -54,7 +54,9 @@ export function WatchlistRow({
   const closes = candles.map((c) => c.c);
 
   return (
-    <div className="flex items-center gap-3 py-2.5">
+    // `content-visibility` lets the browser skip laying out and painting rows
+    // below the fold — the list can be all 214 instruments, each with a chart.
+    <div className="flex items-center gap-3 py-2.5 [contain-intrinsic-size:auto_3.75rem] [content-visibility:auto]">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <Link

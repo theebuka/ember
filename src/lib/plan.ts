@@ -169,6 +169,50 @@ export function planFrom(
 }
 
 /**
+ * What an account's subscription looks like, for the screens that describe it.
+ *
+ * `planFrom` answers "may this account do X"; this answers "what do we tell the
+ * subscriber". They differ in one case that matters: a lapsed row is `free` to
+ * every gate, and `lapsed` here, so the plan page can say when Pro ended and that
+ * nothing was taken away (decision 185).
+ */
+export type Subscription =
+  | { status: "none" }
+  | {
+      status: "active";
+      /** Null when Pro was granted by hand rather than bought. */
+      periodEnd: number | null;
+      billing: Billing | null;
+      /** False once cancelled: Pro runs to `periodEnd`, then lapses. */
+      renews: boolean;
+    }
+  | { status: "lapsed"; endedAt: number };
+
+export type EntitlementRow = {
+  plan?: string | null;
+  period_end?: string | null;
+  billing?: string | null;
+  cancel_at_period_end?: boolean | null;
+};
+
+export function subscriptionFrom(
+  row: EntitlementRow | null | undefined,
+  now: number = Date.now(),
+): Subscription {
+  if (!row || row.plan !== "pro") return { status: "none" };
+  const end = row.period_end ? Date.parse(row.period_end) : null;
+  if (end !== null && Number.isFinite(end) && end <= now) {
+    return { status: "lapsed", endedAt: end };
+  }
+  return {
+    status: "active",
+    periodEnd: end !== null && Number.isFinite(end) ? end : null,
+    billing: row.billing === "monthly" || row.billing === "yearly" ? row.billing : null,
+    renews: end !== null && !row.cancel_at_period_end,
+  };
+}
+
+/**
  * What to say when a gate bites, keyed by the feature that bit.
  *
  * Copy lives beside the rule for the same reason `RISK_PROFILES` carries its own

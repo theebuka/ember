@@ -1,29 +1,41 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo } from "react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PageBody } from "@/components/common/page-body";
-import { SectionHeader } from "@/components/common/section-header";
+import { CaretRight } from "@/components/common/icon";
 import { Segmented } from "@/components/common/segmented";
 import { DataSourceChip } from "@/components/market/data-source-chip";
 import { NotificationsButton } from "@/components/notifications/notifications-button";
-import { AdminPanels } from "@/components/admin/admin-panels";
+import dynamic from "next/dynamic";
+
+// Only an admin ever opens this tab; nobody else should download the composer,
+// the codes panel and the suspension tools with their settings page.
+const AdminPanels = dynamic(
+  () => import("@/components/admin/admin-panels").then((m) => m.AdminPanels),
+  { ssr: false },
+);
 import { useAdmin } from "@/hooks/use-admin";
 import { AccountSetting } from "@/components/settings/account-setting";
 import { AlertSettings } from "@/components/settings/alert-settings";
 import { DataSettings } from "@/components/settings/data-settings";
-import { DeleteAccount } from "@/components/settings/delete-account";
 import { PlanSetting } from "@/components/plan/plan-setting";
 import { ProfileSettings } from "@/components/settings/profile-settings";
 import { RiskProfileSetting } from "@/components/settings/risk-profile-setting";
 import {
+  SETTINGS_GROUP_LABELS,
   tabFromParam,
   visibleSections,
+  type SettingsGroupId,
   type SettingsSection,
   type SettingsTab,
 } from "@/components/settings/settings-nav";
-import { SettingGroup, SettingRow } from "@/components/settings/setting-row";
+import {
+  SettingGroup,
+  SettingRow,
+  SettingsPaneHeader,
+} from "@/components/settings/setting-row";
 import { PageHeader } from "@/components/shell/page-header";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { Switch } from "@/components/ui/switch";
@@ -80,10 +92,17 @@ const CURRENCY_OPTIONS = BASE_CURRENCIES.map((value) => ({
 
 export function SettingsScreen() {
   const hydrated = useHydrated();
-  const router = useRouter();
-  const pathname = usePathname();
   const params = useSearchParams();
-  const tab = tabFromParam(params.get("tab"));
+  const rawTab = params.get("tab");
+  const tab = tabFromParam(rawTab);
+
+  // `?tab=alerts` predates the merge and is in notifications, emails and
+  // broadcasts already sent; it becomes Preferences at the alerts group. A hash
+  // rather than `scrollIntoView`, which the router's own scroll reset undid.
+  const router = useRouter();
+  useEffect(() => {
+    if (rawTab === "alerts") router.replace("/settings?tab=preferences#alerts");
+  }, [rawTab, router]);
 
   const setRiskProfile = usePreferences((s) => s.setRiskProfile);
   const toggleMarket = usePreferences((s) => s.toggleMarket);
@@ -126,24 +145,35 @@ export function SettingsScreen() {
   const onlyOneMarket =
     (["equity", "crypto", "fx"] as const).filter((m) => markets[m]).length === 1;
 
-  const go = (next: SettingsTab) => {
-    // `replace`, not `push`: eight sections would otherwise fill the back
-    // stack, and leaving settings would mean pressing back eight times.
-    router.replace(next === "account" ? pathname : `${pathname}?tab=${next}`, {
-      scroll: false,
-    });
-  };
-
   const { isAdmin } = useAdmin();
   const sections = visibleSections(isAdmin);
-  // Falls back to Account when a non-admin lands on `?tab=admin` — the tab is
+  // Falls back to Profile when a non-admin lands on `?tab=admin` — the tab is
   // simply not one of theirs, which leaks nothing either way.
   const section = sections.find((s) => s.id === tab) ?? sections[0];
+  const current = section.id;
+
+  /**
+   * **Two layouts, chosen by CSS rather than by script** (decision 284).
+   *
+   * A desktop gets the sidebar every settings reference uses — GitHub, Vercel,
+   * Linear, Stripe, macOS — beside a pane with its own title. A phone gets
+   * the iOS pattern: a list of sections, each opening its own page with a way
+   * back. The horizontal tab row that preceded both (decision 127) hid half its
+   * tabs off the right edge of a phone and gave a desktop pane no title at all.
+   *
+   * Which one shows is decided by a media query and the `tab` parameter, both
+   * of which the server knows the shape of, so nothing here can disagree at
+   * hydration.
+   */
+  const atIndex = tab === null;
 
   return (
     <>
+      {/* A phone inside a section reads that section's name, with a way back
+          to the list; everywhere else the header is "Settings". */}
       <PageHeader
         title="Settings"
+        className={cn(!atIndex && "max-lg:hidden")}
         actions={
           <>
             <DataSourceChip />
@@ -151,346 +181,268 @@ export function SettingsScreen() {
           </>
         }
       />
+      {!atIndex && (
+        <PageHeader title={section.label} back="/settings" className="lg:hidden" />
+      )}
 
       <PageBody className="pb-12">
-        <SectionNav current={tab} sections={sections} onSelect={go} />
+        <div className="lg:grid lg:grid-cols-[13.5rem_minmax(0,1fr)] lg:gap-12 xl:gap-16">
+          <SettingsSidebar current={current} sections={sections} />
 
-        {/* One measure, every width.
-            A settings pane is the case decision 065 carves out: there is no
-            "more" to give it — no second column of content that belongs
-            beside a list of switches — so the width goes to the tab row above
-            and the pane keeps a readable measure. A switch 1,400px from its
-            label is worse than a narrow column. */}
-        <div className="min-w-0 max-w-3xl">
-          {/* The tab row is the visible title. A second "Account" 40px under
-              the selected "Account" tab, with a lowercase tagline beneath it,
-              was the same word twice before the first control — so the
-              heading stays for assistive tech and nothing else. */}
-          <h2 className="sr-only">{section.label}</h2>
+          {atIndex && <SettingsIndex sections={sections} />}
 
-          {/* 40px between blocks, not 32. Tightening it was the wrong half of
-              the fix — the pane read as a wall because of the *text*, and taking
-              space out while the paragraphs were still there made it denser
-              rather than calmer. The copy is short now, so the air can come back. */}
-          {tab === "account" && (
+          {/* One measure, every width. A settings pane has no "more" to give
+              (decision 065): a switch 1,400px from its label is worse than a
+              narrow column. */}
+          <div className={cn("min-w-0 max-w-2xl", atIndex && "max-lg:hidden")}>
+            <SettingsPaneHeader title={section.label} description={section.description} />
+
+            {/* 40px between groups, 12px from a group's heading to its rows. */}
             <div className="space-y-10">
-              <AccountSetting />
-              <ProfileSettings />
-            </div>
-          )}
+              {current === "account" && (
+                <>
+                  <AccountSetting />
+                  <ProfileSettings />
+                </>
+              )}
 
-          {tab === "plan" && <PlanSetting />}
+              {current === "plan" && <PlanSetting />}
 
-          {/* Its own tab, and only rendered for an admin — `visibleSections`
-              already hides the chip, this is the matching half. Not a permission:
-              every control inside would be refused by RLS anyway (ADR 0039). */}
-          {tab === "admin" && isAdmin && <AdminPanels />}
+              {/* Only rendered for an admin — `visibleSections` already hides the
+                  entry, this is the matching half. Not a permission: every
+                  control inside would be refused by RLS anyway (ADR 0039). */}
+              {current === "admin" && isAdmin && <AdminPanels />}
 
-          {tab === "advice" && (
-            <section>
-              <SettingRow
-                label="Risk profile"
-                description="How sure ember must be before it recommends a trade, and how large a position it suggests."
-                layout="stack"
-              >
-                <RiskProfileSetting
-                  value={riskProfile}
-                  onChange={setRiskProfile}
-                  bleed
-                  className="mt-3.5"
-                />
-              </SettingRow>
-            </section>
-          )}
+              {current === "advice" && (
+                <SettingGroup
+                  title="Risk profile"
+                  description="Also sets how large a position ember suggests."
+                  boxed={false}
+                >
+                  <RiskProfileSetting value={riskProfile} onChange={setRiskProfile} />
+                </SettingGroup>
+              )}
 
-          {tab === "markets" && (
-            <section>
-              <SettingGroup>
-                {(["equity", "crypto", "fx"] as const).map((market) => {
-                  const on = markets[market];
-                  const locked = on && onlyOneMarket;
-                  const count = counts[market];
+              {current === "preferences" && (
+                <>
+                  <SettingGroup title="Markets" description="What ember watches and advises on.">
+                    {(["equity", "crypto", "fx"] as const).map((market) => {
+                      const on = markets[market];
+                      const locked = on && onlyOneMarket;
+                      // Not before hydration: a warm instruments cache can answer
+                      // before React reaches this row, and the server's HTML has
+                      // no count — decision 250's mismatch, on this screen.
+                      const count = hydrated ? counts[market] : 0;
 
-                  return (
+                      return (
+                        <SettingRow
+                          key={market}
+                          label={MARKET_LABELS[market]}
+                          description={
+                            locked
+                              ? "Keep at least one market on."
+                              : `${MARKET_NOTES[market]}${count > 0 ? ` ${count} instruments.` : ""}`
+                          }
+                          layout="inline"
+                          control={
+                            <Switch
+                              checked={on}
+                              disabled={locked}
+                              onCheckedChange={() => toggleMarket(market)}
+                              aria-label={`Follow ${MARKET_LABELS[market]}`}
+                            />
+                          }
+                        />
+                      );
+                    })}
+                  </SettingGroup>
+
+                  {/* Alerts were their own tab; they sit with the markets they
+                      watch (decision 286). `?tab=alerts` lands here. */}
+                  <AlertSettings />
+
+                  <SettingGroup
+                    title="Currency"
+                    footer={
+                      <p>
+                        Realized P&amp;L uses today&apos;s exchange rate, not the rate on the
+                        day you traded.
+                      </p>
+                    }
+                  >
                     <SettingRow
-                      key={market}
-                      label={MARKET_LABELS[market]}
-                      description={
-                        locked
-                          ? "Keep at least one market on."
-                          : `${MARKET_NOTES[market]}${count > 0 ? ` ${count} instruments.` : ""}`
-                      }
-                      layout="inline"
+                      label="Base currency"
+                      description="Used for totals and P&L. Prices stay in their own currency."
+                      layout="stack"
                       control={
-                        <Switch
-                          checked={on}
-                          disabled={locked}
-                          onCheckedChange={() => toggleMarket(market)}
-                          aria-label={`Follow ${MARKET_LABELS[market]}`}
+                        <Segmented
+                          aria-label="Base currency"
+                          value={baseCurrency}
+                          onChange={(value) => setBaseCurrency(value as BaseCurrency)}
+                          options={CURRENCY_OPTIONS}
                         />
                       }
                     />
-                  );
-                })}
-              </SettingGroup>
-            </section>
-          )}
+                  </SettingGroup>
 
-          {tab === "money" && (
-            <section>
-              <SettingRow
-                label="Base currency"
-                description={"Used for totals and P&L. Prices stay in their own currency."}
-                layout="stack"
-                control={
-                  <Segmented
-                    aria-label="Base currency"
-                    value={baseCurrency}
-                    onChange={(value) => setBaseCurrency(value as BaseCurrency)}
-                    options={CURRENCY_OPTIONS}
-                  />
-                }
-              />
-              <p className="mt-2 text-micro text-stone">
-                Realized P&amp;L uses today&apos;s exchange rate, not the rate on the day you traded.
-              </p>
-            </section>
-          )}
+                  <SettingGroup title="Appearance">
+                    <SettingRow label="Theme" layout="inline" control={<ThemeToggle />} />
+                  </SettingGroup>
+                </>
+              )}
 
-          {tab === "alerts" && (
-            <section>
-              <AlertSettings />
-              {/* One line. The four-line version is on About, where somebody
-                  asking how alerts behave goes looking for it. */}
-            </section>
-          )}
+              {current === "data" && <DataSettings />}
 
-          {tab === "appearance" && (
-            <section>
-              <SettingRow
-                label="Theme"
-                
-                layout="inline"
-                control={<ThemeToggle />}
-              />
-            </section>
-          )}
-
-          {tab === "data" && (
-            <div className="space-y-8">
-              <section>
-                <SectionHeader
-                  title="Export and clear"
-                  hint={hydrated ? "on this device" : undefined}
-                />
-                <DataSettings />
-                {/* This paragraph said "nothing is sent anywhere" until phase
-                    15, and that stopped being true the moment the risk engine
-                    shipped. A privacy claim that has quietly expired is worse
-                    than never having made one, so it is replaced rather than
-                    softened — and it names exactly what goes and exactly what
-                    doesn't. ADR 0025. */}
-                <p className="mt-2 text-micro text-stone">
-                  Your trades live in this browser. If you&apos;re not signed in, clearing browser data deletes them.
-                </p>
-                <p className="mt-1.5 text-micro text-stone">
-                  To warn you about a position, ember&rsquo;s server needs to know you hold it. Whenever Home loads or alerts are on, it receives four numbers per open position — symbol, quantity, average cost and opening date — and stores none of them. Nothing else about your trades leaves this device.
-                </p>
-              </section>
-
-              <DeleteAccount />
-            </div>
-          )}
-
-          {tab === "about" && (
-            <section>
-              <SettingGroup>
-                <SettingRow
-                  label="Where the prices come from"
-                  description={
-                    !synthetic
-                      ? "Stocks from Yahoo and Finnhub, crypto from CoinGecko, exchange rates from the European Central Bank. Central-bank rates and the economic calendar are modelled."
-                      : "Prices and company data are simulated. The engine and track record are real, running on that simulated data."
+              {current === "about" && (
+                <SettingGroup
+                  footer={
+                    <p>
+                      ember gives information, not financial advice. It doesn&apos;t account
+                      for your circumstances, tax position or timeline.
+                    </p>
                   }
-                  control={<DataSourceChip />}
-                />
-                <SettingRow
-                  label="How the signals are built"
-                  description="Every rule ember uses, with its source and weight."
-                  control={<AboutLink href="/signals/methodology">Methodology</AboutLink>}
-                />
-                <SettingRow
-                  label="How past calls performed"
-                  description="Every call the engine has made in testing, losses included."
-                  control={<AboutLink href="/signals/track-record">Track record</AboutLink>}
-                />
-                <SettingRow
-                  label="How alerts behave"
-                  description="In-app alerts arrive while ember is open; push reaches you when it's closed. You're never alerted twice about the same thing or about a call you've handled. Warnings about what you hold repeat at most once a day."
-                />
-                <SettingRow
-                  label="Run through setup again"
-                  description="Your data isn't affected."
-                  control={<AboutLink href="/onboarding?replay=1">Replay</AboutLink>}
-                />
-              </SettingGroup>
-
-              <p className="mt-6 text-micro text-stone">
-                ember gives information, not financial advice. It doesn&apos;t
-                account for your circumstances, tax position or timeline.
-              </p>
-            </section>
-          )}
+                >
+                  <SettingRow
+                    label="Where the prices come from"
+                    description={
+                      !synthetic
+                        ? "Stocks from Yahoo and Finnhub, crypto from CoinGecko, exchange rates from the European Central Bank. Central-bank rates and the economic calendar are modelled."
+                        : "Prices and company data are simulated. The engine and track record are real, running on that simulated data."
+                    }
+                    control={<DataSourceChip />}
+                  />
+                  <SettingRow
+                    label="How the signals are built"
+                    description="Every rule ember uses, with its source and weight."
+                    control={<AboutLink href="/signals/methodology">Methodology</AboutLink>}
+                  />
+                  <SettingRow
+                    label="How past calls performed"
+                    description="Every call the engine has made in testing, losses included."
+                    control={<AboutLink href="/signals/track-record">Track record</AboutLink>}
+                  />
+                  <SettingRow
+                    label="How alerts behave"
+                    description="In-app alerts arrive while ember is open; push reaches you when it's closed. You're never alerted twice about the same thing or about a call you've handled. Warnings about what you hold repeat at most once a day."
+                  />
+                  <SettingRow
+                    label="Run through setup again"
+                    description="Your data isn't affected."
+                    control={<AboutLink href="/onboarding?replay=1">Replay</AboutLink>}
+                  />
+                </SettingGroup>
+              )}
+            </div>
+          </div>
         </div>
       </PageBody>
     </>
   );
 }
 
+/** Sections in their groups, in the order the sidebar and the index list them. */
+function grouped(sections: SettingsSection[]): [SettingsGroupId, SettingsSection[]][] {
+  const order: SettingsGroupId[] = ["account", "app", "admin"];
+  return order
+    .map((group) => [group, sections.filter((s) => s.group === group)] as [SettingsGroupId, SettingsSection[]])
+    .filter(([, items]) => items.length > 0);
+}
+
 /**
- * The section list — one horizontal row of tabs, at every width.
+ * The desktop sidebar: grouped, sticky, and one pane at a time beside it.
  *
- * It was a scrolling chip row on mobile and a 224px sidebar on desktop, and
- * the sidebar was the wrong instinct: it borrowed the macOS/SaaS-console
- * pattern for a pane with eight short sections and no hierarchy under them,
- * and it spent a whole column establishing that. Eight labels fit across a
- * desktop page comfortably, so the row *is* the desktop layout — the width
- * that was going to the sidebar goes to nothing, which on a settings screen is
- * the right answer.
- *
- * One layout rather than two also removes the thing the split kept producing:
- * a section heading that had to be hidden on mobile because the chips already
- * said it, and shown on desktop because the sidebar's label was too far away.
- * Now the row scrolls where it must and the heading is simply always there.
+ * Links rather than buttons, so a section opens in a new tab and reads as a
+ * place. `replace`, so eight sections do not fill the back stack.
  */
-function SectionNav({
+function SettingsSidebar({
   current,
   sections,
-  onSelect,
 }: {
   current: SettingsTab;
   sections: SettingsSection[];
-  onSelect: (tab: SettingsTab) => void;
 }) {
-  const rowRef = useRef<HTMLUListElement>(null);
-
-  /**
-   * **The active tab is brought into view**, and the row says when it scrolls.
-   *
-   * On a phone ten tabs do not fit, so opening `?tab=about` or `?tab=admin` —
-   * from a notification, a warning's action, the `/admin` redirect — landed with
-   * the active tab off the right edge. Nothing on screen looked selected, which
-   * reads as the link having gone to the wrong place.
-   *
-   * Scrolled by hand rather than with `scrollIntoView`, which also scrolls every
-   * scrollable ancestor and would move the page vertically to reach a row that
-   * is already on screen.
-   */
-  useEffect(() => {
-    const row = rowRef.current;
-    const tab = row?.querySelector<HTMLElement>("[aria-current='page']");
-    if (!row || !tab) return;
-    // Measured against the row's own box, in the row's scroll coordinates —
-    // `offsetLeft` is relative to whatever positioned ancestor happens to exist.
-    const left = tab.getBoundingClientRect().left - row.getBoundingClientRect().left + row.scrollLeft;
-    const right = left + tab.offsetWidth;
-    const inset = 24;
-    if (left < row.scrollLeft + inset) {
-      row.scrollTo({ left: Math.max(0, left - inset) });
-    } else if (right > row.scrollLeft + row.clientWidth - inset) {
-      row.scrollTo({ left: right - row.clientWidth + inset });
-    }
-  }, [current]);
-
-  /**
-   * An edge fades where there is more to scroll to — the only sign the row
-   * scrolls at all, with the scrollbar hidden. Written straight to a data
-   * attribute rather than through state: it changes on every scroll event, and
-   * nothing but the CSS below reads it.
-   */
-  useEffect(() => {
-    const row = rowRef.current;
-    if (!row) return;
-    const mark = () => {
-      const start = row.scrollLeft > 1;
-      const end = row.scrollLeft + row.clientWidth < row.scrollWidth - 1;
-      row.dataset.fade = start && end ? "both" : start ? "start" : end ? "end" : "none";
-    };
-    mark();
-    row.addEventListener("scroll", mark, { passive: true });
-    const observer = new ResizeObserver(mark);
-    observer.observe(row);
-    return () => {
-      row.removeEventListener("scroll", mark);
-      observer.disconnect();
-    };
-  }, []);
-
   return (
-    /**
-     * A hairline under the whole row, and the active tab sits on it.
-     *
-     * It was a row of tinted pills, borrowed from the main navigation (decision
-     * 035). That vocabulary is right where the nav is the only thing on its own
-     * surface and wrong here: eight filled capsules across the top of a settings
-     * pane read as eight buttons competing with the content, and the rule they
-     * were meant to sit above did not exist.
-     *
-     * The underline is the standard tab affordance for a reason — it says "these
-     * are views of one thing" rather than "these are actions". The main nav keeps
-     * its pill, which is the point of using a different treatment here.
-     */
-    <nav aria-label="Settings sections" className="mb-7 border-b border-line">
-      {/* `-mx-4` so the first and last tabs sit against the page edge as they
-          scroll past, rather than appearing to stop 16px short of it. Above the
-          point where all of them fit, `overflow-x-auto` is inert. */}
-      <ul
-        ref={rowRef}
-        className={cn(
-          "-mx-4 flex gap-1 overflow-x-auto px-4 min-[360px]:-mx-5 min-[360px]:px-5",
-          "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-          "data-[fade=end]:[mask-image:linear-gradient(to_right,black_calc(100%-2.5rem),transparent)]",
-          "data-[fade=start]:[mask-image:linear-gradient(to_left,black_calc(100%-2.5rem),transparent)]",
-          "data-[fade=both]:[mask-image:linear-gradient(to_right,transparent,black_2.5rem,black_calc(100%-2.5rem),transparent)]",
-          "md:-mx-8 md:px-8 xl:-mx-12 xl:px-12",
-        )}
-      >
-        {sections.map((section) => {
-          const active = section.id === current;
-          const Icon = section.icon;
-          return (
-            <li key={section.id} className="shrink-0">
-              <button
-                type="button"
-                onClick={() => onSelect(section.id)}
-                aria-current={active ? "page" : undefined}
+    <nav
+      aria-label="Settings sections"
+      className="hidden lg:block"
+    >
+      <div className="sticky top-[calc(var(--bar-h,0px)+6.5rem)] space-y-6">
+        {grouped(sections).map(([group, items]) => (
+          <div key={group}>
+            {SETTINGS_GROUP_LABELS[group] && (
+              <p className="mb-1.5 px-3 text-micro font-medium text-stone">
+                {SETTINGS_GROUP_LABELS[group]}
+              </p>
+            )}
+            <ul className="space-y-0.5">
+              {items.map((item) => {
+                const active = item.id === current;
+                const Icon = item.icon;
+                return (
+                  <li key={item.id}>
+                    <Link
+                      href={`/settings?tab=${item.id}`}
+                      replace
+                      scroll={false}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "flex h-10 items-center gap-2.5 rounded-lg px-3 text-caption outline-none transition-colors",
+                        "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+                        active
+                          ? "bg-surface-2 font-medium text-ink"
+                          : "text-stone hover:bg-surface-2 hover:text-graphite",
+                      )}
+                    >
+                      <Icon size={18} weight={active ? "fill" : "regular"} className="shrink-0" />
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+/**
+ * The phone's settings home: every section, grouped, each opening its own page.
+ *
+ * A push rather than a replace, so the system back gesture returns here.
+ */
+function SettingsIndex({ sections }: { sections: SettingsSection[] }) {
+  return (
+    <nav aria-label="Settings sections" className="space-y-8 lg:hidden">
+      {grouped(sections).map(([group, items]) => (
+        <SettingGroup key={group} title={SETTINGS_GROUP_LABELS[group] ?? undefined} heading="h2">
+          {items.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.id}
+                href={`/settings?tab=${item.id}`}
                 className={cn(
-                  "tap-target relative flex w-full items-center gap-2 px-3 pt-2 pb-2.5",
-                  "text-caption font-medium whitespace-nowrap transition-colors",
-                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                  active ? "text-ink" : "text-stone hover:text-graphite",
+                  "flex items-center gap-3.5 px-4 py-3.5 outline-none transition-colors",
+                  "active:bg-surface-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
                 )}
               >
-                <Icon
-                  className="size-4 shrink-0"
-                  weight={active ? "fill" : "regular"}
-                />
-                {section.label}
-
-                {/* Sits *on* the row's hairline rather than under the label, so
-                    the two read as one rule with a lit segment. `-bottom-px`
-                    covers the border rather than doubling it. */}
-                {active && (
-                  <span
-                    aria-hidden
-                    className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-brand"
-                  />
-                )}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-2 text-graphite">
+                  <Icon size={18} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-caption font-medium text-ink">{item.label}</span>
+                  <span className="mt-0.5 block text-micro text-pretty text-stone">
+                    {item.description}
+                  </span>
+                </span>
+                <CaretRight className="size-4 shrink-0 text-stone" />
+              </Link>
+            );
+          })}
+        </SettingGroup>
+      ))}
     </nav>
   );
 }

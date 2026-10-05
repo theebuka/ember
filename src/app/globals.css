@@ -36,6 +36,10 @@
   --line: #ecedf1; /* hairline borders */
   --line-strong: #dddfe6; /* dividers that need to carry more weight */
   --surface-2: #f5f6f8; /* sunken wells, inputs, secondary buttons */
+  /* A well under the cursor. A token rather than `color-mix(in oklch, …)`:
+     mixing two near-greys in oklch leaves the hue `none`, which browsers draw
+     as hue 0 — a faint red on every hovered well. */
+  --surface-2-hover: #e9eaec;
   --surface: #ffffff; /* cards — same as ground on light, deliberately */
   --ground: #ffffff; /* the page */
   /* What the page sits on, desktop only. The rail lives here and the page is a
@@ -139,6 +143,7 @@
   --line: #23262e;
   --line-strong: #30343e;
   --surface-2: #171a20;
+  --surface-2-hover: #22252b;
   --surface: #101216;
   --ground: #0a0b0d;
   --canvas: #060709;
@@ -176,6 +181,7 @@
   --color-line-strong: var(--line-strong);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-surface-2-hover: var(--surface-2-hover);
   --color-ground: var(--ground);
   --color-canvas: var(--canvas);
   --color-brand: var(--brand);

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PanelLeftClose, PanelLeftOpen, Search } from "@/components/common/icon";
 import { PlanRailCard } from "@/components/plan/plan-rail-card";
-import { openCommandMenu } from "@/components/shell/command-menu";
+import { PlanBadge } from "@/components/plan/subscription";
+import { openCommandMenu } from "@/components/shell/command-menu-state";
 import { Logo } from "@/components/shell/logo";
 import { ProfileButton } from "@/components/shell/profile-button";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
@@ -259,9 +260,12 @@ export function SidePanel() {
           </div>
         ) : (
           <>
-            {/* Settings lives behind the portrait, not in the destinations
-                above it — see the note in lib/nav.ts. */}
-            <ProfileButton />
+            {/* The portrait opens Settings too — the same destination as the
+                last item above, kept because it is where people look for it. */}
+            <div className="flex items-center gap-2">
+              <ProfileButton />
+              <PlanBadge />
+            </div>
             <ThemeToggle />
           </>
         )}

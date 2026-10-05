@@ -147,89 +147,93 @@ export function AlertSettings() {
 
   return (
     <>
-      {unavailable && (
-        <div className="mb-3.5 flex items-start gap-2.5 rounded-xl bg-surface-2 p-3.5">
-          <BellSlash className="mt-0.5 size-4 shrink-0 text-graphite" />
-          <div className="min-w-0">
-            <p className="text-caption font-medium text-ink">
-              {blocked
-                ? "Notifications are blocked in this browser"
-                : "Notifications aren't available here"}
-            </p>
-            <p className="mt-0.5 text-caption text-stone">
-              {blocked
-                ? "Allow them from the padlock beside the address bar, or in this site's settings, then come back."
-                : iosHint()}
-            </p>
+      <div className="space-y-4">
+        {unavailable && (
+          <div className="flex items-start gap-2.5 rounded-xl bg-surface-2 p-3.5">
+            <BellSlash className="mt-0.5 size-4 shrink-0 text-graphite" />
+            <div className="min-w-0">
+              <p className="text-caption font-medium text-ink">
+                {blocked
+                  ? "Notifications are blocked in this browser"
+                  : "Notifications aren't available here"}
+              </p>
+              <p className="mt-0.5 text-caption text-stone">
+                {blocked
+                  ? "Allow them from the padlock beside the address bar, or in this site's settings, then come back."
+                  : iosHint()}
+              </p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <SettingGroup>
-        <SettingRow
-          label="A trade window opens"
-          description="When a recommended trade is ready to act on, with its size and stop."
-          layout="inline"
-          control={
-            status ?? <Switch
-              checked={live}
-              disabled={unavailable}
-              onCheckedChange={toggle(
-                "windowOpen",
-                "ember will tell you when a window opens, while it's open.",
-              )}
-              aria-label="Alert me when a window opens"
-            />
-          }
-        />
+        <SettingGroup id="alerts" title="Alerts" description="While ember is open.">
+          <SettingRow
+            label="A trade window opens"
+            description="When a recommended trade is ready to act on, with its size and stop."
+            layout="inline"
+            control={
+              status ?? (
+                <Switch
+                  checked={live}
+                  disabled={unavailable}
+                  onCheckedChange={toggle(
+                    "windowOpen",
+                    "ember will tell you when a window opens, while it's open.",
+                  )}
+                  aria-label="Alert me when a window opens"
+                />
+              )
+            }
+          />
 
-        {/* Its own switch, not a sub-setting of the one above. Wanting to be
+          {/* Its own switch, not a sub-setting of the one above. Wanting to be
             told the moment a position turns against you, and never wanting to
             be pitched a new idea, is a coherent thing to ask for — and it is
             probably the more common of the two. */}
-        <SettingRow
-          label="A position turns against you"
-          description="When something you hold hits its stop, loses ember's support or grows too large, with how much to sell."
-          layout="inline"
-          control={
-            status ?? <Switch
-              checked={riskLive}
-              disabled={unavailable}
-              onCheckedChange={toggle(
-                "riskAlerts",
-                "ember will tell you when something you hold turns against you.",
-              )}
-              aria-label="Alert me when a position turns against me"
-            />
-          }
-        />
-
-        {(live || riskLive) && (
           <SettingRow
-            label="Send a test alert"
-            description="Check that notifications show on this device."
+            label="A position turns against you"
+            description="When something you hold hits its stop, loses ember's support or grows too large, with how much to sell."
+            layout="inline"
             control={
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={sendTest}
-                disabled={testing}
-              >
-                <Send />
-                {testing ? "Sending" : "Send"}
-              </Button>
+              status ?? (
+                <Switch
+                  checked={riskLive}
+                  disabled={unavailable}
+                  onCheckedChange={toggle(
+                    "riskAlerts",
+                    "ember will tell you when something you hold turns against you.",
+                  )}
+                  aria-label="Alert me when a position turns against me"
+                />
+              )
             }
           />
-        )}
 
-      </SettingGroup>
+          {(live || riskLive) && (
+            <SettingRow
+              label="Send a test alert"
+              description="Check that notifications show on this device."
+              control={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={sendTest}
+                  disabled={testing}
+                >
+                  <Send />
+                  {testing ? "Sending" : "Send"}
+                </Button>
+              }
+            />
+          )}
+        </SettingGroup>
+      </div>
 
       {/* Delivery. Its own group because it answers a different question from
           everything above: not what ember decides to tell you, but whether it
           can reach you with the app closed. Renders nothing without an account
           and a VAPID key, so a deployment with neither looks exactly as it did. */}
       <DeliverySettings />
-
     </>
   );
 }
@@ -243,9 +247,9 @@ function StatusLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-
 function iosHint(): string {
-  if (typeof window === "undefined") return "Notifications aren't available here.";
+  if (typeof window === "undefined")
+    return "Notifications aren't available here.";
   if (isIos() && !isStandalone()) {
     return "iOS only allows notifications for apps on the home screen. Share → Add to Home Screen, then open ember from there.";
   }

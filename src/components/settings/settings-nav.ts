@@ -1,14 +1,11 @@
 import {
-  Bell,
   BookOpen,
-  Compass,
   Crosshair,
-  Moon,
+  Database,
   ShieldWarning,
+  SlidersHorizontal,
   Sparkle,
   UserCircle,
-  Wallet,
-  Warning,
   type IconComponent,
 } from "@/components/common/icon";
 
@@ -36,19 +33,29 @@ export type SettingsTab =
   | "plan"
   | "admin"
   | "advice"
-  | "markets"
-  | "money"
-  | "alerts"
-  | "appearance"
+  | "preferences"
   | "data"
   | "about";
+
+export type SettingsGroupId = "account" | "app" | "admin";
+
+/**
+ * The headings the sections sit under, in the sidebar and in the phone's index.
+ * Admin has none: one item under a heading repeating its name says it twice.
+ */
+export const SETTINGS_GROUP_LABELS: Record<SettingsGroupId, string | null> = {
+  account: "Account",
+  app: "App",
+  admin: null,
+};
 
 export interface SettingsSection {
   id: SettingsTab;
   label: string;
-  /** What this section is for, in the register of the section headers it replaces. */
-  hint: string;
+  /** One line under the pane's title, and under the label in the phone's index. */
+  description: string;
   icon: IconComponent;
+  group: SettingsGroupId;
   /**
    * Only rendered for an admin. Not a permission — the refusal lives in RLS
    * (ADR 0039) — just the reason not to show a tab to the people it is useless
@@ -57,21 +64,64 @@ export interface SettingsSection {
   adminOnly?: boolean;
 }
 
+/**
+ * Grouped the way every settings reference groups them: what is yours (who you
+ * are, what you pay for, what ember holds), then how the app behaves. `Your
+ * data` moved up beside Profile and Plan because it is about the account, not
+ * the app. The `account` id stays so every existing link still lands; the label
+ * is Profile, because "Account" is now the heading above it.
+ */
 export const SETTINGS_SECTIONS: SettingsSection[] = [
-  { id: "account", label: "Account", hint: "who you are", icon: UserCircle },
-  { id: "plan", label: "Plan", hint: "what you get", icon: Sparkle },
-  { id: "advice", label: "Advice", hint: "what ember recommends", icon: Crosshair },
-  { id: "markets", label: "Markets", hint: "what ember watches", icon: Compass },
-  { id: "money", label: "Money", hint: "how figures are shown", icon: Wallet },
-  { id: "alerts", label: "Alerts", hint: "while ember is open", icon: Bell },
-  { id: "appearance", label: "Appearance", hint: "how it looks", icon: Moon },
-  { id: "data", label: "Your data", hint: "export, clear, delete", icon: Warning },
-  { id: "about", label: "About", hint: "how any of it works", icon: BookOpen },
+  {
+    id: "account",
+    label: "Profile",
+    description: "Sign-in, sync, and the name ember greets you by.",
+    icon: UserCircle,
+    group: "account",
+  },
+  {
+    id: "plan",
+    label: "Plan",
+    description: "What your plan includes, and redeeming a code.",
+    icon: Sparkle,
+    group: "account",
+  },
+  {
+    id: "data",
+    label: "Your data",
+    description: "Export, clear or delete what ember holds.",
+    icon: Database,
+    group: "account",
+  },
+  {
+    id: "advice",
+    label: "Advice",
+    description: "How sure ember must be before it recommends a trade.",
+    icon: Crosshair,
+    group: "app",
+  },
+  // Markets, Money and Appearance were a tab each, holding five controls
+  // between them; Alerts followed (decision 286). One tab of short groups.
+  {
+    id: "preferences",
+    label: "Preferences",
+    description: "Markets, alerts, currency and theme.",
+    icon: SlidersHorizontal,
+    group: "app",
+  },
+  {
+    id: "about",
+    label: "About",
+    description: "Where prices come from and how ember works.",
+    icon: BookOpen,
+    group: "app",
+  },
   {
     id: "admin",
     label: "Admin",
-    hint: "broadcasts and accounts",
+    description: "Broadcasts, codes, accounts and pricing.",
     icon: ShieldWarning,
+    group: "admin",
     adminOnly: true,
   },
 ];
@@ -87,13 +137,24 @@ export function visibleSections(isAdmin: boolean): SettingsSection[] {
 }
 
 /**
- * The tab from the URL, defaulting to Account.
+ * The tab from the URL. `null` when there is none: a phone shows the index of
+ * sections then, and a desktop shows Profile beside the sidebar.
  *
  * In the query string rather than in component state so a section is
  * linkable — the notification centre's warnings point at alerts, the sign-in
  * screen points back at the account tab, and "change this" links elsewhere in
  * the app can land on the row they mean rather than the top of a long page.
  */
-export function tabFromParam(value: string | null): SettingsTab {
-  return value !== null && IDS.has(value) ? (value as SettingsTab) : "account";
+export function tabFromParam(value: string | null): SettingsTab | null {
+  if (value === null) return null;
+  if (value !== null && value in MERGED) return MERGED[value];
+  return IDS.has(value) ? (value as SettingsTab) : "account";
 }
+
+/** Tabs that were folded into another, so an old link still lands on its row. */
+const MERGED: Record<string, SettingsTab> = {
+  markets: "preferences",
+  money: "preferences",
+  appearance: "preferences",
+  alerts: "preferences",
+};

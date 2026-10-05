@@ -35,7 +35,6 @@ import {
   transactionSchema,
   type TransactionFormValues,
 } from "@/lib/portfolio/transaction-schema";
-import { cn } from "@/lib/utils";
 
 /**
  * Add or edit a trade.
@@ -156,45 +155,44 @@ export function TransactionForm({
     return [...groups.entries()];
   }, [instruments]);
 
+  const quantity = Number(quantityText);
+  const price = Number(priceText);
+  const fees = feesText.trim() === "" ? 0 : Number(feesText);
+  const subtotal =
+    Number.isFinite(quantity) && Number.isFinite(price) && quantity > 0 && price > 0
+      ? quantity * price
+      : null;
+  const money = (value: number | null) =>
+    value !== null && instrument ? formatMoney(value, instrument.currency) : "—";
+  const totalLabel = side === "buy" ? "Total cost" : "Net proceeds";
+  const submitLabel = editing ? "Save changes" : "Log trade";
+
   return (
     <Form {...form}>
+      {/* An order ticket, the shape brokerages use: the fields on the left, and
+          on the right what they add up to beside the button that commits it.
+          A phone keeps one column and puts the total above the buttons. */}
+      {/* The two panes switch on by the form's own width, not the screen's:
+          a modal narrower than the ticket gets the one-column form rather
+          than crushed fields. */}
+      <div className="@container flex min-h-0 flex-col">
       <form
         onSubmit={form.handleSubmit((v) => onSubmit(toTransaction(v)))}
-        className="flex min-h-0 flex-col"
+        className="flex min-h-0 flex-col @2xl:grid @2xl:grid-cols-[minmax(0,1fr)_17rem]"
         noValidate
       >
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 md:p-5">
-          <FormField
-            control={form.control}
-            name="side"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Side</FormLabel>
-                <FormControl>
-                  <Segmented
-                    value={field.value}
-                    onChange={field.onChange}
-                    options={[
-                      { value: "buy", label: "Bought" },
-                      { value: "sell", label: "Sold" },
-                    ]}
-                    aria-label="Side"
-                    className="w-full [&>button]:flex-1"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
+        <div className="grid min-h-0 grid-cols-2 content-start gap-x-4 gap-y-5 overflow-y-auto px-5 py-5 @2xl:px-6 @2xl:py-6">
+          {/* The instrument first, as in every tracker that has one: the price
+              suggestion, the currency and the holding check all hang off it. */}
           <FormField
             control={form.control}
             name="symbol"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="col-span-2">
                 <FormLabel>Asset</FormLabel>
                 <Select value={field.value} onValueChange={field.onChange}>
                   <FormControl>
-                    <SelectTrigger className="h-9 w-full">
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Pick an asset" />
                     </SelectTrigger>
                   </FormControl>
@@ -219,126 +217,139 @@ export function TransactionForm({
             )}
           />
 
-          <div className="grid grid-cols-2 gap-3">
-            <FormField
-              control={form.control}
-              name="quantity"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Quantity</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      className="num h-9"
-                      inputMode="decimal"
-                      autoComplete="off"
-                      placeholder="0"
-                    />
-                  </FormControl>
-                  {held !== null && held > 0 && (
-                    <FormDescription>
-                      You held {formatQuantity(held, instrument?.market ?? "equity")} then
-                    </FormDescription>
+          <FormField
+            control={form.control}
+            name="side"
+            render={({ field }) => (
+              <FormItem className="col-span-2">
+                <FormLabel>Side</FormLabel>
+                <FormControl>
+                  <Segmented
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={[
+                      { value: "buy", label: "Bought" },
+                      { value: "sell", label: "Sold" },
+                    ]}
+                    aria-label="Side"
+                    className="w-full [&>button]:flex-1"
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="quantity"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Quantity</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    className="num"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    placeholder="0"
+                  />
+                </FormControl>
+                {held !== null && held > 0 && (
+                  <FormDescription>
+                    You held {formatQuantity(held, instrument?.market ?? "equity")} then
+                  </FormDescription>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="price"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Price
+                  {instrument && instrument.market !== "fx" && (
+                    <span className="mono-label text-micro text-stone">
+                      {instrument.currency}
+                    </span>
                   )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    className="num"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    placeholder="0.00"
+                  />
+                </FormControl>
+                {quote && (
+                  // Offered, not filled in. Silently prefilling a price the
+                  // user didn't pay is how a ledger stops being a record.
+                  <FormDescription>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        form.setValue("price", String(quote.price), {
+                          shouldValidate: true,
+                        })
+                      }
+                      className="rounded-sm underline underline-offset-2 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    >
+                      Use today&apos;s price, {quote.price.toFixed(instrument?.precision ?? 2)}
+                    </button>
+                  </FormDescription>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-            <FormField
-              control={form.control}
-              name="price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    Price
-                    {instrument && instrument.market !== "fx" && (
-                      <span className="mono-label text-micro text-stone">
-                        {instrument.currency}
-                      </span>
-                    )}
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      className="num h-9"
-                      inputMode="decimal"
-                      autoComplete="off"
-                      placeholder="0.00"
-                    />
-                  </FormControl>
-                  {quote && (
-                    // Offered, not filled in. Silently prefilling a price the
-                    // user didn't pay is how a ledger stops being a record.
-                    <FormDescription>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          form.setValue("price", String(quote.price), {
-                            shouldValidate: true,
-                          })
-                        }
-                        className="rounded-sm underline underline-offset-2 hover:text-stone focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                      >
-                        Use today&apos;s price, {quote.price.toFixed(instrument?.precision ?? 2)}
-                      </button>
-                    </FormDescription>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name="date"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Date</FormLabel>
+                <FormControl>
+                  <Input {...field} type="date" max={todayForInput()} className="num" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-          <div className="grid grid-cols-2 gap-3">
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Date</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="date" max={todayForInput()} className="num h-9" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="fees"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Fees</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      className="num h-9"
-                      inputMode="decimal"
-                      autoComplete="off"
-                      placeholder="0.00"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name="fees"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Fees</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    className="num"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    placeholder="0.00"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <FormField
             control={form.control}
             name="account"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="col-span-2">
                 <FormLabel>Account</FormLabel>
                 <FormControl>
-                  <Input
-                    {...field}
-                    className="h-9"
-                    autoComplete="off"
-                    placeholder="e.g. your broker or exchange"
-                  />
+                  <Input {...field} autoComplete="off" placeholder="e.g. your broker or exchange" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -349,14 +360,10 @@ export function TransactionForm({
             control={form.control}
             name="note"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="col-span-2">
                 <FormLabel>Note</FormLabel>
                 <FormControl>
-                  <Textarea
-                    {...field}
-                    rows={2}
-                    placeholder="Why you made this trade"
-                  />
+                  <Textarea {...field} rows={2} className="min-h-20" placeholder="Why you made this trade" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -364,42 +371,94 @@ export function TransactionForm({
           />
         </div>
 
-        <div className="border-t border-line p-4 md:p-5">
-          <div
-            className={cn(
-              "mb-3 flex items-baseline justify-between",
-              !total && "opacity-0",
+        {/* ── Summary: desktop ─────────────────────────────────────────── */}
+        <aside
+          aria-label="Order summary"
+          className="hidden flex-col border-l border-line bg-surface-2/60 p-6 @2xl:flex"
+        >
+          <p className="text-caption font-medium text-graphite">Summary</p>
+
+          <div className="mt-4 min-h-[3.25rem]">
+            {instrument ? (
+              <>
+                <p className="flex items-baseline justify-between gap-3">
+                  <span className="mono-label text-caption text-ink">{instrument.symbol}</span>
+                  {quote && (
+                    <span className="num text-micro text-stone">
+                      {quote.price.toFixed(instrument.precision)} today
+                    </span>
+                  )}
+                </p>
+                <p className="mt-0.5 truncate text-caption text-stone">{instrument.name}</p>
+              </>
+            ) : (
+              <p className="text-caption text-stone">No asset picked</p>
             )}
-            // Kept in the layout when empty so the footer doesn't jump the
-            // moment a price is typed.
-            aria-hidden={!total}
-          >
-            <span className="text-caption text-stone">
-              {side === "buy" ? "Total cost" : "Net proceeds"}
-            </span>
-            <span className="num text-heading font-medium text-ink">
-              {total !== null && instrument
-                ? formatMoney(total, instrument.currency)
-                : "—"}
-            </span>
           </div>
 
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              className="flex-1"
-              onClick={onCancel}
+          <dl className="mt-6 space-y-2.5 text-caption">
+            <div className="flex justify-between gap-3">
+              <dt className="text-stone">
+                {subtotal !== null ? `${quantityText} × ${priceText}` : "Quantity × price"}
+              </dt>
+              <dd className="num text-ink">{money(subtotal)}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-stone">Fees</dt>
+              <dd className="num text-ink">
+                {feesText.trim() === "" ? "—" : `${side === "buy" ? "+" : "−"}${money(fees)}`}
+              </dd>
+            </div>
+          </dl>
+
+          <div className="mt-4 border-t border-line pt-4">
+            <p className="text-caption text-stone">{totalLabel}</p>
+            <p
+              className={
+                total !== null && instrument
+                  ? "num mt-1 text-title font-semibold tracking-title text-ink"
+                  : "num mt-1 text-title text-stone"
+              }
             >
+              {money(total)}
+            </p>
+          </div>
+
+          <div className="mt-auto space-y-2 pt-8">
+            <Button type="submit" size="lg" className="w-full">
+              {submitLabel}
+            </Button>
+            <Button type="button" variant="ghost" size="lg" className="w-full" onClick={onCancel}>
+              Cancel
+            </Button>
+          </div>
+        </aside>
+
+        {/* ── Footer: phone ────────────────────────────────────────────── */}
+        <div className="border-t border-line px-5 py-4 @2xl:hidden">
+          <div className="mb-4 flex items-baseline justify-between">
+            <span className="text-caption text-stone">{totalLabel}</span>
+            <span
+              className={
+                total !== null && instrument
+                  ? "num text-heading font-medium text-ink"
+                  : "num text-heading text-stone"
+              }
+            >
+              {money(total)}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" size="lg" className="flex-1" onClick={onCancel}>
               Cancel
             </Button>
             <Button type="submit" size="lg" className="flex-1">
-              {editing ? "Save changes" : "Log trade"}
+              {submitLabel}
             </Button>
           </div>
         </div>
       </form>
+      </div>
     </Form>
   );
 }

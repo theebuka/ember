@@ -89,7 +89,7 @@ export function ResponsiveModal({
           onOpenAutoFocus={captureTrigger}
           onCloseAutoFocus={restoreTrigger}
         >
-          <DialogHeader className="gap-0.5 border-b border-line p-5">
+          <DialogHeader className="gap-1 border-b border-line py-5 pr-16 pl-6">
             <DialogTitle className="text-heading font-semibold text-ink">
               {title}
             </DialogTitle>
@@ -122,7 +122,7 @@ export function ResponsiveModal({
         onOpenAutoFocus={captureTrigger}
         onCloseAutoFocus={restoreTrigger}
       >
-        <SheetHeader className="gap-0.5 border-b border-line p-4">
+        <SheetHeader className="gap-1 border-b border-line py-4 pr-14 pl-5">
           <SheetTitle className="text-heading font-semibold text-ink">
             {title}
           </SheetTitle>

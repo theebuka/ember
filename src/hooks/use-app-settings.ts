@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { supabaseBrowser } from "@/lib/supabase/client";
+import { publicRows } from "@/lib/supabase/client";
 
 /**
  * App-wide switches an admin can flip without a deploy (`app_settings`, 0009).
@@ -23,11 +23,10 @@ export const APP_SETTINGS_KEY = ["app-settings"] as const;
 
 async function fetchAppSettings(): Promise<AppSettings> {
   const settings: AppSettings = { ...APP_SETTING_DEFAULTS };
-  const supabase = supabaseBrowser();
-  if (!supabase) return settings;
-  const { data, error } = await supabase.from("app_settings").select("key, value");
-  if (error || !data) return settings;
-  for (const row of data as { key: string; value: unknown }[]) {
+  // Public rows, so no client library (see `publicRows`).
+  const data = await publicRows<{ key: string; value: unknown }>("app_settings?select=key,value");
+  if (!data) return settings;
+  for (const row of data) {
     if (row.key in settings && typeof row.value === typeof settings[row.key as AppSettingKey]) {
       (settings as Record<string, unknown>)[row.key] = row.value;
     }

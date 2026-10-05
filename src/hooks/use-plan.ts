@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSession } from "@/hooks/use-session";
-import { planFrom, type Plan } from "@/lib/plan";
+import { planFrom, subscriptionFrom, type EntitlementRow, type Plan, type Subscription } from "@/lib/plan";
+import { PLAN_PREVIEW_ENABLED, previewed, usePlanPreview } from "@/lib/plan-preview";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { AUTH_CONFIGURED } from "@/lib/supabase/config";
 
 /**
  * Which plan the current user is on.
@@ -20,7 +22,13 @@ import { supabaseBrowser } from "@/lib/supabase/client";
  * it. That is why the plan is not a column on `profiles`, where the existing
  * self-update policy would have made it writable — see ADR 0038.
  */
-export function usePlan(): { plan: Plan; ready: boolean } {
+export function usePlan(): {
+  plan: Plan;
+  ready: boolean;
+  subscription: Subscription;
+  /** Read the entitlement again — the success screen polls while a payment lands. */
+  refresh: () => void;
+} {
   const { user, ready: sessionReady } = useSession();
   /**
    * **Keyed by the account it was read for.** It was a bare `Plan`, never
@@ -31,26 +39,43 @@ export function usePlan(): { plan: Plan; ready: boolean } {
    * first one's plan, reported as `ready`, for the length of its own read.
    * Answering only for the id it was fetched for makes both impossible.
    */
-  const [entitled, setEntitled] = useState<{ userId: string; plan: Plan } | null>(null);
+  const [entitled, setEntitled] = useState<{
+    userId: string;
+    plan: Plan;
+    subscription: Subscription;
+  } | null>(null);
+  const [reads, setReads] = useState(0);
+  const refresh = useCallback(() => setReads((n) => n + 1), []);
+  const preview = usePlanPreview();
 
   useEffect(() => {
-    const supabase = supabaseBrowser();
-    if (!supabase || !user) return;
+    if (!user) return;
 
     let cancelled = false;
     void (async () => {
+      const supabase = await supabaseBrowser();
+      if (!supabase || cancelled) return;
+      // `*` rather than named columns: PostgREST refuses a select naming a
+      // column that doesn't exist, so naming 0010's would fail outright on a
+      // project that hasn't applied it.
       const { data } = await supabase
         .from("entitlements")
-        .select("plan, period_end")
+        .select("*")
         .eq("user_id", user.id)
-        .maybeSingle();
-      if (!cancelled) setEntitled({ userId: user.id, plan: planFrom(data) });
+        .maybeSingle<EntitlementRow>();
+      if (!cancelled) {
+        setEntitled({
+          userId: user.id,
+          plan: planFrom(data),
+          subscription: subscriptionFrom(data),
+        });
+      }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, reads]);
 
   /**
    * Derived, so there is one source of truth for "settled" rather than a flag
@@ -61,10 +86,16 @@ export function usePlan(): { plan: Plan; ready: boolean } {
    * Leaving them pending would park every gated surface in a loading state that
    * never resolves, which is a worse failure than being briefly wrong.
    */
-  const nothingToRead = !user || !supabaseBrowser();
-  const mine = user && entitled?.userId === user.id ? entitled.plan : null;
+  if (PLAN_PREVIEW_ENABLED && preview !== "off") {
+    return { ...previewed(preview), ready: true, refresh };
+  }
+
+  const nothingToRead = !user || !AUTH_CONFIGURED;
+  const mine = user && entitled?.userId === user.id ? entitled : null;
   return {
-    plan: nothingToRead ? "free" : (mine ?? "free"),
+    plan: nothingToRead ? "free" : (mine?.plan ?? "free"),
     ready: nothingToRead ? sessionReady : mine !== null,
+    subscription: mine?.subscription ?? { status: "none" },
+    refresh,
   };
 }

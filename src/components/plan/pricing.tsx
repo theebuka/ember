@@ -19,6 +19,14 @@ import { proPrice, type Price } from "@/lib/pricing";
 import { usePreferences } from "@/store/use-preferences";
 import { cn } from "@/lib/utils";
 
+/** What Pro adds, in the order the comparison and a subscriber's plan page list it. */
+export const PRO_INCLUDES: { text: string; feature: Feature }[] = [
+  { text: "Every finding, ranked by urgency", feature: "unlimited-findings" },
+  { text: "Push alerts with no daily cap", feature: "unlimited-alerts" },
+  { text: "The digest by email, daily or weekly", feature: "email-digest" },
+  { text: "No sponsor slots", feature: "no-sponsors" },
+];
+
 /**
  * The plan comparison — Free beside Pro, with a monthly/yearly switch.
  *
@@ -59,16 +67,12 @@ export function PlanComparison({
     "Every in-app alert, uncapped",
     "Full analysis on every call",
   ];
-  const proItems: { text: string; feature: Feature }[] = [
-    { text: "Every finding, ranked by urgency", feature: "unlimited-findings" },
-    { text: "Push alerts with no daily cap", feature: "unlimited-alerts" },
-    { text: "The digest by email, daily or weekly", feature: "email-digest" },
-    { text: "No sponsor slots", feature: "no-sponsors" },
-  ];
+  const proItems = PRO_INCLUDES;
 
   return (
     <div className={cn("space-y-5", className)}>
-      <div className="flex justify-center">
+      {/* Left, on the content's edge — centred, it floated free of both columns. */}
+      <div className="flex">
         <Segmented
           aria-label="Billing"
           size="sm"

@@ -1,5 +1,6 @@
 import {
   Crosshair,
+  GearSix,
   House,
   Newspaper,
   Wallet,
@@ -49,9 +50,12 @@ export type NavItem = {
  * at nothing is the most visible way there is to break it. It landed in phase
  * 16 with a real screen behind it.
  *
- * Four is the ceiling. A fifth icon-only tab stops being scannable, and there
- * is nowhere left to put one anyway — Settings is behind the profile control
- * and the watchlist is a Portfolio segment.
+ * **Settings came back as the fifth, at the user's direction** (decision 283).
+ * The argument above held for an icon-only bar ending in a gear; the bar is
+ * labelled now (decision 265), and on a phone the profile control lived only in
+ * Home's header, so every other screen was a scroll to the top and a tab away
+ * from settings. It is the same destination the profile control opens, and it
+ * sits last, after the four product surfaces.
  */
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Home", icon: House },
@@ -66,6 +70,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   { href: "/portfolio", label: "Portfolio", icon: Wallet },
   { href: "/news", label: "News", icon: Newspaper },
+  { href: "/settings", label: "Settings", icon: GearSix },
 ];
 
 /** Whether a nav destination is the one currently being viewed. */
@@ -94,6 +99,8 @@ export function isBareRoute(pathname: string): boolean {
   return (
     pathname.startsWith("/onboarding") ||
     pathname.startsWith("/welcome") ||
-    pathname.startsWith("/unsubscribe")
+    pathname.startsWith("/unsubscribe") ||
+    // The checkout's return page: one job, and nothing to navigate to until it's done.
+    pathname.startsWith("/pro/")
   );
 }

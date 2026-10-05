@@ -53,11 +53,12 @@ export function UnsubscribeScreen() {
       : result;
 
   useEffect(() => {
-    const supabase = supabaseBrowser();
-    if (!supabase || !token) return;
+    if (!token) return;
 
     let cancelled = false;
     void (async () => {
+      const supabase = await supabaseBrowser();
+      if (!supabase || cancelled) return;
       const { error } = await supabase.rpc("unsubscribe_digest", { token });
       if (cancelled) return;
       // An error here is a transport or migration problem, not a wrong token —

@@ -158,6 +158,8 @@ export const queryKeys = {
     ] as const,
   asset: (symbol: string, profile: RiskProfile) => ["asset", symbol, profile] as const,
   trackRecord: (profile: RiskProfile) => ["track-record", profile] as const,
+  symbolCalls: (profile: RiskProfile, symbol: string) =>
+    ["track-record", profile, symbol] as const,
   strategies: (profile: RiskProfile) => ["strategies", profile] as const,
   // Not keyed by profile — it answers for all three at once, which is the
   // whole point of it.
@@ -345,6 +347,21 @@ export function fetchRates(signal?: AbortSignal) {
 
 export function fetchTrackRecord(profile: RiskProfile, signal?: AbortSignal) {
   return get<TrackRecordResponse>(`/api/track-record?profile=${profile}`, signal);
+}
+
+/** One instrument's calls from the backtest — the asset page's history. */
+export interface SymbolCallsResponse {
+  trades: BacktestResult["trades"];
+  riskProfile: RiskProfile;
+  at: number;
+  synthetic: boolean;
+}
+
+export function fetchSymbolCalls(profile: RiskProfile, symbol: string, signal?: AbortSignal) {
+  return get<SymbolCallsResponse>(
+    `/api/track-record?profile=${profile}&symbol=${encodeURIComponent(symbol)}`,
+    signal,
+  );
 }
 
 export function fetchStrategies(profile: RiskProfile, signal?: AbortSignal) {

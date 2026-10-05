@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { supabaseBrowser } from "@/lib/supabase/client";
+import { hasSessionCookie, supabaseBrowser } from "@/lib/supabase/client";
 import { AUTH_CONFIGURED } from "@/lib/supabase/config";
 
 export interface SessionState {
@@ -38,25 +38,50 @@ export function useSession(): SessionState {
   });
 
   useEffect(() => {
-    const supabase = supabaseBrowser();
-    if (!supabase) return;
+    if (!AUTH_CONFIGURED) return;
 
     let alive = true;
+    let unsubscribe: (() => void) | null = null;
 
-    supabase.auth.getUser().then(({ data }) => {
-      if (alive) setState({ user: data.user ?? null, ready: true, available: true });
-    });
+    const connect = async () => {
+      const supabase = await supabaseBrowser();
+      if (!supabase || !alive || unsubscribe) return;
 
-    // Covers sign-in, sign-out, token refresh and — the one that matters most
-    // — a session established in *another tab*. Without this, signing in on
-    // one tab leaves every other tab convinced it is a stranger until reload.
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (alive) setState({ user: session?.user ?? null, ready: true, available: true });
-    });
+      // Covers sign-in, sign-out, token refresh and a session established in
+      // another tab. Its first event carries the stored session, so it also
+      // answers "who is this" — without `getUser()`'s round trip to Supabase on
+      // every page load, which the findings inbox (through `usePlan`) was
+      // waiting on. Postgres still checks the token on every query (RLS); this
+      // is only who the screen says is signed in.
+      const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (alive) setState({ user: session?.user ?? null, ready: true, available: true });
+      });
+      unsubscribe = () => sub.subscription.unsubscribe();
+    };
 
+    /**
+     * **No session cookie, no library.** Somebody who has never signed in —
+     * most readers — is answered "signed out" without downloading the client
+     * at all. A sign-in completes through `/auth/callback`, which sets the
+     * cookie and reloads, so the next page connects. Coming back to the tab
+     * re-checks, for a sign-in finished in another one.
+     */
+    const check = () => {
+      if (hasSessionCookie()) {
+        void connect();
+      } else if (!unsubscribe) {
+        void Promise.resolve().then(() => {
+          if (alive) setState({ user: null, ready: true, available: true });
+        });
+      }
+    };
+
+    check();
+    window.addEventListener("focus", check);
     return () => {
       alive = false;
-      sub.subscription.unsubscribe();
+      window.removeEventListener("focus", check);
+      unsubscribe?.();
     };
   }, []);
 

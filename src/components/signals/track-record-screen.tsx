@@ -10,6 +10,7 @@ import { PageBody } from "@/components/common/page-body";
 import { SectionHeader } from "@/components/common/section-header";
 import { Segmented } from "@/components/common/segmented";
 import { PageHeader } from "@/components/shell/page-header";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -51,6 +52,9 @@ type Filter = "all" | "wins" | "losses";
 export function TrackRecordScreen() {
   const riskProfile = usePreferences((s) => s.riskProfile);
   const [filter, setFilter] = useState<Filter>("all");
+  // How many calls are drawn. All 2,000-odd were, in two tables (one per
+  // width), which made this the heaviest page in the app to render.
+  const [shown, setShown] = useState(TRADES_PAGE);
 
   const query = useTrackRecord(riskProfile);
   const strategiesQuery = useStrategies(riskProfile);
@@ -266,11 +270,14 @@ export function TrackRecordScreen() {
             <section>
               <SectionHeader
                 title="The calls themselves"
-                hint={`${trades.length} shown`}
+                hint={`${Math.min(shown, trades.length)} of ${trades.length}, newest first`}
                 action={
                   <Segmented
                     value={filter}
-                    onChange={setFilter}
+                    onChange={(next) => {
+                      setFilter(next);
+                      setShown(TRADES_PAGE);
+                    }}
                     options={[
                       { value: "all", label: "All" },
                       { value: "wins", label: "Wins" },
@@ -286,7 +293,19 @@ export function TrackRecordScreen() {
                   No calls in this slice.
                 </p>
               ) : (
-                <TradesTable trades={trades} />
+                <>
+                  <TradesTable trades={trades.slice(0, shown)} />
+                  {trades.length > shown && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-4"
+                      onClick={() => setShown((n) => n + TRADES_PAGE * 2)}
+                    >
+                      Show {Math.min(TRADES_PAGE * 2, trades.length - shown)} more
+                    </Button>
+                  )}
+                </>
               )}
             </section>
 
@@ -306,6 +325,8 @@ export function TrackRecordScreen() {
     </>
   );
 }
+
+const TRADES_PAGE = 50;
 
 function TradesTable({ trades }: { trades: readonly BacktestTrade[] }) {
   return (

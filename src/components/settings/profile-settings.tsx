@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import Link from "next/link";
-import { CheckCircle } from "@/components/common/icon";
-import { SectionHeader } from "@/components/common/section-header";
-import { Button } from "@/components/ui/button";
+import { SettingBlock, SettingGroup } from "@/components/settings/setting-row";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -15,7 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useHydrated } from "@/hooks/use-hydrated";
-import { useSession } from "@/hooks/use-session";
 import { countries, detectTimezone } from "@/lib/profile";
 import { useProfile } from "@/store/use-profile";
 
@@ -36,7 +32,6 @@ import { useProfile } from "@/store/use-profile";
  */
 export function ProfileSettings() {
   const hydrated = useHydrated();
-  const { user, available } = useSession();
 
   const profile = useProfile();
   const setProfile = useProfile((s) => s.set);
@@ -58,15 +53,9 @@ export function ProfileSettings() {
 
 
   return (
-    <div className="space-y-8">
-      <section>
-        <SectionHeader
-          title="Your name"
-          // Not the name itself: the fields directly beneath already say it.
-          hint="optional"
-        />
-
-        <div className="grid gap-4 sm:grid-cols-2">
+    <>
+      <SettingGroup title="Name" description="Optional.">
+        <SettingBlock className="grid gap-4 sm:grid-cols-2">
           <Field
             id="profile-first"
             label="First name"
@@ -90,13 +79,11 @@ export function ProfileSettings() {
             autoComplete="nickname"
             className="sm:col-span-2"
           />
-        </div>
-      </section>
+        </SettingBlock>
+      </SettingGroup>
 
-      <section>
-        <SectionHeader title="Where you are" />
-
-        <div className="grid gap-4 sm:grid-cols-2">
+      <SettingGroup title="Location">
+        <SettingBlock className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor="profile-country">Country</Label>
             <Select
@@ -132,41 +119,9 @@ export function ProfileSettings() {
               Trade windows are shown in this time zone.
             </p>
           </div>
-        </div>
-      </section>
-
-      {/* Only when signed in. Signed out this rendered "Not signed in" beside a
-          Sign in button — a second copy of the CTA the account block at the top
-          of this very tab already offers, 1,800px above it. Two identical calls
-          to action on one screen is one of them being ignored. */}
-      {available && user && (
-        <section>
-          <SectionHeader title="Email" />
-
-          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3 border-y border-line py-4">
-            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-surface-2 text-stone">
-              <CheckCircle className="size-4" />
-            </span>
-
-            <div className="min-w-0 flex-1">
-              <p className="num text-body font-medium break-all text-ink">
-                {user.email}
-              </p>
-            </div>
-
-            {/* `gap-x-4` above rather than nothing: the button used to butt
-                straight against the address on desktop, with the flex row's
-                only spacing coming from `justify-between` at widths where the
-                two happened not to meet. */}
-            <Button variant="outline" size="default" asChild className="shrink-0">
-              <Link href="/auth?next=%2Fsettings%3Ftab%3Daccount">
-                Change email
-              </Link>
-            </Button>
-          </div>
-        </section>
-      )}
-    </div>
+        </SettingBlock>
+      </SettingGroup>
+    </>
   );
 }
 

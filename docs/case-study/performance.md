@@ -1,6 +1,6 @@
 # Performance and layout shift
 
-`scripts/perf.mjs`, 2026-10-02, against a production build.
+`scripts/perf.mjs`, 2026-10-05, against a production build.
 
 ## Layout shift
 
@@ -14,15 +14,16 @@ Lighthouse table below is where that one shows up.
 | Screen | Mobile | Desktop |
 |---|---|---|
 | Home | 0.006 | 0.009 |
-| Portfolio — holdings | 0.009 | 0.003 |
+| Portfolio — holdings | 0.008 | 0.003 |
 | Portfolio — watching | 0.006 | 0.001 |
 | Portfolio — activity | 0.006 | 0.001 |
 | Signals feed | 0.000 | 0.012 |
 | News | 0.000 | 0.000 |
 | Track record | 0.000 | 0.000 |
 | Methodology | 0.000 | 0.000 |
-| Asset detail | 0.074 | 0.028 |
-| Settings — account | 0.054 | 0.005 |
+| Asset detail | 0.069 | 0.028 |
+| Settings | 0.000 | 0.005 |
+| Settings — profile | 0.042 | 0.005 |
 | Settings — your data | 0.000 | 0.000 |
 | Notifications | 0.007 | 0.014 |
 | Sign in | 0.000 | 0.000 |
@@ -54,12 +55,12 @@ does seeded.
 
 | Screen | Profile | Perf | A11y | Best practices | SEO | LCP | TBT | CLS |
 |---|---|---|---|---|---|---|---|---|
-| Home | mobile | 79 | 100 | 100 | 100 | 5.5 s | 43 ms | 0.067 |
-| Signals feed | mobile | 78 | 100 | 100 | 100 | 6.2 s | 28 ms | 0.000 |
-| Asset detail | mobile | 86 | 100 | 100 | 100 | 4.3 s | 21 ms | 0.003 |
-| Home | desktop | 98 | 100 | 100 | 100 | 1.1 s | 0 ms | 0.015 |
-| Signals feed | desktop | 98 | 100 | 100 | 100 | 1.2 s | 0 ms | 0.011 |
-| Asset detail | desktop | 99 | 100 | 100 | 100 | 0.9 s | 0 ms | 0.004 |
+| Home | mobile | 79 | 100 | 100 | 100 | 5.5 s | 1 ms | 0.067 |
+| Signals feed | mobile | 79 | 100 | 100 | 100 | 5.7 s | 18 ms | 0.000 |
+| Asset detail | mobile | 88 | 100 | 100 | 100 | 3.9 s | 8 ms | 0.008 |
+| Home | desktop | 97 | 100 | 100 | 100 | 1.2 s | 0 ms | 0.015 |
+| Signals feed | desktop | 98 | 100 | 100 | 100 | 1.1 s | 0 ms | 0.011 |
+| Asset detail | desktop | 100 | 100 | 100 | 100 | 0.8 s | 0 ms | 0.004 |
 
 Mobile is Lighthouse's throttled profile — simulated slow 4G with a 4×
 CPU penalty. The critical path is the stylesheet and the app's own

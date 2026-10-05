@@ -1,6 +1,7 @@
 "use client";
 
 import { EmberPoint } from "@/components/common/ember-point";
+import { Sparkle } from "@/components/common/icon";
 import { MARKET_LABELS, RISK_PROFILES, type MarketKind, type RiskProfile } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
@@ -248,5 +249,47 @@ function MarketsArt({ markets }: { markets: Record<MarketKind, boolean> }) {
         );
       })}
     </Stage>
+  );
+}
+
+/* ── Pro ───────────────────────────────────────────────────────────────────
+   The checkout's return page uses onboarding's frame, because it is the only
+   other moment in the app rather than a screen: the same dark field and the
+   same rings around the point. Once Pro is confirmed the point gains its mark;
+   while it is being confirmed the rings are the waiting. */
+
+export function ProArt({ confirmed }: { confirmed: boolean }) {
+  return (
+    <div aria-hidden className="relative isolate h-full w-full overflow-hidden">
+      <div className="absolute inset-0" style={{ background: "#0B0C0F" }} />
+      <Grain />
+      {/* Flex, not grid: a grid start-aligns a stage taller than a phone's
+          band, which put the point on top of the mark below it. Lifted a
+          little on a phone to leave the mark its own room. */}
+      <div className="absolute inset-0 flex -translate-y-5 items-center justify-center lg:translate-y-0">
+        <Stage>
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="ember-pulse absolute rounded-full border border-[color-mix(in_oklab,var(--brand)_45%,transparent)]"
+              style={{ animationDelay: `${i * 1.6}s` }}
+            />
+          ))}
+          <EmberPoint size={128} />
+        </Stage>
+      </div>
+      {/* On the panel, not the stage: the stage is scaled, and on a phone's
+          short band a mark inside it fell off the bottom. */}
+      <span
+        className={cn(
+          "absolute bottom-5 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-brand px-3.5 py-1.5 text-caption font-semibold text-white lg:top-[calc(50%+7.5rem)] lg:bottom-auto",
+          "transition-[opacity,translate] duration-500 ease-out motion-reduce:transition-none",
+          confirmed ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
+        )}
+      >
+        <Sparkle weight="fill" className="size-3.5" />
+        ember Pro
+      </span>
+    </div>
   );
 }

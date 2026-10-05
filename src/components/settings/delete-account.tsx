@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash, Warning } from "@/components/common/icon";
-import { SectionHeader } from "@/components/common/section-header";
+import { Trash } from "@/components/common/icon";
+import { SettingRow } from "@/components/settings/setting-row";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,7 +63,7 @@ export function DeleteAccount() {
   const CONFIRM_PHRASE = "delete my account";
 
   async function destroy() {
-    const supabase = supabaseBrowser();
+    const supabase = await supabaseBrowser();
     if (!supabase || !user) return;
 
     setStep("working");
@@ -108,33 +108,27 @@ export function DeleteAccount() {
 
   // The section's heading lives here, so it disappears with the control: a
   // "Danger" heading over nothing was what a signed-out reader saw.
+  // A row in the danger zone on Your data, beside Reset everything. It was its
+  // own red slab under a "Danger" heading, which made one control the loudest
+  // thing on the tab.
   return (
-    <section>
-    <SectionHeader title="Danger" />
-    <div className="mt-4 rounded-xl border border-down/25 bg-down-tint/40 p-5">
-      <div className="flex items-start gap-3.5">
-        <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl bg-down-tint text-down">
-          <Warning className="size-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-body font-semibold text-ink">Delete your account</h3>
-          <p className="mt-1 text-caption text-stone text-pretty">
-            Deletes your profile, synced trades, settings and watchlist from ember&apos;s server, and signs you out everywhere. This can&apos;t be undone.
-          </p>
-        </div>
-      </div>
-
-      {step === "closed" && (
-        <Button
-          variant="outline"
-          size="lg"
-          className="mt-4 border-down/40 text-down hover:bg-down-tint"
-          onClick={() => setStep("confirm")}
-        >
-          <Trash />
-          Delete account
-        </Button>
-      )}
+    <SettingRow
+      label="Delete your account"
+      description="Deletes your profile, synced trades, settings and watchlist from ember's server, and signs you out everywhere. This can't be undone."
+      control={
+        step === "closed" ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-down/40 text-down hover:bg-down-tint"
+            onClick={() => setStep("confirm")}
+          >
+            <Trash />
+            Delete
+          </Button>
+        ) : undefined
+      }
+    >
 
       {/* ── Gate one: read what goes ─────────────────────────────────── */}
       {step === "confirm" && (
@@ -230,7 +224,6 @@ export function DeleteAccount() {
           </div>
         </div>
       )}
-    </div>
-    </section>
+    </SettingRow>
   );
 }

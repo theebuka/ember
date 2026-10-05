@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "@/hooks/use-session";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { AUTH_CONFIGURED } from "@/lib/supabase/config";
 
 /**
  * Whether the signed-in user may write broadcasts, and whether their own account
@@ -29,11 +30,12 @@ export function useAdmin(): { isAdmin: boolean; ready: boolean } {
   });
 
   useEffect(() => {
-    const supabase = supabaseBrowser();
-    if (!supabase || !user) return;
+    if (!user) return;
 
     let cancelled = false;
     void (async () => {
+      const supabase = await supabaseBrowser();
+      if (!supabase || cancelled) return;
       const { data } = await supabase
         .from("admins")
         .select("user_id")
@@ -49,7 +51,7 @@ export function useAdmin(): { isAdmin: boolean; ready: boolean } {
 
   // Nobody signed in, or no backend at all, is a definitive answer rather than a
   // pending one — nothing is going to arrive and change it.
-  const nothingToRead = !user || !supabaseBrowser();
+  const nothingToRead = !user || !AUTH_CONFIGURED;
   return nothingToRead ? { isAdmin: false, ready: sessionReady } : state;
 }
 
@@ -78,11 +80,12 @@ export function useSuspension(): SuspensionState {
   });
 
   useEffect(() => {
-    const supabase = supabaseBrowser();
-    if (!supabase || !user) return;
+    if (!user) return;
 
     let cancelled = false;
     void (async () => {
+      const supabase = await supabaseBrowser();
+      if (!supabase || cancelled) return;
       const { data } = await supabase
         .from("suspensions")
         .select("reason")
@@ -102,7 +105,7 @@ export function useSuspension(): SuspensionState {
     };
   }, [user]);
 
-  const nothingToRead = !user || !supabaseBrowser();
+  const nothingToRead = !user || !AUTH_CONFIGURED;
   return nothingToRead
     ? { suspended: false, reason: null, ready: sessionReady }
     : state;

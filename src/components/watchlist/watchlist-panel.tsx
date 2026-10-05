@@ -59,6 +59,8 @@ const SORTS: { value: SortKey; label: string }[] = [
 
 const MARKET_ORDER: MarketKind[] = ["equity", "crypto", "fx"];
 
+const NO_SYMBOLS: readonly string[] = [];
+
 export function WatchlistPanel() {
   const hydrated = useHydrated();
   const [query, setQuery] = useState("");
@@ -87,13 +89,16 @@ export function WatchlistPanel() {
   );
   const universe = useMemo(() => instruments.map((i) => i.symbol), [instruments]);
 
-  const seriesQuery = useSeries(universe, "1M");
-
   /** Symbols on the list, before the settings filter. */
   const followed = useMemo(
     () => (hydrated ? resolveWatchlist(watched, universe) : universe),
     [hydrated, watched, universe],
   );
+
+  // Bars for what is on the list, not for the whole universe: somebody
+  // following five names was downloading a month of history for 214.
+  // Not before hydration, when `followed` is still the whole universe.
+  const seriesQuery = useSeries(hydrated ? followed : NO_SYMBOLS, "1M");
 
   const positionWeights = useMemo(() => {
     const summary = derivePortfolio({

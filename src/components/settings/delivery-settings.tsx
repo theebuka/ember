@@ -73,14 +73,15 @@ export function DeliverySettings() {
   }, []);
 
   useEffect(() => {
-    const supabase = supabaseBrowser();
     // No reset in the else branch: `null` already means "not loaded", and the
     // component returns null without a user anyway — clearing it here would be
     // writing a value the render path never reads.
-    if (!supabase || !user) return;
+    if (!user) return;
 
     let cancelled = false;
     void (async () => {
+      const supabase = await supabaseBrowser();
+      if (!supabase || cancelled) return;
       const { data } = await supabase
         .from("email_prefs")
         .select("digest_enabled, frequency, min_findings")
@@ -104,7 +105,7 @@ export function DeliverySettings() {
 
   const saveEmail = useCallback(
     async (patch: Partial<EmailPrefs>) => {
-      const supabase = supabaseBrowser();
+      const supabase = await supabaseBrowser();
       if (!supabase || !user || !email) return;
 
       const next = { ...email, ...patch };
@@ -157,7 +158,7 @@ export function DeliverySettings() {
   if (!user || !PUSH_CONFIGURED) return null;
 
   return (
-    <SettingGroup>
+    <SettingGroup title="Push and email" description="When ember is closed.">
       <SettingRow
         label={
           <span className="flex items-center gap-2">

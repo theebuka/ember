@@ -1,5 +1,7 @@
 "use client";
 
+import { DeleteAccount } from "@/components/settings/delete-account";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Download, Eraser, RotateCcw } from "@/components/common/icon";
@@ -114,7 +116,27 @@ export function DataSettings() {
 
   return (
     <>
-      <SettingGroup>
+      <SettingGroup
+        title="Export and clear"
+        description={hydrated ? "Your trades on this device." : undefined}
+        footer={
+          <>
+            <p>
+              Your trades live in this browser. If you&apos;re not signed in, clearing browser
+              data deletes them.
+            </p>
+            {/* This said "nothing is sent anywhere" until phase 15, and that
+                stopped being true the moment the risk engine shipped. It names
+                exactly what goes and exactly what doesn't. ADR 0025. */}
+            <p>
+              To warn you about a position, ember&rsquo;s server needs to know you hold it.
+              Whenever Home loads or alerts are on, it receives four numbers per open
+              position — symbol, quantity, average cost and opening date — and stores none
+              of them. Nothing else about your trades leaves this device.
+            </p>
+          </>
+        }
+      >
         <SettingRow
           label="Export your transactions"
           description={
@@ -166,6 +188,11 @@ export function DataSettings() {
           }
         />
 
+      </SettingGroup>
+
+      {/* The irreversible things, together and apart from the everyday ones —
+          the reason `Your data` and the account deletion were never peers. */}
+      <SettingGroup title="Danger zone" tone="danger">
         <SettingRow
           label="Reset everything"
           description="Deletes your trades, watchlist and settings, and restarts setup. This can't be undone."
@@ -176,6 +203,7 @@ export function DataSettings() {
             </Button>
           }
         />
+        <DeleteAccount />
       </SettingGroup>
 
       <ResponsiveModal

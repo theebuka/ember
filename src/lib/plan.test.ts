@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { canUse, findingLimit, planFrom } from "./plan";
+import { canUse, findingLimit, planFrom, subscriptionFrom } from "./plan";
 
 /**
  * Two rules about money that should fail a build rather than a review.
@@ -87,5 +87,48 @@ describe("a lapsed plan takes nothing away", () => {
     expect(findingLimit("pro")).toBeNull();
     expect(canUse("unlimited-findings", "free")).toBe(false);
     expect(canUse("unlimited-findings", "pro")).toBe(true);
+  });
+});
+
+describe("what the plan page says", () => {
+  const now = Date.parse("2026-10-05T12:00:00Z");
+  const DAY = 86_400_000;
+  const iso = (t: number) => new Date(t).toISOString();
+
+  it("agrees with the gate on who is Pro", () => {
+    for (const row of [
+      null,
+      { plan: "free" },
+      { plan: "pro", period_end: null },
+      { plan: "pro", period_end: iso(now + DAY) },
+      { plan: "pro", period_end: iso(now - DAY) },
+    ]) {
+      const active = subscriptionFrom(row, now).status === "active";
+      expect(active).toBe(planFrom(row, now) === "pro");
+    }
+  });
+
+  it("says when Pro ended, rather than reading a lapse as never having had it", () => {
+    expect(subscriptionFrom({ plan: "pro", period_end: iso(now - DAY) }, now)).toEqual({
+      status: "lapsed",
+      endedAt: now - DAY,
+    });
+  });
+
+  it("renews only with a period end and no cancellation", () => {
+    const end = iso(now + 30 * DAY);
+    const at = (row: Parameters<typeof subscriptionFrom>[0]) => {
+      const sub = subscriptionFrom(row, now);
+      return sub.status === "active" ? sub.renews : null;
+    };
+    expect(at({ plan: "pro", period_end: end, billing: "monthly" })).toBe(true);
+    expect(at({ plan: "pro", period_end: end, cancel_at_period_end: true })).toBe(false);
+    // Granted by hand: nothing to renew.
+    expect(at({ plan: "pro", period_end: null })).toBe(false);
+  });
+
+  it("ignores a billing value it does not know", () => {
+    const sub = subscriptionFrom({ plan: "pro", period_end: null, billing: "weekly" }, now);
+    expect(sub.status === "active" && sub.billing).toBeNull();
   });
 });

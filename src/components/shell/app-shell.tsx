@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { AnnouncementBar } from "@/components/shell/announcement-bar";
 import { BottomNav } from "@/components/shell/bottom-nav";
-import { CommandMenu } from "@/components/shell/command-menu";
+import { CommandMenuLoader } from "@/components/shell/command-menu-loader";
 import { SidePanel } from "@/components/shell/side-panel";
 import { useFindingAlerts } from "@/hooks/use-finding-alerts";
 import { useSync } from "@/hooks/use-sync";
@@ -84,7 +84,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <BottomNav />
-        <CommandMenu />
+        <CommandMenuLoader />
       </div>
     </>
   );

@@ -7,12 +7,11 @@ import { SignalCard, SignalCardSkeleton, type SuggestedTrade } from "@/component
 import { ErrorState } from "@/components/common/error-state";
 import { SponsorRow } from "@/components/plan/sponsor-row";
 import { PageBody } from "@/components/common/page-body";
-import { ResponsiveModal } from "@/components/common/responsive-modal";
 import { SectionHeader } from "@/components/common/section-header";
 import { Segmented } from "@/components/common/segmented";
 import { DataSourceChip } from "@/components/market/data-source-chip";
 import { NotificationsButton } from "@/components/notifications/notifications-button";
-import { TransactionForm } from "@/components/portfolio/transaction-form";
+import { TradeModal, TransactionForm } from "@/components/portfolio/trade-modal";
 import { PageHeader } from "@/components/shell/page-header";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useNow } from "@/hooks/use-now";
@@ -23,7 +22,7 @@ import { ACTION_LABELS, RISK_PROFILES } from "@/lib/api/types";
 import { formatQuantity, quantityPrecision } from "@/lib/market/format";
 import { USD_PER_UNIT } from "@/lib/market/universe";
 import { convert, derivePortfolio } from "@/lib/portfolio/derive";
-import { todayForInput } from "@/lib/portfolio/transaction-schema";
+import { todayForInput } from "@/lib/portfolio/dates";
 import { undoableToast } from "@/lib/toast";
 import { findingId, handlingFor, useAdviceActions } from "@/store/use-advice-actions";
 import { usePortfolio } from "@/store/use-portfolio";
@@ -378,7 +377,7 @@ export function SignalsScreen() {
         )}
       </PageBody>
 
-      <ResponsiveModal
+      <TradeModal
         open={executing !== null}
         onOpenChange={(next) => !next && setExecuting(null)}
         title="Log this trade"
@@ -413,7 +412,7 @@ export function SignalsScreen() {
             onCancel={() => setExecuting(null)}
           />
         )}
-      </ResponsiveModal>
+      </TradeModal>
     </>
   );
 }

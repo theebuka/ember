@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
-import { Section } from "@/components/common/section";
 import { recordAdminAction } from "@/components/admin/record";
 import { SettingGroup, SettingRow } from "@/components/settings/setting-row";
 import { Switch } from "@/components/ui/switch";
@@ -25,7 +24,7 @@ export function PricingPanel({ user }: { user: User }) {
   const [busy, setBusy] = useState(false);
 
   async function setLocal(next: boolean) {
-    const supabase = supabaseBrowser();
+    const supabase = await supabaseBrowser();
     if (!supabase) return;
     setBusy(true);
     const { error } = await supabase.from("app_settings").upsert({
@@ -47,8 +46,7 @@ export function PricingPanel({ user }: { user: User }) {
   }
 
   return (
-    <Section title="Pricing">
-      <SettingGroup>
+    <SettingGroup title="Pricing">
         <SettingRow
           label="Show Pro's price in local currency"
           description="Converted from dollars at today's rate and rounded. Off, everyone sees dollars."
@@ -62,7 +60,6 @@ export function PricingPanel({ user }: { user: User }) {
             />
           }
         />
-      </SettingGroup>
-    </Section>
+    </SettingGroup>
   );
 }

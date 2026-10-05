@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, CheckCircle, Envelope } from "@/components/common/icon";
+import { ArrowLeft, CheckCircle, Envelope, Warning } from "@/components/common/icon";
 import { PageBody } from "@/components/common/page-body";
 import { PageHeader } from "@/components/shell/page-header";
 import { Button } from "@/components/ui/button";
@@ -38,16 +38,42 @@ type State =
  * addition to a local-first app rather than the price of using it —
  * `lib/supabase/config.ts`.
  */
+/**
+ * Why a sign-in link sent somebody back here, in their words.
+ *
+ * Supabase reports a dead link in the URL *fragment* (`#error_code=otp_expired`),
+ * which never reaches the server, so the callback only sees a missing code. The
+ * page used to ignore both and show the empty form, which reads as the link
+ * having done nothing at all.
+ */
+export function linkProblem(query: string | null, hash: string): string | null {
+  const fragment = new URLSearchParams(hash.replace(/^#/, ""));
+  const code = fragment.get("error_code") ?? query;
+  if (code === null) return null;
+  if (code === "otp_expired" || code === "link") {
+    return "That link has expired or was already used. Each link works once, and only the newest one works. Send yourself a new one.";
+  }
+  return "That link didn't sign you in. Send yourself a new one.";
+}
+
+function subscribeToHash(onChange: () => void) {
+  window.addEventListener("hashchange", onChange);
+  return () => window.removeEventListener("hashchange", onChange);
+}
+
 export function AuthScreen() {
   const params = useSearchParams();
   const next = safeNext(params.get("next")) ?? "/settings";
+  // The fragment is browser-only; the server renders as if there were none.
+  const hash = useSyncExternalStore(subscribeToHash, () => window.location.hash, () => "");
+  const problem = linkProblem(params.get("error"), hash);
 
   const [email, setEmail] = useState("");
   const [state, setState] = useState<State>({ step: "email" });
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    const supabase = supabaseBrowser();
+    const supabase = await supabaseBrowser();
     if (!supabase) return;
 
     setState({ step: "sending" });
@@ -109,6 +135,12 @@ export function AuthScreen() {
           </div>
         ) : (
           <form onSubmit={submit} className="max-w-md">
+            {problem && state.step === "email" && (
+              <div role="alert" className="mb-7 flex items-start gap-2.5 rounded-xl bg-surface-2 p-3.5">
+                <Warning className="mt-0.5 size-4 shrink-0 text-graphite" />
+                <p className="text-caption text-graphite">{problem}</p>
+              </div>
+            )}
             <span className="grid size-11 place-items-center rounded-xl bg-surface-2 text-stone">
               <Envelope className="size-5" />
             </span>

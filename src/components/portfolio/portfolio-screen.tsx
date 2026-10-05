@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Sparkles, Upload, Wallet } from "@/components/common/icon";
 import { undoableToast } from "@/lib/toast";
-import { ResponsiveModal } from "@/components/common/responsive-modal";
 import { ErrorState } from "@/components/common/error-state";
 import { PageBody } from "@/components/common/page-body";
 import { Section, Rows, Row } from "@/components/common/section";
@@ -19,7 +18,7 @@ import {
 } from "@/components/portfolio/positions-list";
 import { PositionsTable } from "@/components/portfolio/positions-table";
 import { Fab } from "@/components/common/fab";
-import { TransactionForm } from "@/components/portfolio/transaction-form";
+import { TradeModal, TransactionForm } from "@/components/portfolio/trade-modal";
 import { TransactionHistory } from "@/components/portfolio/transaction-history";
 import { ValueChart, ValueChartSkeleton } from "@/components/portfolio/value-chart";
 import { ValueHero, ValueHeroSkeleton } from "@/components/portfolio/value-hero";
@@ -456,7 +455,7 @@ export function PortfolioScreen() {
         />
       )}
 
-      <ResponsiveModal
+      <TradeModal
         open={editing !== null}
         onOpenChange={(open) => !open && setEditing(null)}
         title={editing?.mode === "edit" ? "Edit trade" : "Log a trade"}
@@ -480,7 +479,7 @@ export function PortfolioScreen() {
             onCancel={() => setEditing(null)}
           />
         )}
-      </ResponsiveModal>
+      </TradeModal>
 
       <CsvImport
         open={importing}

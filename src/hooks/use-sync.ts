@@ -52,7 +52,7 @@ export function useSync(): void {
 
   const run = useCallback(
     async (resolution?: Resolution) => {
-      const supabase = supabaseBrowser();
+      const supabase = await supabaseBrowser();
       if (!supabase || !user) return;
       // Overlapping runs would push the same rows twice and, worse, could apply
       // an older pull over a newer one.
@@ -256,7 +256,7 @@ export function useSyncStatus(): { status: SyncStatus; lastSyncedAt: number | nu
 
 /* ── Single-row documents ───────────────────────────────────────────────── */
 
-type Client = NonNullable<ReturnType<typeof supabaseBrowser>>;
+type Client = NonNullable<Awaited<ReturnType<typeof supabaseBrowser>>>;
 
 /**
  * `replacing` makes the account's copy win outright. The device's own stamp is

@@ -207,13 +207,7 @@ export function toFormValues(tx: Transaction): TransactionFormValues {
   };
 }
 
-/** `YYYY-MM-DD` for a date input, in the user's own timezone. */
-export function todayForInput(now: number = Date.now()): string {
-  const d = new Date(now);
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${month}-${day}`;
-}
+export { todayForInput } from "./dates";
 
 /** Drops trailing zeros so 0.30000000000000004 doesn't appear in an error. */
 function trim(value: number): string {

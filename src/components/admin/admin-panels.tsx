@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Section } from "@/components/common/section";
+import { SettingGroup } from "@/components/settings/setting-row";
+import { CodesPanel } from "@/components/admin/codes-panel";
 import { BroadcastComposer } from "@/components/admin/broadcast-composer";
 import { PricingPanel } from "@/components/admin/pricing-panel";
 import { SuspensionPanel } from "@/components/admin/suspension-panel";
@@ -44,12 +45,13 @@ export function AdminPanels() {
   if (!user) return null;
 
   return (
-    <div className="space-y-10">
+    <>
       <BroadcastComposer user={user} onChanged={refresh} />
+      <CodesPanel user={user} />
       <SuspensionPanel user={user} />
       <PricingPanel user={user} />
       <AdminLog />
-    </div>
+    </>
   );
 }
 
@@ -73,11 +75,11 @@ function AdminLog() {
   const now = useNow(60_000);
 
   useEffect(() => {
-    const supabase = supabaseBrowser();
-    if (!supabase) return;
 
     let cancelled = false;
     void (async () => {
+      const supabase = await supabaseBrowser();
+      if (!supabase || cancelled) return;
       const { data } = await supabase
         .from("admin_log")
         .select("id, action, detail, at")
@@ -92,7 +94,7 @@ function AdminLog() {
   }, []);
 
   return (
-    <Section title="Log" hint="append-only">
+    <SettingGroup title="Log" description="Append-only." boxed={false}>
       {rows === null ? (
         <Skeleton className="h-[1lh] w-full text-caption" />
       ) : rows.length === 0 ? (
@@ -119,6 +121,6 @@ function AdminLog() {
           ))}
         </div>
       )}
-    </Section>
+    </SettingGroup>
   );
 }

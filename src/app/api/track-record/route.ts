@@ -32,6 +32,7 @@ function backtestFor(riskProfile: RiskProfile, at: number): BacktestResult | nul
 
 export async function GET(request: NextRequest) {
   const riskProfile = parseRiskProfile(request.nextUrl.searchParams.get("profile"));
+  const symbol = request.nextUrl.searchParams.get("symbol");
   const at = Date.now();
   const key = `${riskProfile}:${Math.floor(at / DAY)}`;
 
@@ -46,6 +47,17 @@ export async function GET(request: NextRequest) {
     // can never be asked for again.
     if (cache.size > 6) cache.clear();
     cache.set(key, result);
+  }
+
+  // One instrument's past calls, for its asset page. The whole record is
+  // ~1.2 MB of trades; the page needs the handful that are about it.
+  if (symbol) {
+    return NextResponse.json({
+      trades: result.trades.filter((trade) => trade.symbol === symbol),
+      riskProfile,
+      at,
+      synthetic: getProvider().synthetic,
+    });
   }
 
   return NextResponse.json({

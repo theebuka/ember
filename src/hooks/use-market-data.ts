@@ -13,6 +13,7 @@ import {
   fetchSeries,
   fetchStrategies,
   fetchTrackRecord,
+  fetchSymbolCalls,
   queryKeys,
   type PositionInput,
 } from "@/lib/api/client";
@@ -144,6 +145,17 @@ export function useTrackRecord(profile: RiskProfile) {
   return useQuery({
     queryKey: queryKeys.trackRecord(profile),
     queryFn: ({ signal }) => fetchTrackRecord(profile, signal),
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  });
+}
+
+/** One instrument's past calls — what the asset page shows, without the rest. */
+export function useSymbolCalls(profile: RiskProfile, symbol: string) {
+  return useQuery({
+    queryKey: queryKeys.symbolCalls(profile, symbol),
+    queryFn: ({ signal }) => fetchSymbolCalls(profile, symbol, signal),
+    enabled: symbol.length > 0,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
   });

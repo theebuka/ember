@@ -231,7 +231,7 @@ async function recordSubscription(subscription: PushSubscription): Promise<void>
     throw new PushError("Your browser didn't finish setting up push. Try again.");
   }
 
-  const supabase = supabaseBrowser();
+  const supabase = await supabaseBrowser();
   if (!supabase) throw new PushError("Accounts aren't available in this version of ember.");
 
   const { data } = await supabase.auth.getUser();
@@ -272,7 +272,7 @@ export async function unsubscribeFromPush(): Promise<PushState> {
   const endpoint = subscription.endpoint;
   await subscription.unsubscribe();
 
-  const supabase = supabaseBrowser();
+  const supabase = await supabaseBrowser();
   if (supabase) {
     await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
   }

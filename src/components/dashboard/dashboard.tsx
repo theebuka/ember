@@ -95,12 +95,25 @@ export function Dashboard({
     [instrumentsQuery.data],
   );
 
-  const pulseSymbols = useMemo(
-    () => instruments.filter((i) => markets[i.market]).map((i) => i.symbol),
-    [instruments, markets],
-  );
+  /**
+   * The five biggest movers, chosen from quotes — before any history is asked
+   * for. It requested a month of bars for every instrument on (214, 462 KB)
+   * to draw five sparklines; ranking first makes the request five symbols.
+   */
+  const pulseQuotes = useMemo(() => {
+    const bySymbol = new Map(instruments.map((i) => [i.symbol, i]));
+    return (quotesQuery.data?.quotes ?? [])
+      .filter((q) => {
+        const instrument = bySymbol.get(q.symbol);
+        return instrument !== undefined && markets[instrument.market];
+      })
+      .sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct))
+      .slice(0, PULSE_ROWS);
+  }, [quotesQuery.data, instruments, markets]);
 
-  // One month of closes behind every price in the pulse.
+  // Sorted, so the same five in a new order (quotes refresh every 20s) reuse
+  // the cached request instead of asking again.
+  const pulseSymbols = useMemo(() => pulseQuotes.map((q) => q.symbol).sort(), [pulseQuotes]);
   const pulseSeriesQuery = useSeries(pulseSymbols, "1M");
 
   /**
@@ -126,27 +139,16 @@ export function Dashboard({
   );
 
   const pulseRows = useMemo<PulseRow[]>(() => {
-    const quotes = quotesQuery.data?.quotes ?? [];
-    if (quotes.length === 0) return [];
-
     const bySymbol = new Map(instruments.map((i) => [i.symbol, i]));
     const candlesBy = new Map(
       (pulseSeriesQuery.data?.series ?? []).map((s) => [s.symbol, s.candles]),
     );
-
-    return quotes
-      .filter((q) => {
-        const instrument = bySymbol.get(q.symbol);
-        return instrument !== undefined && markets[instrument.market];
-      })
-      .sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct))
-      .slice(0, PULSE_ROWS)
-      .map((quote) => ({
-        instrument: bySymbol.get(quote.symbol)!,
-        quote,
-        candles: candlesBy.get(quote.symbol) ?? [],
-      }));
-  }, [quotesQuery.data, pulseSeriesQuery.data, instruments, markets]);
+    return pulseQuotes.map((quote) => ({
+      instrument: bySymbol.get(quote.symbol)!,
+      quote,
+      candles: candlesBy.get(quote.symbol) ?? [],
+    }));
+  }, [pulseQuotes, pulseSeriesQuery.data, instruments]);
 
   const showEmptyBook = hydrated && transactions.length === 0;
 

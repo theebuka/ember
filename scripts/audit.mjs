@@ -37,7 +37,10 @@ const ROUTES = [
   { path: "/signals/track-record", name: "Track record" },
   { path: "/signals/methodology", name: "Methodology" },
   { path: "/asset/NVDA", name: "Asset detail" },
-  { path: "/settings", name: "Settings — account" },
+  { path: "/settings", name: "Settings" },
+  { path: "/settings?tab=account", name: "Settings — profile" },
+  { path: "/settings?tab=plan", name: "Settings — plan" },
+  { path: "/settings?tab=preferences", name: "Settings — preferences" },
   { path: "/settings?tab=data", name: "Settings — your data" },
   { path: "/settings?tab=about", name: "Settings — about" },
   { path: "/notifications", name: "Notifications" },
@@ -50,6 +53,8 @@ const ROUTES = [
   // screen the route list would otherwise never visit. A screen outside the gate
   // is a screen with no accessibility check.
   { path: "/unsubscribe?token=00000000-0000-0000-0000-000000000000", name: "Unsubscribe" },
+  // The checkout's return page — a bare route, signed out here.
+  { path: "/pro/welcome", name: "Pro welcome" },
   // The admin surface is a settings tab now. A non-admin — which is what the
   // gate is — gets the Account tab, so this row is a duplicate of the one above
   // in every state a machine here can produce, and it is left out rather than

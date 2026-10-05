@@ -5,7 +5,7 @@ import { ArrowUpRight } from "@/components/common/icon";
 import { usePlan } from "@/hooks/use-plan";
 import { showsSponsors } from "@/lib/plan";
 import { AUTH_CONFIGURED } from "@/lib/supabase/config";
-import { supabaseBrowser } from "@/lib/supabase/client";
+import { publicRows } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 type Slot = "news" | "signals" | "portfolio";
@@ -41,34 +41,29 @@ export function SponsorRow({ slot, className }: { slot: Slot; className?: string
   const { plan, ready } = usePlan();
   const [sponsor, setSponsor] = useState<Sponsor | null>(null);
 
+  const wanted = AUTH_CONFIGURED && ready && showsSponsors(plan);
+
   useEffect(() => {
-    const supabase = supabaseBrowser();
-    if (!supabase) return;
-
-    let cancelled = false;
-    void (async () => {
-      // The active-window filter is in the RLS policy, not here: an expired
-      // sponsor is invisible to every reader rather than to the readers whose
-      // client happened to filter correctly.
-      const { data } = await supabase
-        .from("sponsors")
-        .select("id, sponsor, copy, href")
-        .eq("slot", slot)
-        .order("starts_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (!cancelled) setSponsor((data as Sponsor | null) ?? null);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [slot]);
+    // Only asked for when it would be drawn: a Pro reader never sees a sponsor,
+    // so they never fetch one.
+    if (!wanted) return;
+    const controller = new AbortController();
+    // The active-window filter is in the RLS policy, not here: an expired
+    // sponsor is invisible to every reader rather than to the readers whose
+    // client happened to filter correctly.
+    void publicRows<Sponsor>(
+      `sponsors?select=id,sponsor,copy,href&slot=eq.${slot}&order=starts_at.desc&limit=1`,
+      controller.signal,
+    ).then((rows) => {
+      if (!controller.signal.aborted) setSponsor(rows?.[0] ?? null);
+    });
+    return () => controller.abort();
+  }, [slot, wanted]);
 
   // Nothing to show, or nothing that should be shown. Rendering an empty
   // placeholder would reserve space for an advertisement that does not exist,
   // which is the one kind of layout shift that annoys everybody.
-  if (!AUTH_CONFIGURED || !ready || !showsSponsors(plan) || !sponsor) return null;
+  if (!wanted || !sponsor) return null;
 
   return (
     <a

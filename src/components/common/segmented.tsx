@@ -1,7 +1,6 @@
 "use client";
 
-import { useId } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { useLayoutEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 export type SegmentedOption<T extends string> = {
@@ -14,9 +13,18 @@ export type SegmentedOption<T extends string> = {
 /**
  * A segmented control with a sliding indicator.
  *
- * Used for chart ranges, theme, and any other small exclusive choice. The
- * indicator is a shared-layout animation rather than a transition on each
- * button, so the pill genuinely travels between options instead of blinking.
+ * Used for chart ranges, theme, and any other small exclusive choice. The pill
+ * travels between options rather than blinking.
+ *
+ * **CSS, not a motion library.** This was the only component importing
+ * `motion`, which put ~118 KB of script on every page for one shared-layout
+ * animation. The indicator is one element whose `left` and `width` are written
+ * from the selected button's box and moved by a CSS transition — which also
+ * means `prefers-reduced-motion` in globals.css reaches it, where a JavaScript
+ * spring needed its own check (decision 036).
+ *
+ * Until the box has been measured — the server's HTML, the first paint — the
+ * selected button draws its own pill, so nothing is ever unselected-looking.
  */
 export function Segmented<T extends string>({
   value,
@@ -35,24 +43,53 @@ export function Segmented<T extends string>({
   id?: string;
   "aria-label"?: string;
 }) {
-  // Scopes the shared-layout animation to this instance, so two segmented
-  // controls on one screen don't animate into each other.
-  const layoutId = useId();
+  const groupRef = useRef<HTMLDivElement>(null);
+  const pillRef = useRef<HTMLSpanElement>(null);
 
-  // Shared-layout animations run in JavaScript, so the `prefers-reduced-motion`
-  // block in globals.css never sees them.
-  const reduceMotion = useReducedMotion();
+  // Written straight to the element: it changes on every selection and resize,
+  // and nothing but the browser reads it.
+  useLayoutEffect(() => {
+    const group = groupRef.current;
+    const pill = pillRef.current;
+    if (!group || !pill) return;
+
+    const place = () => {
+      const selected = group.querySelector<HTMLElement>("[aria-checked='true']");
+      if (!selected) {
+        group.dataset.ready = "false";
+        return;
+      }
+      pill.style.left = `${selected.offsetLeft}px`;
+      pill.style.width = `${selected.offsetWidth}px`;
+      group.dataset.ready = "true";
+    };
+
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(group);
+    return () => observer.disconnect();
+  }, [value, options.length]);
 
   return (
     <div
+      ref={groupRef}
       id={id}
       role="radiogroup"
       aria-label={ariaLabel}
       className={cn(
-        "inline-flex items-center gap-0.5 rounded-full bg-surface-2 p-1",
+        "group/seg relative inline-flex items-center gap-0.5 rounded-full bg-surface-2 p-1",
         className,
       )}
     >
+      <span
+        ref={pillRef}
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute top-1 bottom-1 hidden rounded-full border border-line bg-surface",
+          "group-data-[ready=true]/seg:block",
+          "transition-[left,width] duration-200 ease-out motion-reduce:transition-none",
+        )}
+      />
       {options.map((option) => {
         const selected = option.value === value;
         return (
@@ -64,9 +101,9 @@ export function Segmented<T extends string>({
             aria-label={option.ariaLabel}
             onClick={() => onChange(option.value)}
             className={cn(
-              // `tap-target` supplies the `relative` the selected pill needs
-              // to position against, plus a 44px-tall hit region on touch —
-              // `sm` renders at 24px, which is well under the minimum.
+              // `tap-target` supplies the `relative` the label and the
+              // first-paint pill position against, plus a 44px-tall hit region
+              // on touch — `sm` renders at 24px, which is well under the minimum.
               "tap-target rounded-full font-medium transition-colors outline-none",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
               size === "sm"
@@ -76,14 +113,9 @@ export function Segmented<T extends string>({
             )}
           >
             {selected && (
-              <motion.span
-                layoutId={layoutId}
-                className="absolute inset-0 rounded-full border border-line bg-surface"
-                transition={
-                  reduceMotion
-                    ? { duration: 0 }
-                    : { type: "spring", stiffness: 420, damping: 34 }
-                }
+              <span
+                aria-hidden
+                className="absolute inset-0 rounded-full border border-line bg-surface group-data-[ready=true]/seg:hidden"
               />
             )}
             <span className="relative flex items-center justify-center gap-1">

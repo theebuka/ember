@@ -28,7 +28,10 @@ const ROUTES = [
   { path: "/signals/track-record", slug: "track-record", name: "Track record" },
   { path: "/signals/methodology", slug: "methodology", name: "Methodology" },
   { path: "/asset/NVDA", slug: "asset", name: "Asset detail" },
-  { path: "/settings", slug: "settings-account", name: "Settings — account" },
+  // The index on a phone, Profile beside the sidebar on desktop (decision 284).
+  { path: "/settings", slug: "settings", name: "Settings" },
+  { path: "/settings?tab=account", slug: "settings-profile", name: "Settings — profile" },
+  { path: "/settings?tab=plan", slug: "settings-plan", name: "Settings — plan" },
   { path: "/settings?tab=data", slug: "settings-data", name: "Settings — your data" },
   { path: "/notifications", slug: "notifications", name: "Notifications" },
   { path: "/auth", slug: "auth", name: "Sign in" },
@@ -42,6 +45,10 @@ const ROUTES = [
     slug: "unsubscribe",
     name: "Unsubscribe",
   },
+  // The checkout's return page. The gate has no session, so this photographs
+  // "Sign in to finish"; the subscriber states are seen with the development
+  // preview on the Plan tab.
+  { path: "/pro/welcome", slug: "pro-welcome", name: "Pro welcome" },
   // Admin moved into a settings tab, which a signed-out visitor cannot select,
   // so there is nothing here a machine can photograph. Recorded in §8.
 ];

@@ -44,7 +44,9 @@ export function SettingRow({
   const Label = htmlFor ? "label" : "div";
 
   return (
-    <div className={cn("py-3.5 first:pt-0 last:pb-0", className)}>
+    // Padded inside its group's container rather than flush to the page, so a
+    // group reads as one object and the row's hairline stops at the box.
+    <div className={cn("px-4 py-4 sm:px-5", className)}>
       <div
         className={cn(
           "flex gap-x-5 gap-y-2.5",
@@ -57,7 +59,10 @@ export function SettingRow({
           <Label
             {...(htmlFor ? { htmlFor } : {})}
             className={cn(
-              "block text-body font-medium text-ink",
+              // 15px medium, under a 17px group heading and a 20px pane title.
+              // It was 17px under a 15px group label, so every block on the
+              // screen read upside down (decision 284).
+              "block text-caption font-medium text-ink",
               htmlFor && "cursor-pointer",
             )}
           >
@@ -77,7 +82,7 @@ export function SettingRow({
               characters rather than `max-w-prose`'s 65, which measured 666px
               (decision 213). */}
           {description && (
-            <p className="mt-1 max-w-[48ch] text-caption break-words text-pretty text-stone">
+            <p className="mt-0.5 max-w-[48ch] text-caption break-words text-pretty text-stone">
               {description}
             </p>
           )}
@@ -105,10 +110,122 @@ export function SettingRow({
   );
 }
 
-/** The hairline-divided stack a settings card is made of. */
+/**
+ * A titled group of settings: a heading, an optional line under it, the rows in
+ * one bordered container, and an optional footnote beneath.
+ *
+ * **The inset grouped list** — iOS Settings, macOS System Settings, GitHub,
+ * Vercel and Linear all draw a settings group this way, and it is the one place
+ * in ember where a bordered container is the default rather than the exception
+ * (§5's card rule is about content screens). Containment is what tells a reader
+ * which switches belong together; hairlines alone left a pane of five groups
+ * reading as one long list.
+ *
+ * `boxed={false}` keeps the heading and drops the container, for content that
+ * draws its own (a plan comparison, the risk table, the admin composer).
+ */
 export function SettingGroup({
+  title,
+  description,
+  footer,
+  action,
+  tone = "default",
+  boxed = true,
+  heading: Heading = "h3",
+  id,
   className,
-  ...props
-}: React.ComponentProps<"div">) {
-  return <div className={cn("divide-y divide-line", className)} {...props} />;
+  children,
+}: {
+  title?: string;
+  description?: React.ReactNode;
+  /** A note under the container — a caveat, never a control. */
+  footer?: React.ReactNode;
+  /** Beside the heading: a status, a count, a small link. */
+  action?: React.ReactNode;
+  /** `danger` for the irreversible group, the only one tinted. */
+  tone?: "default" | "danger";
+  boxed?: boolean;
+  /** `h2` where there is no pane title above the group — the phone's index. */
+  heading?: "h2" | "h3";
+  /** An anchor, for a link that means one group rather than its pane. */
+  id?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section id={id} className={cn("min-w-0 scroll-mt-36", className)}>
+      {(title || description) && (
+        <div className="mb-3 flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            {title && (
+              <Heading
+                className={cn(
+                  "text-body font-semibold text-ink",
+                  tone === "danger" && "text-down",
+                )}
+              >
+                {title}
+              </Heading>
+            )}
+            {description && (
+              <p className="mt-0.5 max-w-[56ch] text-caption text-pretty text-stone">
+                {description}
+              </p>
+            )}
+          </div>
+          {action && <div className="shrink-0">{action}</div>}
+        </div>
+      )}
+
+      {boxed ? (
+        <div
+          className={cn(
+            "divide-y overflow-hidden rounded-xl border bg-surface",
+            tone === "danger" ? "divide-down/20 border-down/30" : "divide-line border-line",
+          )}
+        >
+          {children}
+        </div>
+      ) : (
+        children
+      )}
+
+      {footer && (
+        <div className="mt-2.5 max-w-[60ch] space-y-1.5 px-1 text-micro text-pretty text-stone">
+          {footer}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** Padded content inside a group that is not a row — a form, a preview. */
+export function SettingBlock({ className, ...props }: React.ComponentProps<"div">) {
+  return <div className={cn("px-4 py-4 sm:px-5", className)} {...props} />;
+}
+
+/**
+ * A settings tab's own heading: its name and one line on what it holds.
+ *
+ * The tab row used to be the only title, with the pane's `h2` kept for screen
+ * readers — so nothing on screen sat between the 40px page title and the first
+ * 15px group label. Every settings reference names the pane it is showing.
+ */
+export function SettingsPaneHeader({
+  title,
+  description,
+}: {
+  title: string;
+  description?: string;
+}) {
+  return (
+    // On a phone the page header already carries the section's name, so the
+    // title stays for assistive tech and only the line under it shows.
+    <header className="mb-6 lg:mb-8 lg:border-b lg:border-line lg:pb-5">
+      <h2 className="text-heading font-semibold tracking-title text-ink max-lg:sr-only">
+        {title}
+      </h2>
+      {description && <p className="text-caption text-stone lg:mt-1">{description}</p>}
+    </header>
+  );
 }

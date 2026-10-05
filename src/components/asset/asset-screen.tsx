@@ -6,13 +6,12 @@ import { Check, Eye, Plus } from "@/components/common/icon";
 import { SignalCard, SignalCardSkeleton } from "@/components/signals/signal-card";
 import { ErrorState } from "@/components/common/error-state";
 import { PageBody } from "@/components/common/page-body";
-import { ResponsiveModal } from "@/components/common/responsive-modal";
 import { SectionHeader } from "@/components/common/section-header";
 import { Segmented } from "@/components/common/segmented";
 import { ChangeChip } from "@/components/market/change-chip";
 import { DataSourceChip } from "@/components/market/data-source-chip";
 import { PriceChart, PriceChartSkeleton } from "@/components/market/price-chart";
-import { TransactionForm } from "@/components/portfolio/transaction-form";
+import { TradeModal, TransactionForm } from "@/components/portfolio/trade-modal";
 import { PageHeader } from "@/components/shell/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,7 +22,7 @@ import {
   useQuotes,
   useRates,
   useSeries,
-  useTrackRecord,
+  useSymbolCalls,
 } from "@/hooks/use-market-data";
 import { ApiError } from "@/lib/api/client";
 import {
@@ -86,7 +85,7 @@ export function AssetScreen({ symbol }: { symbol: string }) {
 
   const assetQuery = useAsset(symbol, riskProfile);
   const seriesQuery = useSeries([symbol], range);
-  const trackRecordQuery = useTrackRecord(riskProfile);
+  const trackRecordQuery = useSymbolCalls(riskProfile, symbol);
   const instrumentsQuery = useInstruments();
   const quotesQuery = useQuotes();
   const ratesQuery = useRates();
@@ -510,7 +509,7 @@ export function AssetScreen({ symbol }: { symbol: string }) {
         </p>
       </PageBody>
 
-      <ResponsiveModal
+      <TradeModal
         open={logging}
         onOpenChange={setLogging}
         title="Log a trade"
@@ -527,7 +526,7 @@ export function AssetScreen({ symbol }: { symbol: string }) {
           onSubmit={handleLogged}
           onCancel={() => setLogging(false)}
         />
-      </ResponsiveModal>
+      </TradeModal>
     </>
   );
 }

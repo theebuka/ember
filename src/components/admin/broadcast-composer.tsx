@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
 import { Megaphone, Send, Trash } from "@/components/common/icon";
-import { Section } from "@/components/common/section";
+import { SettingGroup } from "@/components/settings/setting-row";
 import { NoticeRow } from "@/components/notifications/notice-row";
 import { recordAdminAction } from "@/components/admin/record";
 import { Button } from "@/components/ui/button";
@@ -81,7 +81,7 @@ export function BroadcastComposer({
     gcTime: 0,
     staleTime: 0,
     queryFn: async (): Promise<Broadcast[]> => {
-      const supabase = supabaseBrowser();
+      const supabase = await supabaseBrowser();
       if (!supabase) return [];
       const { data, error } = await supabase
         .from("notices")
@@ -106,7 +106,7 @@ export function BroadcastComposer({
     setDraft((d) => ({ ...d, [key]: value }));
 
   async function publish() {
-    const supabase = supabaseBrowser();
+    const supabase = await supabaseBrowser();
     if (!supabase || problem) return;
 
     setSending(true);
@@ -149,7 +149,7 @@ export function BroadcastComposer({
   }
 
   async function withdraw(notice: Broadcast) {
-    const supabase = supabaseBrowser();
+    const supabase = await supabaseBrowser();
     if (!supabase) return;
 
     const { error } = await supabase.from("notices").delete().eq("id", notice.id);
@@ -179,7 +179,7 @@ export function BroadcastComposer({
    * something every reader sees immediately. Promoting means composing.
    */
   async function demote(notice: Broadcast) {
-    const supabase = supabaseBrowser();
+    const supabase = await supabaseBrowser();
     if (!supabase) return;
 
     const { error } = await supabase
@@ -204,10 +204,7 @@ export function BroadcastComposer({
 
   return (
     <>
-      <Section
-        title="Broadcast"
-        hint="everyone sees this"
-      >
+      <SettingGroup title="Broadcast" description="Everyone sees this." boxed={false}>
         <div className="space-y-4">
           <Field
             id="broadcast-title"
@@ -356,15 +353,16 @@ export function BroadcastComposer({
             {problem && <p className="text-caption text-stone">{problem}</p>}
           </div>
         </div>
-      </Section>
+      </SettingGroup>
 
-      <Section
+      <SettingGroup
         title="Live"
-        hint={
+        description={
           stored.length > 0
-            ? `${stored.length} published from the dashboard`
-            : "nothing published yet"
+            ? `${stored.length} published from the dashboard.`
+            : "Nothing published yet."
         }
+        boxed={false}
       >
         {stored.length === 0 ? (
           <p className="text-caption text-stone">
@@ -409,7 +407,7 @@ export function BroadcastComposer({
             ))}
           </div>
         )}
-      </Section>
+      </SettingGroup>
     </>
   );
 }

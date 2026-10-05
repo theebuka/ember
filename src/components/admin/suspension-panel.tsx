@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
-import { Section } from "@/components/common/section";
+import { SettingGroup } from "@/components/settings/setting-row";
 import { recordAdminAction } from "@/components/admin/record";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,7 +64,7 @@ export function SuspensionPanel({ user }: { user: User }) {
     gcTime: 0,
     staleTime: 0,
     queryFn: async (): Promise<SuspensionRow[]> => {
-      const supabase = supabaseBrowser();
+      const supabase = await supabaseBrowser();
       if (!supabase) return [];
       const { data, error } = await supabase
         .from("suspensions")
@@ -79,7 +79,7 @@ export function SuspensionPanel({ user }: { user: User }) {
   const rows = list.data ?? null;
 
   async function suspend() {
-    const supabase = supabaseBrowser();
+    const supabase = await supabaseBrowser();
     const id = target.trim();
     if (!supabase) return;
 
@@ -120,7 +120,7 @@ export function SuspensionPanel({ user }: { user: User }) {
   }
 
   async function restore(row: SuspensionRow) {
-    const supabase = supabaseBrowser();
+    const supabase = await supabaseBrowser();
     if (!supabase) return;
 
     const { error } = await supabase
@@ -138,7 +138,11 @@ export function SuspensionPanel({ user }: { user: User }) {
   }
 
   return (
-    <Section title="Accounts" hint="suspend sync and delivery">
+    <SettingGroup
+      title="Accounts"
+      description="Suspend sync and delivery for one account."
+      boxed={false}
+    >
       {/* Two rows of chips and one sentence, where this was six full clauses in
           a tinted box. The nouns carry the contrast — three things stop, three
           do not — and the sentence says the part that genuinely needs prose. */}
@@ -224,6 +228,6 @@ export function SuspensionPanel({ user }: { user: User }) {
           </div>
         )}
       </div>
-    </Section>
+    </SettingGroup>
   );
 }

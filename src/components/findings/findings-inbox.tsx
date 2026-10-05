@@ -5,9 +5,8 @@ import Link from "next/link";
 import { Compass } from "@/components/common/icon";
 import { ErrorState } from "@/components/common/error-state";
 import { Section } from "@/components/common/section";
-import { ResponsiveModal } from "@/components/common/responsive-modal";
 import { FindingRow, FindingRowSkeleton } from "@/components/findings/finding-row";
-import { TransactionForm } from "@/components/portfolio/transaction-form";
+import { TradeModal, TransactionForm } from "@/components/portfolio/trade-modal";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { usePlan } from "@/hooks/use-plan";
 import { useNow } from "@/hooks/use-now";
@@ -19,7 +18,7 @@ import { formatQuantity, quantityPrecision } from "@/lib/market/format";
 import { findingLimit } from "@/lib/plan";
 import { USD_PER_UNIT } from "@/lib/market/universe";
 import { convert, derivePortfolio, positionInputs } from "@/lib/portfolio/derive";
-import { todayForInput } from "@/lib/portfolio/transaction-schema";
+import { todayForInput } from "@/lib/portfolio/dates";
 import { undoableToast } from "@/lib/toast";
 import { handlingFor, useAdviceActions } from "@/store/use-advice-actions";
 import { usePortfolio } from "@/store/use-portfolio";
@@ -364,7 +363,7 @@ export function FindingsInbox({
         </Section>
       )}
 
-      <ResponsiveModal
+      <TradeModal
         open={executing !== null}
         onOpenChange={(next) => !next && setExecuting(null)}
         title={
@@ -405,7 +404,7 @@ export function FindingsInbox({
             onCancel={() => setExecuting(null)}
           />
         )}
-      </ResponsiveModal>
+      </TradeModal>
     </>
   );
 }

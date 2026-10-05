@@ -22,7 +22,12 @@ export async function GET(request: NextRequest) {
   const next = safeNext(url.searchParams.get("next")) ?? "/settings";
 
   if (!code) {
-    return NextResponse.redirect(new URL("/auth?error=missing-code", url.origin));
+    // Supabase sometimes reports a dead link in the query rather than the
+    // fragment; pass its reason on so the page can say which it was.
+    const reason = url.searchParams.get("error_code") ?? "missing-code";
+    return NextResponse.redirect(
+      new URL(`/auth?error=${encodeURIComponent(reason)}`, url.origin),
+    );
   }
 
   const supabase = await supabaseServer();

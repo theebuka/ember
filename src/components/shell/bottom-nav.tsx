@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
  * **Labelled, compact and centred.** It was icon-only and ran edge to edge, on
  * the reasoning that four conventional glyphs need no legend; in use it read as
  * a row of loose icons in a very long lozenge. Now each item is an icon over its
- * name, the capsule is only as wide as its four items and sits centred, and the
+ * name, the capsule is only as wide as its five items and sits centred, and the
  * current one wears a tinted pill — the same indicator the desktop rail uses
  * (decision 035), which is what makes "where am I" look the same on both.
  * Taller rather than wider: a 56px item is a comfortable thumb target without
@@ -44,7 +44,7 @@ export function BottomNav() {
     >
       <ul
         className={cn(
-          "pointer-events-auto mb-3 flex gap-1 rounded-full p-1.5",
+          "pointer-events-auto mb-3 flex gap-0.5 rounded-full p-1.5",
           // On light, `surface` and `ground` are the same white, so the capsule
           // cannot lift off the page by value; it gets a stronger hairline and
           // the system's overlay shadow, which exists for exactly this: chrome
@@ -63,9 +63,9 @@ export function BottomNav() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  // 76px from 375px up (a 336px capsule); 72px below, so it still
-                  // fits a 320px screen with room either side.
-                  "flex h-14 w-[4.5rem] flex-col items-center justify-center gap-1 rounded-full outline-none min-[375px]:w-[4.75rem]",
+                  // Five items: 64px from 375px up (a 340px capsule); 56px below,
+                  // so it still fits a 320px screen with room either side.
+                  "flex h-14 w-14 flex-col items-center justify-center gap-1 rounded-full outline-none min-[375px]:w-16",
                   "transition-colors duration-150",
                   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
                   // A neutral pill, not the brand tint, at the user's

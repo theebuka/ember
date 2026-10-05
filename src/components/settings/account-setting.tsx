@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { SettingGroup, SettingRow } from "@/components/settings/setting-row";
+import { PlanBadge, renewalLine, usePriceLine } from "@/components/plan/subscription";
+import { usePlan } from "@/hooks/use-plan";
 import { Button } from "@/components/ui/button";
 import { useNow } from "@/hooks/use-now";
 import { useSession } from "@/hooks/use-session";
@@ -34,7 +36,7 @@ export function AccountSetting() {
   if (!available) return null;
 
   async function signOut() {
-    const supabase = supabaseBrowser();
+    const supabase = await supabaseBrowser();
     if (!supabase) return;
     setSigningOut(true);
     await supabase.auth.signOut();
@@ -52,13 +54,12 @@ export function AccountSetting() {
      * blocks a reader met before reaching a single control. This block is the
      * first thing under the tab title, so the tab title is its label.
      */
-    <section>
-      <SettingGroup>
+    <SettingGroup title="Sign-in and sync">
         {!ready ? (
           // Reserved rather than assumed signed-out: flashing a Sign in button
           // at someone who is already signed in is the auth version of the
           // hydration flicker ADR 0017 exists to prevent.
-          <SettingRow label="Sign-in" description="Checking…" />
+          <SettingRow label="Account" description="Checking…" />
         ) : user ? (
           <>
             {/* `control`, not `children`. As a child the button dropped into
@@ -68,20 +69,18 @@ export function AccountSetting() {
                 the row empty. As a control it sits beside the address where
                 there is room and beneath it on a phone, which is the whole
                 point of the `responsive` layout. */}
+            {/* The address, and changing it, in one row. It was here and again
+                in an Email block 600px further down the same tab. */}
             <SettingRow
-              label="Signed in"
-              description={user.email ?? "Kept in sync."}
+              label="Email"
+              description={<span className="num break-all">{user.email ?? "Kept in sync."}</span>}
               control={
-                <Button
-                  variant="outline"
-                  size="default"
-                  onClick={signOut}
-                  disabled={signingOut}
-                >
-                  {signingOut ? "Signing out…" : "Sign out"}
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/auth?next=%2Fsettings%3Ftab%3Daccount">Change</Link>
                 </Button>
               }
             />
+            <PlanRow />
 
             {/* Held: this device's data was last synced with another account,
                 and nothing moves until somebody says which way. Two outcomes,
@@ -109,20 +108,28 @@ export function AccountSetting() {
                 description={syncDescription(status, lastSyncedAt, now)}
               />
             )}
+            <SettingRow
+              label="Sign out"
+              description="Your data stays on this device."
+              control={
+                <Button variant="outline" size="sm" onClick={signOut} disabled={signingOut}>
+                  {signingOut ? "Signing out…" : "Sign out"}
+                </Button>
+              }
+            />
           </>
         ) : (
           <SettingRow
             label="Sync across devices"
             description="Back up your trades, watchlist, settings and profile, and use them on any device."
             control={
-              <Button asChild size="default">
-                <Link href="/auth?next=%2Fsettings">Sign in</Link>
+              <Button asChild size="sm">
+                <Link href="/auth?next=%2Fsettings%3Ftab%3Daccount">Sign in</Link>
               </Button>
             }
           />
         )}
-      </SettingGroup>
-    </section>
+    </SettingGroup>
   );
 }
 
@@ -146,4 +153,31 @@ function syncDescription(
     return "Positions and P&L are recomputed, never stored.";
   }
   return `Last synced ${formatRelative(lastSyncedAt, now)}.`;
+}
+
+/**
+ * The plan, on the Account tab — for a subscriber only.
+ *
+ * Free gets no row: "Plan: Free" with a link to the prices would be a standing
+ * upsell on a screen about identity (ADR 0038 — one, and only where a limit bit).
+ */
+function PlanRow() {
+  const { plan, ready, subscription } = usePlan();
+  const price = usePriceLine(subscription.status === "active" ? subscription.billing : null);
+  if (!ready || plan !== "pro" || subscription.status !== "active") return null;
+  return (
+    <SettingRow
+      label={
+        <span className="flex items-center gap-2">
+          Plan <PlanBadge />
+        </span>
+      }
+      description={renewalLine(subscription, price)}
+      control={
+        <Button asChild variant="outline" size="sm">
+          <Link href="/settings?tab=plan">Manage</Link>
+        </Button>
+      }
+    />
+  );
 }

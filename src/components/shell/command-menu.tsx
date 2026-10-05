@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Moon, Sun, Monitor, Plus, Sparkles } from "@/components/common/icon";
+import { BookOpen, Moon, Sun, Monitor, Plus, Sparkles, TrendUp } from "@/components/common/icon";
 import { useTheme } from "next-themes";
 import {
   CommandDialog,
@@ -18,6 +18,8 @@ import { useInstruments } from "@/hooks/use-market-data";
 import { useIsDesktop } from "@/hooks/use-media-query";
 import { MARKET_LABELS, type MarketKind } from "@/lib/api/types";
 import { NAV_ITEMS } from "@/lib/nav";
+import { readCommandMenuOpen, setCommandMenuOpen, useCommandMenuOpen } from "@/components/shell/command-menu-state";
+import { cn } from "@/lib/utils";
 
 /**
  * Open state as an external store, not component state.
@@ -28,30 +30,35 @@ import { NAV_ITEMS } from "@/lib/nav";
  * for the shared clock and the notification permission, and it lets the
  * opener be a plain function rather than a hook every caller has to thread.
  */
-const listeners = new Set<() => void>();
-let openState = false;
 
-function setOpenState(next: boolean) {
-  if (next === openState) return;
-  openState = next;
-  for (const listener of listeners) listener();
-}
+/** Track record and Methodology have no icon in the rail; here every row has one, so labels share a left edge. */
+const CHILD_ICONS: Record<string, React.ReactNode> = {
+  "/signals/track-record": <TrendUp />,
+  "/signals/methodology": <BookOpen />,
+};
 
-function subscribe(onChange: () => void) {
-  listeners.add(onChange);
-  return () => listeners.delete(onChange);
-}
-
-export function useCommandMenuOpen(): boolean {
-  return useSyncExternalStore(
-    subscribe,
-    () => openState,
-    () => false,
+function Hint({
+  keys,
+  className,
+  children,
+}: {
+  keys: string[];
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <span className={cn("flex items-center gap-1.5", className)}>
+      {keys.map((key) => (
+        <kbd
+          key={key}
+          className="inline-flex h-5 min-w-5 items-center justify-center rounded-md bg-surface-2 px-1.5 font-sans text-micro font-medium text-graphite"
+        >
+          {key}
+        </kbd>
+      ))}
+      {children}
+    </span>
   );
-}
-
-export function openCommandMenu(): void {
-  setOpenState(true);
 }
 
 /**
@@ -97,7 +104,7 @@ export function CommandMenu() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "k" || !(event.metaKey || event.ctrlKey)) return;
       event.preventDefault();
-      setOpenState(!openState);
+      setCommandMenuOpen(!readCommandMenuOpen());
     };
 
     document.addEventListener("keydown", onKeyDown);
@@ -106,7 +113,7 @@ export function CommandMenu() {
 
   const go = useCallback(
     (href: string) => {
-      setOpenState(false);
+      setCommandMenuOpen(false);
       router.push(href);
     },
     [router],
@@ -117,7 +124,7 @@ export function CommandMenu() {
   return (
     <CommandDialog
       open={open}
-      onOpenChange={setOpenState}
+      onOpenChange={setCommandMenuOpen}
       title="Search ember"
       description="Jump to a screen or an instrument, or change the theme."
     >
@@ -144,6 +151,7 @@ export function CommandMenu() {
               value={`go ${child.label}`}
               onSelect={() => go(child.href)}
             >
+              {CHILD_ICONS[child.href]}
               {child.label}
             </CommandItem>
           ))}
@@ -160,8 +168,11 @@ export function CommandMenu() {
                 value={`${instrument.symbol} ${instrument.name}`}
                 onSelect={() => go(`/asset/${instrument.symbol}`)}
               >
-                <span className="mono-label text-caption">{instrument.symbol}</span>
-                <span className="text-stone">{instrument.name}</span>
+                {/* A fixed column for the ticker, so the names line up. */}
+                <span className="mono-label min-w-24 shrink-0 text-caption text-ink">
+                  {instrument.symbol}
+                </span>
+                <span className="min-w-0 truncate text-stone">{instrument.name}</span>
               </CommandItem>
             ))}
           </CommandGroup>
@@ -184,7 +195,7 @@ export function CommandMenu() {
             value="theme light"
             onSelect={() => {
               setTheme("light");
-              setOpenState(false);
+              setCommandMenuOpen(false);
             }}
           >
             <Sun />
@@ -194,7 +205,7 @@ export function CommandMenu() {
             value="theme dark"
             onSelect={() => {
               setTheme("dark");
-              setOpenState(false);
+              setCommandMenuOpen(false);
             }}
           >
             <Moon />
@@ -204,7 +215,7 @@ export function CommandMenu() {
             value="theme system match"
             onSelect={() => {
               setTheme("system");
-              setOpenState(false);
+              setCommandMenuOpen(false);
             }}
           >
             <Monitor />
@@ -212,6 +223,15 @@ export function CommandMenu() {
           </CommandItem>
         </CommandGroup>
       </CommandList>
+
+      <div
+        aria-hidden
+        className="flex items-center gap-4 border-t border-line px-4 py-2.5 text-micro text-stone"
+      >
+        <Hint keys={["↑", "↓"]}>to move</Hint>
+        <Hint keys={["↵"]}>to open</Hint>
+        <Hint keys={["esc"]} className="ml-auto">to close</Hint>
+      </div>
     </CommandDialog>
   );
 }
