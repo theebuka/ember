@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getAdvice, parseRiskProfile } from "@/lib/api/server";
+import { freeCallsFor, getAdvice, parseRiskProfile } from "@/lib/api/server";
+import { requestPlan } from "@/lib/api/plan-server";
 import type { AssetMetricGroup, Candle } from "@/lib/api/types";
 import { getProvider } from "@/lib/market/providers";
 import {
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
   const provider = getProvider();
   const at = Date.now();
 
-  const [quote, candles, fundamentals, onchain, advice] = await Promise.all([
+  const [quote, candles, fundamentals, onchain, advice, plan] = await Promise.all([
     provider.getQuote(symbol, at),
     provider.getCandles(symbol),
     provider.getFundamentals(symbol),
@@ -69,6 +70,7 @@ export async function GET(request: NextRequest) {
     // Reuses the feed's cached assessment rather than re-running the engine,
     // so the read shown here is character-for-character the one on the feed.
     getAdvice(riskProfile),
+    requestPlan(),
   ]);
 
   const periodsPerYear = periodsPerYearFor(spec.market);
@@ -241,7 +243,11 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const assessment = advice.assessments.find((a) => a.symbol === symbol) ?? null;
+  const read = advice.assessments.find((a) => a.symbol === symbol) ?? null;
+  // A call outside the plan's free ones is withheld here, not hidden on screen.
+  const unlocked = freeCallsFor(plan, advice);
+  const locked = read !== null && unlocked !== null && !unlocked.has(symbol);
+  const assessment = locked ? null : read;
 
   return NextResponse.json({
     // The whole spec minus the generation parameters. A hand-picked subset
@@ -251,7 +257,8 @@ export async function GET(request: NextRequest) {
     instrument: toInstrument(spec),
     quote,
     assessment,
-    actionable: advice.actionable.includes(symbol),
+    locked,
+    actionable: !locked && advice.actionable.includes(symbol),
     groups,
     riskProfile,
     at,

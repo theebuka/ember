@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { ArrowRight, Sparkles, Wallet } from "@/components/common/icon";
 import { ErrorState } from "@/components/common/error-state";
@@ -8,7 +8,6 @@ import { PAGE_COLUMNS, PageBody, PageColumns } from "@/components/common/page-bo
 import { Section } from "@/components/common/section";
 import { GreetingLine } from "@/components/dashboard/greeting-line";
 import { PinnedBanner } from "@/components/dashboard/pinned-banner";
-import { PlanCard } from "@/components/plan/upsell";
 import { FindingsInbox } from "@/components/findings/findings-inbox";
 import { ChangeChip } from "@/components/market/change-chip";
 import { DataSourceChip } from "@/components/market/data-source-chip";
@@ -33,6 +32,7 @@ import { derivePortfolio, type PortfolioSummary } from "@/lib/portfolio/derive";
 import { sampleTransactions } from "@/lib/portfolio/sample";
 import { usePortfolio } from "@/store/use-portfolio";
 import { usePreferences } from "@/store/use-preferences";
+import { useLedger } from "@/hooks/use-ledger";
 
 /**
  * The home screen — the findings inbox.
@@ -76,9 +76,9 @@ export function Dashboard({
   pinned?: Broadcast[];
 }) {
   const hydrated = useHydrated();
-  const [withheld, setWithheld] = useState(0);
 
-  const transactions = usePortfolio((s) => s.transactions);
+  // What the plan shows; `ledger` is every row, for writes (decision 289).
+  const { transactions, all: ledger } = useLedger();
   const isSample = usePortfolio((s) => s.isSample);
   const loadSample = usePortfolio((s) => s.loadSample);
   const clearPortfolio = usePortfolio((s) => s.clear);
@@ -150,7 +150,7 @@ export function Dashboard({
     }));
   }, [pulseQuotes, pulseSeriesQuery.data, instruments]);
 
-  const showEmptyBook = hydrated && transactions.length === 0;
+  const showEmptyBook = hydrated && ledger.length === 0;
 
   const quotesError = quotesQuery.error;
 
@@ -222,9 +222,6 @@ export function Dashboard({
           footer={
             // 8px on the grid's 32px gap keeps the page's 40px block rhythm.
             <div className="space-y-8 pt-2">
-              {/* The gate, said where it bit. Only when the cap actually held
-                  something back (ADR 0038). */}
-              {withheld > 0 && <PlanCard feature="unlimited-findings" />}
               <p className="text-micro text-stone">
                 ember gives information, not financial advice.{" "}
                 <Link
@@ -288,7 +285,7 @@ export function Dashboard({
                 handled state and its own execute flow — this screen composes
                 it rather than orchestrating it, because the same list is what
                 a notification deep-links into. */}
-            <FindingsInbox onWithheld={setWithheld} />
+            <FindingsInbox />
           </div>
         </PageColumns>
       </PageBody>

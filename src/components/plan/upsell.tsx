@@ -134,7 +134,7 @@ export function PlanInterstitial({
           ? UPSELL[feature].body
           : "Both plans get the same analysis. Pro shows you more of it."
       }
-      className="sm:max-w-2xl"
+      className="sm:max-w-[52.5rem]"
     >
       <div className="min-h-0 overflow-y-auto p-4 md:p-5">
         <PlanComparison feature={feature} />

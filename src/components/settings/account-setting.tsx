@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { PlanCard, PlanChip } from "@/components/plan/upsell";
+import { canUse } from "@/lib/plan";
 import Link from "next/link";
 import { SettingGroup, SettingRow } from "@/components/settings/setting-row";
 import { PlanBadge, renewalLine, usePriceLine } from "@/components/plan/subscription";
@@ -30,6 +32,7 @@ export function AccountSetting() {
   const { user, ready, available } = useSession();
   const { status, lastSyncedAt } = useSyncStatus();
   const resolve = useSyncState((s) => s.resolve);
+  const { plan, ready: planReady } = usePlan();
   const now = useNow(30_000);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -102,6 +105,18 @@ export function AccountSetting() {
                   </div>
                 }
               />
+            ) : planReady && !canUse("sync", plan) ? (
+              <SettingRow
+                label={
+                  <span className="flex items-center gap-2">
+                    Sync
+                    <PlanChip />
+                  </span>
+                }
+                description="Your data stays on this device."
+              >
+                <PlanCard feature="sync" className="mt-3.5" />
+              </SettingRow>
             ) : (
               <SettingRow
                 label="Sync"
@@ -120,8 +135,8 @@ export function AccountSetting() {
           </>
         ) : (
           <SettingRow
-            label="Sync across devices"
-            description="Back up your trades, watchlist, settings and profile, and use them on any device."
+            label="Sign in"
+            description="Needed for Pro. With Pro, your data syncs to every device you sign in on."
             control={
               <Button asChild size="sm">
                 <Link href="/auth?next=%2Fsettings%3Ftab%3Daccount">Sign in</Link>

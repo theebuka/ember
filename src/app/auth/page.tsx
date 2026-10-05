@@ -3,7 +3,7 @@ import { AuthScreen } from "@/components/auth/auth-screen";
 
 export const metadata = {
   title: "Sign in",
-  description: "Keep your trades, settings and watchlist across devices.",
+  description: "Sign in to ember. With Pro, your trades, settings and watchlist sync across devices.",
 };
 
 export default function AuthPage() {

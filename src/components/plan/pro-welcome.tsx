@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { usePlan } from "@/hooks/use-plan";
 import { useSession } from "@/hooks/use-session";
-import { PLAN_RULES } from "@/lib/plan";
 import { PLAN_PREVIEW_ENABLED, usePlanPreview } from "@/lib/plan-preview";
 
 /** How long to wait for the payment to land before saying it hasn't. */
@@ -31,9 +30,9 @@ const POLL_EVERY_MS = 2_500;
 const UNLOCKED: { icon: IconComponent; title: string; body: string; href: string }[] = [
   {
     icon: Crosshair,
-    title: "Every finding",
-    body: "Home shows all of them now, most urgent first.",
-    href: "/",
+    title: "Every call",
+    body: "Buy or sell, when, how much and the stop, on every market.",
+    href: "/signals",
   },
   {
     icon: Envelope,
@@ -43,8 +42,8 @@ const UNLOCKED: { icon: IconComponent; title: string; body: string; href: string
   },
   {
     icon: BellRinging,
-    title: "Push with no daily cap",
-    body: `Free stops at ${PLAN_RULES.free.alertsPerDay} a day. Pro sends every one.`,
+    title: "Push alerts",
+    body: "Turn them on for each device, and hear about a window with ember closed.",
     href: "/settings?tab=alerts",
   },
 ];

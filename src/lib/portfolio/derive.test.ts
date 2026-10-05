@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Candle, Instrument, Quote, Transaction } from "@/lib/api/types";
-import { convert, derivePortfolio, portfolioValueSeries, type Rates } from "./derive";
+import { convert, derivePortfolio, keepLargest, portfolioValueSeries, type Rates } from "./derive";
 
 /**
  * Portfolio maths, checked against figures worked out by hand.
@@ -458,5 +458,38 @@ describe("portfolioValueSeries", () => {
         base: "USD",
       }),
     ).toEqual([]);
+  });
+});
+
+describe("keepLargest (decision 289)", () => {
+  const tx = (id: string, symbol: string, side: "buy" | "sell", quantity: number) =>
+    ({ id, symbol, side, quantity, price: 10, date: "2025-01-01" }) as const;
+  const ledger = [
+    tx("a", "AAPL", "buy", 1),
+    tx("b", "BTC", "buy", 1),
+    tx("c", "COP", "buy", 1),
+    tx("d", "DIS", "buy", 1),
+    tx("d2", "DIS", "sell", 1),
+  ];
+  const positions = [
+    { symbol: "AAPL", quantity: 1, marketValue: 100, costBasis: 10 },
+    { symbol: "BTC", quantity: 1, marketValue: 300, costBasis: 10 },
+    { symbol: "COP", quantity: 1, marketValue: 200, costBasis: 10 },
+    { symbol: "DIS", quantity: 0, marketValue: 0, costBasis: 0 },
+  ];
+
+  it("keeps the largest open positions and names the rest", () => {
+    const { transactions, locked } = keepLargest(ledger, positions, 2);
+    expect(locked).toEqual(["AAPL"]);
+    expect(transactions.map((t) => t.id)).toEqual(["b", "c", "d", "d2"]);
+  });
+
+  it("keeps a closed position's history, which is not a holding", () => {
+    expect(keepLargest(ledger, positions, 1).transactions.map((t) => t.symbol)).toContain("DIS");
+  });
+
+  it("ranks by cost while prices are still loading", () => {
+    const unpriced = positions.map((p, i) => ({ ...p, marketValue: 0, costBasis: i }));
+    expect(keepLargest(ledger, unpriced, 2).locked).toEqual(["AAPL"]);
   });
 });

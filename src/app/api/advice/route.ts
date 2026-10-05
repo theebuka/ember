@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getAdvice, parseRiskProfile, trimAdvice } from "@/lib/api/server";
+import { getAdvice, parseRiskProfile, presentAdvice } from "@/lib/api/server";
+import { requestPlan } from "@/lib/api/plan-server";
 
 export const dynamic = "force-dynamic";
 
@@ -23,5 +24,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(request: NextRequest) {
   const riskProfile = parseRiskProfile(request.nextUrl.searchParams.get("profile"));
-  return NextResponse.json(trimAdvice(await getAdvice(riskProfile)));
+  const [advice, plan] = await Promise.all([getAdvice(riskProfile), requestPlan()]);
+  // Locked calls are stripped here, before anything is serialised (decision 288).
+  return NextResponse.json(presentAdvice(advice, plan));
 }

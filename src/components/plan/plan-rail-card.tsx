@@ -68,7 +68,7 @@ export function PlanRailCard() {
               240px column, and a paragraph here is decision 212's wall of
               text arriving in the chrome instead of on the page. */}
           <p className="mt-0.5 text-micro text-stone">
-            Every finding, uncapped push and the email digest.
+            Every call in full, every market, and alerts with ember closed.
           </p>
           <Button size="sm" className="mt-3 w-full" onClick={() => setOpen(true)}>
             See plans

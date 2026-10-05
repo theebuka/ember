@@ -361,6 +361,34 @@ export function quantityHeldAt(
   return Math.max(0, quantity);
 }
 
+/** Symbols with a quantity still held at the end of the ledger. */
+export function openSymbols(transactions: readonly Transaction[]): Set<string> {
+  const symbols = new Set(transactions.map((t) => t.symbol));
+  return new Set(
+    [...symbols].filter((symbol) => quantityHeldAt(transactions, symbol, Infinity) > 0),
+  );
+}
+
+/**
+ * The ledger cut to a plan's holdings limit: the `limit` open positions worth
+ * most (cost breaks a tie, and stands in while prices load), and every row of
+ * any symbol not open. The rest are returned by name, largest first. Pure, so
+ * the rule is tested rather than trusted (decision 289).
+ */
+export function keepLargest(
+  transactions: readonly Transaction[],
+  positions: readonly { symbol: string; quantity: number; marketValue: number; costBasis: number }[],
+  limit: number,
+): { transactions: Transaction[]; locked: string[] } {
+  const ranked = positions
+    .filter((p) => p.quantity > 0)
+    .sort((a, b) => b.marketValue - a.marketValue || b.costBasis - a.costBasis)
+    .map((p) => p.symbol);
+  const locked = ranked.slice(limit);
+  const hidden = new Set(locked);
+  return { transactions: transactions.filter((t) => !hidden.has(t.symbol)), locked };
+}
+
 /* ── Value over time ───────────────────────────────────────────────────── */
 
 export interface ValuePoint {

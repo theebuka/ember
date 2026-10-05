@@ -25,9 +25,13 @@ import { USD_PER_UNIT } from "@/lib/market/universe";
 import { derivePortfolio } from "@/lib/portfolio/derive";
 import { undoableToast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { usePortfolio } from "@/store/use-portfolio";
 import { usePreferences } from "@/store/use-preferences";
 import { resolveWatchlist, useWatchlist } from "@/store/use-watchlist";
+import { usePlan } from "@/hooks/use-plan";
+import { watchlistLimit } from "@/lib/plan";
+import { PlanInterstitial } from "@/components/plan/upsell";
+import { LockedHoldings } from "@/components/plan/locked";
+import { useLedger } from "@/hooks/use-ledger";
 
 /**
  * Everything the user is following, with ember's current read on each.
@@ -76,7 +80,8 @@ export function WatchlistPanel() {
   const markets = usePreferences((s) => s.markets);
   const riskProfile = usePreferences((s) => s.riskProfile);
   const base = usePreferences((s) => s.baseCurrency);
-  const transactions = usePortfolio((s) => s.transactions);
+  // What the plan shows (decision 289).
+  const { transactions } = useLedger();
 
   const instrumentsQuery = useInstruments();
   const quotesQuery = useQuotes();
@@ -87,18 +92,42 @@ export function WatchlistPanel() {
     () => instrumentsQuery.data?.instruments ?? [],
     [instrumentsQuery.data],
   );
+  const instrumentBy = useMemo(
+    () => new Map(instruments.map((i) => [i.symbol, i])),
+    [instruments],
+  );
   const universe = useMemo(() => instruments.map((i) => i.symbol), [instruments]);
 
   /** Symbols on the list, before the settings filter. */
-  const followed = useMemo(
-    () => (hydrated ? resolveWatchlist(watched, universe) : universe),
-    [hydrated, watched, universe],
+  const { plan, ready: planReady } = usePlan();
+  const limit = watchlistLimit(plan);
+  const [upsell, setUpsell] = useState(false);
+  const following = useMemo(
+    () => (hydrated && planReady ? resolveWatchlist(watched, universe, plan) : universe),
+    [hydrated, planReady, watched, universe, plan],
   );
+  const full = limit !== null && following.length >= limit;
+  // Past the limit — Pro lapsed — the first few show and the rest wait, untouched,
+  // for Pro to come back (decision 289).
+  const followed = useMemo(
+    () => (limit === null ? following : following.slice(0, limit)),
+    [following, limit],
+  );
+  const lockedWatch = limit === null ? [] : following.slice(limit);
+
+  const handleAdd = (symbol: string) => {
+    if (full) {
+      setAdding(false);
+      setUpsell(true);
+      return;
+    }
+    addToWatchlist(symbol, following);
+  };
 
   // Bars for what is on the list, not for the whole universe: somebody
   // following five names was downloading a month of history for 214.
   // Not before hydration, when `followed` is still the whole universe.
-  const seriesQuery = useSeries(hydrated ? followed : NO_SYMBOLS, "1M");
+  const seriesQuery = useSeries(hydrated && planReady ? followed : NO_SYMBOLS, "1M");
 
   const positionWeights = useMemo(() => {
     const summary = derivePortfolio({
@@ -120,6 +149,7 @@ export function WatchlistPanel() {
     const adviceBy = new Map(
       (adviceQuery.data?.assessments ?? []).map((a) => [a.symbol, a]),
     );
+    const lockedBy = new Map((adviceQuery.data?.locked ?? []).map((c) => [c.symbol, c]));
     // The route already applies `isActionable` for this risk profile, so the
     // feed's bar and the badge's tint can't drift apart.
     const actionable = new Set(adviceQuery.data?.actionable ?? []);
@@ -132,6 +162,7 @@ export function WatchlistPanel() {
         quote: quoteBy.get(instrument.symbol) ?? null,
         candles: candlesBy.get(instrument.symbol) ?? [],
         assessment: adviceBy.get(instrument.symbol) ?? null,
+        locked: lockedBy.get(instrument.symbol) ?? null,
         actionable: actionable.has(instrument.symbol),
         weight: positionWeights.get(instrument.symbol) ?? null,
       }));
@@ -185,20 +216,21 @@ export function WatchlistPanel() {
   }, [visible, sort]);
 
   const unwatched = useMemo(
-    () => instruments.filter((i) => !followed.includes(i.symbol)),
-    [instruments, followed],
+    () => instruments.filter((i) => !following.includes(i.symbol)),
+    [instruments, following],
   );
 
   const handleRemove = (symbol: string) => {
     // Captured before the mutation, sentinel and all — see `setSymbols`.
     const previous = watched === null ? null : [...watched];
-    removeFromWatchlist(symbol, universe);
+    removeFromWatchlist(symbol, following);
     undoableToast(`Stopped following ${symbol}`, {
       onUndo: () => setWatchlist(previous),
     });
   };
 
-  const loading = !hydrated || instrumentsQuery.isPending || quotesQuery.isPending;
+  const loading =
+    !hydrated || !planReady || instrumentsQuery.isPending || quotesQuery.isPending;
   const error = instrumentsQuery.error ?? quotesQuery.error;
 
   if (error) {
@@ -268,7 +300,7 @@ export function WatchlistPanel() {
         {unwatched.length > 0 && (
           <Button
             size="icon-lg"
-            onClick={() => setAdding(true)}
+            onClick={() => (full ? setUpsell(true) : setAdding(true))}
             aria-label="Follow an instrument"
             className="shrink-0"
           >
@@ -280,7 +312,12 @@ export function WatchlistPanel() {
       {loading ? (
         <WatchlistRowSkeleton rows={6} />
       ) : followed.length === 0 ? (
-        <EmptyWatchlist onAdd={() => setAdding(true)} onReset={resetWatchlist} />
+        <EmptyWatchlist
+          onAdd={() => setAdding(true)}
+          // "Everything" is a Pro default; on free it would resolve to nothing.
+          onReset={limit === null ? resetWatchlist : undefined}
+          limit={limit}
+        />
       ) : visible.length === 0 ? (
         <p className="text-caption text-stone">
           {query.trim()
@@ -317,12 +354,30 @@ export function WatchlistPanel() {
         <p className="text-micro text-stone">Loading ember&apos;s reads…</p>
       )}
 
+      {!loading && limit !== null && followed.length > 0 && (
+        <p className="text-micro text-stone">
+          {Math.min(following.length, limit)} of {limit} on Free.{" "}
+          <button
+            type="button"
+            onClick={() => setUpsell(true)}
+            className="underline underline-offset-2 hover:text-graphite"
+          >
+            Watch more with Pro
+          </button>
+        </p>
+      )}
+
+      {!loading && (
+        <LockedHoldings kind="watchlist" symbols={lockedWatch} instruments={instrumentBy} />
+      )}
+
       <AddSymbols
         open={adding}
         onOpenChange={setAdding}
         available={unwatched}
-        onAdd={addToWatchlist}
+        onAdd={handleAdd}
       />
+      <PlanInterstitial feature="bigger-watchlist" open={upsell} onOpenChange={setUpsell} />
     </div>
   );
 }
@@ -330,9 +385,11 @@ export function WatchlistPanel() {
 function EmptyWatchlist({
   onAdd,
   onReset,
+  limit,
 }: {
   onAdd: () => void;
-  onReset: () => void;
+  onReset?: () => void;
+  limit: number | null;
 }) {
   return (
     <div className="flex flex-col items-start">
@@ -340,19 +397,23 @@ function EmptyWatchlist({
         <Eye size={22} />
       </div>
       <h2 className="text-heading font-semibold text-ink">
-        You&apos;ve unfollowed everything
+        {limit === null ? "You've unfollowed everything" : "Build your watchlist"}
       </h2>
       <p className="mt-2 max-w-sm text-body text-stone">
-        Follow instruments to see their prices and ember&apos;s read on each.
+        {limit === null
+          ? "Follow instruments to see their prices and ember's read on each."
+          : `Follow up to ${limit} instruments to see their prices and ember's read on each.`}
       </p>
       <div className="mt-6 flex flex-wrap gap-2.5">
         <Button size="lg" onClick={onAdd}>
           <Plus />
           Follow an instrument
         </Button>
-        <Button size="lg" variant="outline" onClick={onReset}>
-          Follow everything again
-        </Button>
+        {onReset && (
+          <Button size="lg" variant="outline" onClick={onReset}>
+            Follow everything again
+          </Button>
+        )}
       </div>
     </div>
   );

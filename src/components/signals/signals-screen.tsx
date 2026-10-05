@@ -25,8 +25,10 @@ import { convert, derivePortfolio } from "@/lib/portfolio/derive";
 import { todayForInput } from "@/lib/portfolio/dates";
 import { undoableToast } from "@/lib/toast";
 import { findingId, handlingFor, useAdviceActions } from "@/store/use-advice-actions";
+import { LockedCalls } from "@/components/plan/locked";
 import { usePortfolio } from "@/store/use-portfolio";
 import { usePreferences } from "@/store/use-preferences";
+import { useLedger } from "@/hooks/use-ledger";
 
 /**
  * The feed.
@@ -73,7 +75,8 @@ export function SignalsScreen() {
 
   const riskProfile = usePreferences((s) => s.riskProfile);
   const base = usePreferences((s) => s.baseCurrency);
-  const transactions = usePortfolio((s) => s.transactions);
+  // What the plan shows; `ledger` is every row, for writes (decision 289).
+  const { transactions, all: ledger } = useLedger();
   const addTransaction = usePortfolio((s) => s.add);
   const removeTransaction = usePortfolio((s) => s.remove);
 
@@ -91,6 +94,10 @@ export function SignalsScreen() {
     [instrumentsQuery.data],
   );
   const rates = ratesQuery.data?.rates ?? USD_PER_UNIT;
+  const instrumentBy = useMemo(
+    () => new Map(instruments.map((i) => [i.symbol, i])),
+    [instruments],
+  );
 
   const summary = useMemo(
     () =>
@@ -230,7 +237,11 @@ export function SignalsScreen() {
 
   const loading = adviceQuery.isPending || instrumentsQuery.isPending || !hydrated;
   const error = adviceQuery.error ?? instrumentsQuery.error;
-  const assessed = adviceQuery.data?.assessments.length ?? 0;
+  const assessed = adviceQuery.data?.assessed ?? 0;
+  // Calls the reader's plan doesn't show in full. Never sent with a direction,
+  // so all the feed can do is count them and offer the plans (decision 288).
+  const lockedAll = adviceQuery.data?.locked ?? [];
+  const locked = view === "open" ? lockedAll.filter((c) => c.actionable) : lockedAll;
   /**
    * Instruments the server had not finished loading when it answered.
    *
@@ -279,7 +290,7 @@ export function SignalsScreen() {
               <p className="text-caption text-stone">
                 {loading
                   ? "Assessing the universe…"
-                  : `${open.length} of ${assessed} match your ${RISK_PROFILES[riskProfile].label.toLowerCase()} risk profile.`}
+                  : `${open.length + lockedAll.filter((c) => c.actionable).length} of ${assessed} match your ${RISK_PROFILES[riskProfile].label.toLowerCase()} risk profile.`}
                 {!loading && pending > 0 && (
                   <span className="text-faint"> · </span>
                 )}
@@ -304,7 +315,7 @@ export function SignalsScreen() {
                 <SignalCardSkeleton />
                 <SignalCardSkeleton />
               </div>
-            ) : shown.length === 0 ? (
+            ) : shown.length === 0 && locked.length === 0 ? (
               <NothingToday assessed={assessed} onSeeAll={() => setView("all")} />
             ) : (
               <div className={FEED_GRID}>
@@ -325,6 +336,19 @@ export function SignalsScreen() {
                   />
                 ))}
               </div>
+            )}
+
+            {!loading && (
+              <LockedCalls
+                heading="h2"
+                calls={locked}
+                instruments={instrumentBy}
+                title={
+                  view === "open"
+                    ? `${locked.length} more ${locked.length === 1 ? "call" : "calls"} on Pro`
+                    : `${locked.length} more ${locked.length === 1 ? "read" : "reads"} on Pro`
+                }
+              />
             )}
 
             {view === "open" && done.length > 0 && (
@@ -388,7 +412,7 @@ export function SignalsScreen() {
             key={executing.assessment.symbol}
             instruments={instruments}
             quotes={quotesQuery.data?.quotes ?? []}
-            existing={transactions}
+            existing={ledger}
             defaults={{
               symbol: executing.assessment.symbol,
               side: REDUCING.has(executing.assessment.action) ? "sell" : "buy",

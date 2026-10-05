@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getFindings, parseRiskProfile, type PositionInput } from "@/lib/api/server";
+import { requestPlan } from "@/lib/api/plan-server";
 
 export const dynamic = "force-dynamic";
 
@@ -91,6 +92,7 @@ export async function POST(request: NextRequest) {
     riskProfile: parseRiskProfile(typeof body.profile === "string" ? body.profile : null),
     positions: parsePositions(body.positions),
     watching: parseWatching(body.watching),
+    plan: await requestPlan(),
   });
 
   return NextResponse.json(findings);

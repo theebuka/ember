@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { EyeOff, MoreHorizontal } from "@/components/common/icon";
 import { ActionBadge } from "@/components/signals/action-badge";
+import { featureFor, LockedBadge } from "@/components/plan/locked";
 import { Confidence } from "@/components/signals/confidence";
 import { ChangeText } from "@/components/market/change-chip";
 import { Sparkline } from "@/components/market/sparkline";
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Assessment } from "@/lib/api/client";
-import type { Candle, Instrument, Quote } from "@/lib/api/types";
+import type { Candle, Instrument, LockedCall, Quote } from "@/lib/api/types";
 import { formatPercent, formatQuotePrice } from "@/lib/market/format";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,8 @@ export interface WatchRow {
   quote: Quote | null;
   candles: readonly Candle[];
   assessment: Assessment | null;
+  /** Set when ember has a read here that the reader's plan doesn't show. */
+  locked: LockedCall | null;
   /** True when this read clears the user's risk profile and reaches the feed. */
   actionable: boolean;
   /** Set when the user holds this — the watchlist should say so. */
@@ -50,7 +53,7 @@ export function WatchlistRow({
   row: WatchRow;
   onRemove: () => void;
 }) {
-  const { instrument, quote, candles, assessment, actionable, weight } = row;
+  const { instrument, quote, candles, assessment, locked, actionable, weight } = row;
   const closes = candles.map((c) => c.c);
 
   return (
@@ -65,7 +68,9 @@ export function WatchlistRow({
           >
             {instrument.symbol}
           </Link>
-          {assessment ? (
+          {locked ? (
+            <LockedBadge size="sm" feature={featureFor(locked)} />
+          ) : assessment ? (
             <ActionBadge
               action={assessment.action}
               size="sm"

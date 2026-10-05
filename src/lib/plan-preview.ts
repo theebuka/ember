@@ -38,6 +38,12 @@ function read(): PlanPreview {
 }
 
 export function setPlanPreview(value: PlanPreview): void {
+  // The server decides what a response locks, so it has to hear about the
+  // preview too. Read only outside production (`lib/api/plan-server.ts`).
+  document.cookie =
+    value === "off"
+      ? "ember_plan_preview=; path=/; max-age=0"
+      : `ember_plan_preview=${previewed(value).plan}; path=/; samesite=lax`;
   try {
     if (value === "off") localStorage.removeItem(KEY);
     else localStorage.setItem(KEY, value);

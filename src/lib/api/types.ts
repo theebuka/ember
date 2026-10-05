@@ -461,3 +461,18 @@ export const RISK_PROFILES: Record<RiskProfile, RiskProfileConfig> = {
     confidenceFloor: 23,
   },
 };
+
+/**
+ * A call the reader's plan doesn't show in full: the instrument, its price and
+ * whether it clears their risk profile — never the direction, the window, the
+ * size or the stop. Built on the server, so the rest never reaches the browser.
+ */
+export interface LockedCall {
+  symbol: string;
+  market: MarketKind;
+  price: number;
+  /** Whether it matches the reader's risk profile. Says ember would act, not which way. */
+  actionable: boolean;
+  /** What Pro adds here: more calls, or a market free doesn't cover. */
+  reason: "calls" | "markets";
+}

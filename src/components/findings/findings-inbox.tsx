@@ -1,21 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Compass } from "@/components/common/icon";
 import { ErrorState } from "@/components/common/error-state";
+import { LockedCalls } from "@/components/plan/locked";
 import { Section } from "@/components/common/section";
 import { FindingRow, FindingRowSkeleton } from "@/components/findings/finding-row";
 import { TradeModal, TransactionForm } from "@/components/portfolio/trade-modal";
 import { useHydrated } from "@/hooks/use-hydrated";
-import { usePlan } from "@/hooks/use-plan";
 import { useNow } from "@/hooks/use-now";
 import { useFindings, useInstruments, useQuotes, useRates } from "@/hooks/use-market-data";
 import { ApiError, type Finding } from "@/lib/api/client";
 import type { Instrument, Transaction } from "@/lib/api/types";
 import { ACTION_LABELS } from "@/lib/api/types";
 import { formatQuantity, quantityPrecision } from "@/lib/market/format";
-import { findingLimit } from "@/lib/plan";
 import { USD_PER_UNIT } from "@/lib/market/universe";
 import { convert, derivePortfolio, positionInputs } from "@/lib/portfolio/derive";
 import { todayForInput } from "@/lib/portfolio/dates";
@@ -24,6 +23,7 @@ import { handlingFor, useAdviceActions } from "@/store/use-advice-actions";
 import { usePortfolio } from "@/store/use-portfolio";
 import { usePreferences } from "@/store/use-preferences";
 import { useWatchlist } from "@/store/use-watchlist";
+import { useLedger } from "@/hooks/use-ledger";
 
 /**
  * What ember found — the screen the whole repositioning is for.
@@ -48,24 +48,15 @@ interface Executing {
   quantity: number | null;
 }
 
-export function FindingsInbox({
-  onWithheld,
-}: {
-  /**
-   * How many findings the plan cap held back, once the list has answered. The
-   * plan card that explains it belongs at the end of the page, not inside this
-   * section, so the screen draws it.
-   */
-  onWithheld?: (count: number) => void;
-} = {}) {
+export function FindingsInbox() {
   const hydrated = useHydrated();
   const now = useNow(60_000);
   const [executing, setExecuting] = useState<Executing | null>(null);
 
-  const { plan, ready: planReady } = usePlan();
   const riskProfile = usePreferences((s) => s.riskProfile);
   const base = usePreferences((s) => s.baseCurrency);
-  const transactions = usePortfolio((s) => s.transactions);
+  // What the plan shows; `ledger` is every row, for writes (decision 289).
+  const { transactions, all: ledger } = useLedger();
   const addTransaction = usePortfolio((s) => s.add);
   const removeTransaction = usePortfolio((s) => s.remove);
   const watching = useWatchlist((s) => s.symbols);
@@ -238,38 +229,15 @@ export function FindingsInbox({
 
   /* ── Render ────────────────────────────────────────────────────────────── */
 
-  // The plan is part of what the list *is*: until it is known, a Pro reader
-  // would be shown the free cap and an upsell card, then watch the rest of
-  // their list push everything down. Held in the skeleton instead.
-  const loading =
-    !hydrated || !planReady || findingsQuery.isPending || instrumentsQuery.isPending;
+  const loading = !hydrated || findingsQuery.isPending || instrumentsQuery.isPending;
   const error = findingsQuery.error;
 
-  const unhandled = findings.filter((f) => handlingOf(f) === null);
+  const open = findings.filter((f) => handlingOf(f) === null);
   const done = findings.filter((f) => handlingOf(f) !== null);
-
-  /**
-   * The free tier's cap, applied *after* ranking and never before it.
-   *
-   * That ordering is the whole difference between a shorter answer and a worse
-   * one. `findings.ts` already sorts by urgency across both kinds, so the three a
-   * free reader sees are the three ember would put first for anybody — the cap
-   * removes the tail, not the top. A cap applied before the sort, or one that
-   * sampled, would be selling a different product to people who had not paid.
-   *
-   * Handled findings are outside the cap on purpose: they are the user's own
-   * history of what they did, and metering somebody's record of their own actions
-   * would be indefensible.
-   */
-  const cap = findingLimit(plan);
-  const open = cap === null ? unhandled : unhandled.slice(0, cap);
-  const withheld = unhandled.length - open.length;
+  // Opportunities this plan doesn't show in full — counted and offered, never
+  // sent with a direction (decision 288). Risks are never among them.
+  const locked = findingsQuery.data?.locked ?? [];
   const shownRisks = open.filter((f) => f.kind === "risk").length;
-  const gated = !loading && !error ? withheld : 0;
-
-  useEffect(() => {
-    onWithheld?.(gated);
-  }, [gated, onWithheld]);
 
   return (
     <>
@@ -301,7 +269,7 @@ export function FindingsInbox({
             <FindingRowSkeleton />
             <FindingRowSkeleton />
           </div>
-        ) : open.length === 0 ? (
+        ) : open.length === 0 && locked.length === 0 ? (
           <NothingFound assessed={assessed} held={summary.positions.length} />
         ) : (
           <div className="divide-y divide-line border-t border-line">
@@ -326,13 +294,23 @@ export function FindingsInbox({
           </div>
         )}
 
+        {!loading && !error && (
+          <LockedCalls
+            className={open.length > 0 ? "mt-6" : undefined}
+            calls={locked}
+            instruments={bySymbol}
+            pageSize={5}
+            title={`${locked.length} more ${locked.length === 1 ? "opportunity" : "opportunities"} on Pro`}
+          />
+        )}
+
         {/* Only when there is something the list itself doesn't show: that it
             was cut to the most urgent, or that instruments are still loading.
             "That's everything. Checked 214 instruments…" under every list was
             the app describing its own process. */}
         {!loading && !error && open.length > 0 && (
           <Footnote
-            trimmed={trimmed(found, unhandled.length + done.length)}
+            trimmed={trimmed(found, open.length + done.length + locked.length)}
             pending={pending}
           />
         )}
@@ -376,7 +354,7 @@ export function FindingsInbox({
             key={executing.finding.id}
             instruments={instruments}
             quotes={quotesQuery.data?.quotes ?? []}
-            existing={transactions}
+            existing={ledger}
             defaults={{
               symbol: executing.finding.symbol,
               side:

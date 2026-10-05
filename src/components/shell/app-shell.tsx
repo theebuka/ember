@@ -7,6 +7,7 @@ import { CommandMenuLoader } from "@/components/shell/command-menu-loader";
 import { SidePanel } from "@/components/shell/side-panel";
 import { useFindingAlerts } from "@/hooks/use-finding-alerts";
 import { useSync } from "@/hooks/use-sync";
+import { usePlanRefresh } from "@/hooks/use-plan-refresh";
 import { isBareRoute } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // one of them stops the moment you navigate away from it. Inert — it returns
   // immediately — when there is no project configured or nobody signed in.
   useSync();
+  usePlanRefresh();
 
   if (isBareRoute(pathname)) return <>{children}</>;
 

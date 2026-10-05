@@ -90,6 +90,7 @@ export {
   SignIn,
   SignOut,
   Sparkle,
+  LockSimple,
   TrendUp,
   TrendDown,
   ShieldWarning,

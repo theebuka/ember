@@ -1,6 +1,11 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { PlanCard } from "@/components/plan/upsell";
+import { usePlan } from "@/hooks/use-plan";
+import { holdingLimit } from "@/lib/plan";
+import { openSymbols } from "@/lib/portfolio/derive";
+import { usePortfolio } from "@/store/use-portfolio";
 import { AlertTriangle, Check, Upload } from "@/components/common/icon";
 import { ResponsiveModal } from "@/components/common/responsive-modal";
 import { Button } from "@/components/ui/button";
@@ -62,6 +67,24 @@ export function CsvImport({
     return findOversell([...existing, ...incoming]);
   }, [result, existing]);
 
+  /**
+   * Would the import take the book past the plan's holdings limit (decision
+   * 288)? Measured as open positions after the merge against the larger of the
+   * limit and what is already open, so a book already over it — a lapse, which
+   * takes nothing away — can still import into what it holds.
+   */
+  const { plan } = usePlan();
+  const isSample = usePortfolio((s) => s.isSample);
+  const limit = isSample ? null : holdingLimit(plan);
+  const overLimit = useMemo(() => {
+    if (limit === null || !result || result.valid === 0) return false;
+    const incoming = result.rows
+      .filter((r) => r.transaction !== null)
+      .map((r, i) => ({ ...r.transaction!, id: `__import_${i}__` }));
+    const before = openSymbols(existing).size;
+    return openSymbols([...existing, ...incoming]).size > Math.max(limit, before);
+  }, [limit, result, existing]);
+
   const close = () => {
     setText("");
     onOpenChange(false);
@@ -120,6 +143,7 @@ export function CsvImport({
         </p>
 
         {result && <Preview result={result} oversell={oversell} />}
+        {overLimit && <PlanCard feature="more-holdings" />}
       </div>
 
       <div className="flex gap-2 border-t border-line p-4 md:p-5">
@@ -129,7 +153,7 @@ export function CsvImport({
         <Button
           size="lg"
           className="flex-1"
-          disabled={importable === 0}
+          disabled={importable === 0 || overLimit}
           onClick={() => {
             if (!result) return;
             onImport(

@@ -89,19 +89,20 @@ const FLOOR = {
 const PUSH_REPEAT_WINDOW = 24 * HOUR;
 
 /**
- * The free plan's caps, duplicated from `src/lib/plan.ts`.
- *
- * A duplicated constant is normally a defect, and this one is deliberate: a `.mjs`
- * script cannot import a TypeScript module without a loader, and adding one to put
- * two numbers in scope would be a build step in the delivery path. The numbers are
- * named identically on both sides and both are cited in ADR 0038; if a third place
- * ever needs them, that is the moment to pay for the loader.
+ * Push and email are both Pro (decision 288), so a free account is simply held.
  *
  * **The plan check has to happen here, not only in the UI.** A client-side gate is
- * cosmetic — the row can already say `digest_enabled` because the user was Pro and
- * lapsed, and only the sender is in a position to refuse.
+ * cosmetic — the row can already say `digest_enabled` or hold a subscription
+ * because the user was Pro and lapsed, and only the sender is in a position to
+ * refuse.
  */
-const FREE_ALERTS_PER_DAY = 3;
+
+/**
+ * `/api/advice` locks most calls for a request with no Pro session. The sender
+ * sends only to Pro accounts, so it presents this token for Pro's answer; it
+ * must match `EMBER_SENDER_TOKEN` on the app.
+ */
+const SENDER_TOKEN = process.env.EMBER_SENDER_TOKEN ?? "";
 
 /* ── Clients ─────────────────────────────────────────────────────────────── */
 
@@ -147,7 +148,10 @@ async function adviceFor(profile) {
   if (hit) return hit;
 
   const response = await fetch(`${APP_URL}/api/advice?profile=${profile}`, {
-    headers: { accept: "application/json" },
+    headers: {
+      accept: "application/json",
+      ...(SENDER_TOKEN ? { "x-ember-sender": SENDER_TOKEN } : {}),
+    },
   });
   if (!response.ok) throw new Error(`/api/advice?profile=${profile} → ${response.status}`);
 
@@ -237,18 +241,6 @@ async function planFor(userId) {
   if (!data || data.plan !== "pro") return "free";
   if (!data.period_end) return "pro";
   return Date.parse(data.period_end) > Date.now() ? "pro" : "free";
-}
-
-/** How many pushes this user has already had today. */
-async function pushesToday(userId) {
-  const since = new Date(Date.now() - 24 * HOUR).toISOString();
-  const { count } = await supabase
-    .from("digest_log")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("channel", "push")
-    .gte("sent_at", since);
-  return count ?? 0;
 }
 
 /** The last time this user was contacted on this channel, and about what. */
@@ -548,19 +540,12 @@ async function main() {
 
     // The plan gate, enforced where it can actually be enforced.
     const plan = await planFor(row.user_id);
-    if (CHANNEL === "email" && plan !== "pro") {
+    if (plan !== "pro") {
       // The switch may well be on: they were Pro and lapsed. Nothing is deleted
-      // and nothing is hidden — the digest simply stops going out, and turning it
-      // back on is a plan change rather than a setting change.
+      // and nothing is hidden — delivery simply stops, and turning it back on is
+      // a plan change rather than a setting change.
       held++;
       continue;
-    }
-    if (CHANNEL === "push" && plan !== "pro") {
-      const already = await pushesToday(row.user_id);
-      if (already >= FREE_ALERTS_PER_DAY) {
-        held++;
-        continue;
-      }
     }
 
     const candidate = await candidateFor(row.user_id, {

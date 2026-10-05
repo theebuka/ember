@@ -89,7 +89,7 @@ npm run build        # production build
 npm run start        # serve production build
 npm run lint         # eslint
 npx tsc --noEmit     # typecheck — run before declaring any phase done
-npx vitest run       # unit tests — 384 passing (engine, exposure triggers,
+npx vitest run       # unit tests — 396 passing (engine, exposure triggers,
                      #   finding ranking, backtest invariants, mock calendar,
                      #   portfolio math, CSV import + export round-trip, ledger
                      #   validation, watchlist resolve, alert scheduling for both
@@ -265,8 +265,10 @@ src/
 │  │                         what a suspension cannot touch. A leaf module
 │  ├─ redeem.ts              code shape, generation, periods, refusal copy
 │  ├─ plan.ts ★              the only place a gate is decided — `canUse`, the
-│  │                         limits table, and the upsell copy beside the rules
-│  │                         it describes. A leaf module: imports nothing
+│  │                         limits table, which calls free unlocks, and the
+│  │                         upsell copy beside the rules. A leaf module
+│  ├─ api/plan-server.ts ★   the request's plan, from the session — what every
+│  │                         lock is decided by (server-only)
 │  ├─ greeting.ts            the two lines at the top of Home — greeting and
 │  │                         lead question, seeded, daypart-aware (tested)
 │  ├─ onboarding.ts          the cookie mirroring `hasOnboarded` (tested)
@@ -304,6 +306,9 @@ supabase/migrations/         0001 schema + RLS · 0002 profile fields ·
                              0011 redemption codes (`redeem_code()` is
                              security definer — entitlements stay select-only;
                              needs 0010 first — decision 285) ·
+                             0012 sync is Pro (`is_pro()` on every synced
+                             write; read and delete stay the owner's —
+                             decision 289) ·
                              0006 announcements + admin ★ (admins is its own
                              select-only table for the *same* reason —
                              decision 190 — plus suspensions, admin_log, and
@@ -485,23 +490,39 @@ The brand is **`#2563EB`**, chosen by the user. It is exactly Tailwind's `blue-6
   adds information.
 
 ### Plans and money
-- **A gate needs a reason that survives being said out loud to the person hitting
-  it.** Two kinds qualify: it costs ember something per use, or it is genuinely
-  *more of the same thing* with free still getting ember's best answer. Anything
-  free to serve and restricted only to create pressure is manufactured scarcity,
-  and it is out. ADR 0038.
-- **The methodology page and the track record are never gated, on any plan, with or
-  without an account.** They are how a reader checks whether ember works. There is
-  a test that fails if either screen so much as *imports* the plan module.
-- **The engine's answer is never degraded.** Same assessment, same confidence, same
-  window, same sizing on every plan. Only how many findings are surfaced differs —
-  two engines is two products.
-- **A cap applies after ranking, never before.** The inbox is sorted by urgency, so
-  a free reader sees the three that matter. A cap applied before the sort would be
-  selling a different product to people who had not paid.
-- **Nothing is ever taken away on a lapse.** `period_end` is a grace boundary, not
-  a kill switch; a ledger somebody typed by hand is theirs whether or not they are
-  currently a customer.
+- **Free is a taste; Pro is the product** (decision 288, at the user's direction;
+  it supersedes ADR 0038's "a gate needs a cost" test). Free: 3 calls a day in full
+  on US stocks and crypto, every other call locked; 5 holdings; a watchlist of 10;
+  alerts only while ember is open; no sync; a month of chart history. The numbers
+  live in `PLAN_RULES` and nowhere else. (Watchlist: 5, since decision 289.)
+- **A locked call never reaches the browser.** `/api/advice`, `/api/findings` and
+  `/api/asset` read the plan from the session (`lib/api/plan-server.ts`) and send a
+  locked call as a `LockedCall` — instrument, price, whether it matches the
+  profile, never the direction, window, size or stop. Hiding a call on screen
+  leaves it one developer-tools tab away.
+- **A lock shows what is missing.** The instrument and a `Pro` lock where Buy or
+  Sell would be (`components/plan/locked.tsx`), on Signals, Home, the watchlist and
+  the asset page. Never a blurred card: there is nothing underneath to blur.
+- **The free calls are the strongest that match the profile, chosen once a UTC day**
+  and the same for every free reader. `unlockedCalls` in `plan.ts` picks them from
+  the feed's own ranking; nothing about the person picks them.
+- **Never gated: the methodology page, the track record's figures, and warnings
+  about what you hold.** A test fails if either public screen imports the plan
+  module. Free's track record lists calls from four weeks back; the newest are
+  Pro, because a call made last week usually still points the same way today and
+  would give away a locked one. The route cuts the list, and every summary figure
+  — the distribution included — still counts every call. Risks are never locked.
+- **A lapse is a return to free, and nothing is deleted** (decision 289, at the
+  user's direction; supersedes decision 185). An account over a limit sees what
+  free sees — its five largest holdings, its first five watched instruments — and
+  every total is measured over those. The rest are named, never valued, as locked
+  rows. `useLedger()` is the only place that decides: read its `transactions` for
+  anything drawn and `all` for anything written (the trade form's checks, export,
+  sync). Rows on the device and the server are untouched, so resubscribing shows
+  everything at once.
+- **An unlocked call is exactly what Pro sees.** Locked is withheld, never
+  worsened — same assessment, confidence, window and sizing. Two engines is two
+  products.
 - **Entitlements live in their own select-only table, never on `profiles`.** RLS is
   row-level, so a `plan` column on a table the user may update is a column the user
   may update.
@@ -509,13 +530,13 @@ The brand is **`#2563EB`**, chosen by the user. It is exactly Tailwind's `blue-6
 - **A subscriber sees their plan, not the sales table.** The Plan tab for an active Pro account is `ProSummary` — renewal, billing, what's included; a lapsed one gets `LapsedNote` above the comparison. `subscriptionFrom` (beside `planFrom`) is the only place that decides which. "Manage billing" is disabled until a merchant exists, exactly like Get Pro.
 - **The checkout's return page waits for the entitlement, never for the redirect.** `/pro/welcome` polls the row for 30s, then says the payment hasn't come through rather than spinning.
 - **"Get Pro" is unavailable until a checkout exists, and says so.** `PlanComparison` takes an `onGetPro`; absent, the button is disabled with one line under it. Wiring a merchant of record is that prop.
-- **A plan gate that a server enforces must be enforced on the server.** The email
-  and push caps live in `scripts/send-digests.mjs`; the UI copy is only copy.
-- **Upsell register: sentence case, names its outcome, at most one per screen, only
-  where a limit actually bit.** No countdowns, no "limited time", no counts of what
-  other people are doing, no urgency, no direction colours — `up`/`down` mean money
-  moved and a commercial prompt tinted like a gain blurs the one distinction the
-  palette exists to keep.
+- **A plan gate that a server enforces must be enforced on the server.** Push and
+  email are Pro, and `scripts/send-digests.mjs` holds every free account; the UI
+  copy is only copy. The sender reads Pro's advice with `EMBER_SENDER_TOKEN`.
+- **Upsell register: sentence case, names its outcome.** No countdowns, no "limited
+  time", no counts of what other people are doing, no urgency, no direction colours
+  — `up`/`down` mean money moved and a commercial prompt tinted like a gain blurs
+  the one distinction the palette exists to keep. A lock is not an urgency device.
 - **Ads are first-party or they do not exist.** No third-party script, iframe, pixel
   or remote origin, ever. A network tag on a finance app learns what somebody is
   thinking of doing with their money.
@@ -840,11 +861,11 @@ See `docs/decisions/` for full ADRs. Summary:
 | 178 | The scheduler is a **GitHub Actions workflow**, not a Vercel or `pg_cron` job | §7 says the host has to change before ember charges anybody; tying the schedule to it would make that migration drag the scheduler along. A workflow in the repository moves when the repository does |
 | 179 | The warm store was **deferred a second time, for a different reason** | Phase 22 deferred it because nothing was scheduled to fill it; the scheduler now exists, so that reason expired. The real obstacle is a shape mismatch: `cache.ts` is generic over its value type and the only process allowed to write the store runs outside the app, so filling it means duplicating provider logic, exposing a cache-dump route over an unlicensed upstream, or 214 round trips at load. The migration was written and then **deleted** — an unused table in a migration is worse than none, because the next reader takes it for something that works |
 | 180 | Entitlements are **their own select-only table**, not a `plan` column on `profiles` ([ADR 0038](docs/decisions/0038-what-a-free-tier-is-allowed-to-withhold.md)) | A hole rather than a preference: `profiles` has an RLS policy letting a user update their own row, and **RLS is row-level, not column-level** — so a `plan` column there lets any signed-in browser run `update profiles set plan = 'pro'` and be believed. Column privileges and a trigger are both workarounds to keep right beside a policy that already says "you may write this row". A select-only table has no such ambiguity in one sentence |
-| 181 | **A gate needs a reason that survives being said out loud** to the person hitting it | Two kinds qualify: it costs ember something per use (email, push), or it is more of the same thing with free still getting the *best* answer (the findings cap, applied after ranking). Anything free to serve and restricted only to create pressure is manufactured scarcity, which is the register the brief exists to rule out |
-| 182 | The planned **watchlist size cap was rejected**, twice over | No cost behind it — the engine assesses all 214 instruments regardless of who watches what, so a cap saves ember nothing. And it is incoherent with decision 023: the watchlist defaults to a "following everything" sentinel, so a capped free user would be following 214 while being told they may follow 25, and fixing *that* means materialising the sentinel — the exact bug 023 exists to prevent |
-| 183 | **In-app alerts are not capped on any plan**; push is | A local notification costs ember nothing, so capping it would fail decision 181's own test. Push costs a service quota and runner minutes, which is a sentence a reader can check. It would have been the easy version of the feature and the dishonest one |
-| 184 | The findings cap is applied **after ranking, never before** | `findings.ts` sorts by urgency across both kinds, so the three a free reader sees are the three ember would put first for anybody — the cap shortens the answer without worsening it. Applied before the sort, or by sampling, it would be a different product sold to people who had not paid |
-| 185 | A lapse **takes nothing away** | `period_end` is read as a grace boundary rather than a kill switch, in `planFrom` and identically in the sender. A ledger somebody typed by hand is theirs whether or not they are currently a customer, and the function that could break that rule is the one that states it |
+| 181 | **A gate needs a reason that survives being said out loud** to the person hitting it | Two kinds qualify: it costs ember something per use (email, push), or it is more of the same thing with free still getting the *best* answer (the findings cap, applied after ranking). Anything free to serve and restricted only to create pressure is manufactured scarcity, which is the register the brief exists to rule out — *superseded by 288* |
+| 182 | The planned **watchlist size cap was rejected**, twice over | No cost behind it — the engine assesses all 214 instruments regardless of who watches what, so a cap saves ember nothing. And it is incoherent with decision 023: the watchlist defaults to a "following everything" sentinel, so a capped free user would be following 214 while being told they may follow 25, and fixing *that* means materialising the sentinel — the exact bug 023 exists to prevent — *superseded by 288* |
+| 183 | **In-app alerts are not capped on any plan**; push is | A local notification costs ember nothing, so capping it would fail decision 181's own test. Push costs a service quota and runner minutes, which is a sentence a reader can check. It would have been the easy version of the feature and the dishonest one — *superseded by 288* |
+| 184 | The findings cap is applied **after ranking, never before** | `findings.ts` sorts by urgency across both kinds, so the three a free reader sees are the three ember would put first for anybody — the cap shortens the answer without worsening it. Applied before the sort, or by sampling, it would be a different product sold to people who had not paid — *superseded by 288* |
+| 185 | A lapse **takes nothing away** | `period_end` is read as a grace boundary rather than a kill switch, in `planFrom` and identically in the sender. A ledger somebody typed by hand is theirs whether or not they are currently a customer, and the function that could break that rule is the one that states it — *superseded by 289* |
 | 186 | The plan gate is enforced **in the sender**, not only in the UI | A row can say `digest_enabled` because the user was Pro and lapsed, so only `scripts/send-digests.mjs` is in a position to refuse. A client-side cap on something a server sends is decoration |
 | 187 | Ads are **first-party or they do not exist** | No third-party script, iframe, pixel or remote origin. A network tag would learn which instruments a reader looks at — for a finance app, a list of what somebody is thinking of doing with their money — learned by the one product claiming not to watch them. The cost is that ember cannot report an impression count, which is in §8 rather than solved with the pixel that would solve it |
 | 188 | The plan table in settings is **generated from `PLAN_RULES`** | Same rule as the methodology page being derived from the strategy registry (ADR 0012). A pricing table transcribed by hand is a document that was true once, and on a product arguing "you can check this", a stale limit is worse than no table |
@@ -947,6 +968,8 @@ See `docs/decisions/` for full ADRs. Summary:
 | 285 | **Redemption codes, redeemed in Postgres** | Asked for directly: a field on Plan, and a place in Admin to create codes with set periods. `entitlements` is select-only (decision 180), so redeeming is `redeem_code(code)`, a `security definer` function that only extends the *caller's* Pro — decision 172's shape. Codes are twelve characters from a 31-letter alphabet (no 0/O/1/I/L), ~59 bits from the admin's CSPRNG with rejection sampling, which is why there is no attempt limit. Time stacks onto running Pro; a code never renews; it refuses Pro granted without end and a paid plan that renews; one redemption per account. Unknown, revoked and expired answer one sentence, so a guesser learns nothing. Admin picks 1 week to 1 year or a custom count of days, how many accounts may use it, how long it stays redeemable, and a note; the new code shows large with Copy, the last twenty are listed with uses and status, and revoking is one press. Create and revoke append to `admin_log`. A redemption goes to `/pro/welcome`, which reads the entitlement rather than trusting the call |
 | 286 | **Alerts live in Preferences; a dead sign-in link says so** | Alerts merged at the user's direction, as two groups after Markets — Alerts (while ember is open) and Push and email (when it is closed). `?tab=alerts` is in notifications, emails and broadcasts already sent, so it redirects to `?tab=preferences#alerts`: `scrollIntoView` in an effect was undone by the router's own scroll reset, a hash is not. Found on the way: the market switches' instrument counts failed hydration whenever the instruments cache answered first (decision 250's defect, on this screen); held until hydrated. Separately, a magic link Supabase had already spent landed on `/auth` with the reason in the URL *fragment* (`#error_code=otp_expired`), which the server never sees, and the page ignored `?error` too — so it showed the empty form, as if the link had done nothing. It now says the link expired or was used, and that only the newest works; the callback forwards a query-string `error_code` as well |
 | 287 | **A speed pass, measured** | Asked for directly ("the app is notoriously slow"). Server routes were already fast warm (3–60ms); the cost was in the browser. Measured and fixed: Home fetched a month of bars for **214 instruments to draw 5 sparklines** (462 KB → 9 KB, ranked first); the watchlist did the same for the whole universe (now what is followed, rows `content-visibility: auto`); the asset page downloaded the **whole 1.15 MB track record** for one symbol (`?symbol=`, ~7 KB); the track record **rendered 2,116 calls twice** (50, then more). Script per page **1.35 MB → 0.82–0.94 MB** (≈400 → 255 KB gzip): Supabase (245 KB) loads on first use and never for a signed-out reader, `motion` (118 KB, one animation) is gone, the trade form with react-hook-form and zod loads with its modal, cmdk with ⌘K on desktop only, and the admin panels for admins only. Signed-in page loads no longer wait on `getUser()`'s round trip before the inbox can render. Lighthouse mobile: Signals 68 → 80, Asset 77–83 → 88, Home 79 (TBT 43 → 1–15ms); desktop 97–100. Not changed, and why: the doubled API requests in `next dev` are React's development double-mount cancelling the first fetch (absent in production); first visits to a route in `next dev` compile it; and on live data a cold server still spends ~8s on the universe and ~10s on the track record — `npm run warm` after a restart |
+| 288 | **Free is a taste; Pro is the product** — supersedes ADR 0038's gate test, and decisions 181–184 | At the user's direction: the free plan was nearly everything, so Pro was "less friction" and its two delivery benefits did not yet run. Free now sees 3 calls a day in full — the strongest matching the profile, on US stocks and crypto — and every other call as a lock with the instrument and price; 5 holdings, a watchlist of 10, alerts only while ember is open, no sync, a month of chart history. Pro is every call on every market, push and email, unlimited holdings and watchlist, sync, full history, no sponsors. Kept free on purpose: the methodology and track record (how a stranger decides to trust ember), and every warning on what you hold — selling "your stop broke" would make people hate the app. **The lock is server-side**: the routes read the plan from the session and send a `LockedCall` with no direction, because a call hidden on screen is a call in the network tab. "Everything" on the watchlist is now a Pro default; on free it resolves to nothing and the first add starts a list. A sample book is exempt from the holdings limit until the reader's own first trade |
+| 289 | **A lapse is a return to free; the server keeps everything** — supersedes 185 | At the user's direction: a lapsed account gets free's benefits, not Pro's. Over a limit it sees its five largest holdings (by today's value, falling back to cost) and its first five watched instruments, and every total, the chart and the warnings are measured over those; the rest are locked rows, named and not valued. Nothing is deleted, on the device or on the server, so resubscribing restores it at once. In the same change: the free watchlist is 5 (it was 10); free's track record and an asset's past calls leave out the last four weeks of calls, because a recent call usually still points the way a locked one does — the list is cut on the server and every figure, the return distribution included, still counts them; and `0012` puts `is_pro()` on every synced write, keeping read and delete with the owner so account deletion works on any plan |
 
 ---
 
@@ -983,8 +1006,6 @@ See `docs/decisions/` for full ADRs. Summary:
 | **Vercel cron or Supabase `pg_cron`** | Both tie the schedule to infrastructure §7 says has to change. A GitHub Actions workflow moves with the repository |
 | **A tracking pixel in the digest** | Never. A mail that phones home about whether you opened it is not this product's register, and the one thing an ad-free finance app has is that it isn't watching you |
 | **Storing the risk profile on the push subscription** | Would save the sender a read of `preferences` and put the profile in two places, where only one of them syncs. It would go stale the first time someone changed it on another device |
-| **A watchlist size cap on the free plan** | Listed in the v3 plan and rejected: no cost behind it, and incoherent with decision 023's "following everything" sentinel. Decision 182 |
-| **Capping how many markets a free user can watch** | Same objection — no marginal cost, and it makes the product worse in a way that teaches nothing about what Pro is for |
 | **Gating the per-strategy breakdown on the track record** | Looks "advanced", is evidence about whether ember works. That category cannot be sold |
 | **Degrading free confidence, or widening free windows** | Two engines is two products, and telling a user something ember does not believe in order to sell them something is disqualifying |
 | **A blurred countdown showing what Pro users did** | The phase 14–16 review's suggestion, permanently out. Manufactured anxiety pointed at ember's own users |
@@ -1006,8 +1027,8 @@ See `docs/decisions/` for full ADRs. Summary:
 
 - **Every screen is real; nothing links to a stub.**
 - **`0009` is applied**, verified 2026-09-29 by probing as an anonymous client: `app_settings` reads `200 []` (public select, no rows yet, so every reader gets the default — local currency on), and an anonymous insert is refused `401 42501` by RLS. What is not yet observed is the admin half — a signed-in admin flipping the switch, and a signed-in non-admin being refused by `is_admin()`; both need a real session.
-- **`0011` is written and not applied, and needs `0010` first.** Until both land, redeeming answers "That didn't go through" and the admin's code list is empty. **The admin panel and a successful redemption have not been observed**: both need a signed-in admin, which the in-app browser cannot be. The panel and the field were rendered by hand to check layout and formatting; the database half is reasoned, not run.
-- **`0010` is written and not applied.** The app reads `entitlements` with `select *`, so until it lands a subscriber's page just can't say monthly or yearly, or that a plan won't renew. The success screen's two signed-in states — *confirming* and *hasn't come through* — need a signed-in free account and have not been observed; the gate photographs its signed-out state, and the subscriber states were checked by hand through the development preview.
+- **`0010`, `0011` and `0012` are applied** (run by the user in the SQL editor, 2026-10-06). **The admin panel and a successful redemption have not been observed**: both need a signed-in admin, which the in-app browser cannot be. The panel and the field were rendered by hand to check layout and formatting; the database half is reasoned, not run.
+- **The success screen's two signed-in states — *confirming* and *hasn't come through* — need a signed-in free account and have not been observed; the gate photographs its signed-out state, and the subscriber states were checked by hand through the development preview.
 - **Plans exist, and there is no checkout.** `lib/plan.ts` is the only place a gate
   is decided, `entitlements` is a select-only table, and every account is `free`
   because the only way a Pro row lands today is somebody typing it into the
@@ -1015,11 +1036,16 @@ See `docs/decisions/` for full ADRs. Summary:
   till. §7's three pre-revenue blockers are unresolved — no merchant of record with
   Nigerian payouts, a host that forbids commercial use, and an unlicensed price
   feed — and the upsell says so plainly rather than offering a waitlist.
-- **The free findings cap is the one gate a reader will feel, and it has the weakest
-  cost argument.** Email and push cost ember a quota per send; showing a fourth
-  finding costs nothing. It is included on the "more of the same" ground and it is
-  worth revisiting with real users: if the top three turn out to be all anyone
-  reads, the cap is selling nothing and should go.
+- **`0012` is applied, and not yet observed refusing.** Writing a synced row needs
+  `is_pro()` in RLS; a signed-in free account's write being refused, and a Pro
+  one's accepted, have not been driven against the project.
+- **Free's daily picks are held per server instance.** A fresh instance picks
+  again, from the same ranking — so usually the same three, but not guaranteed.
+- **The plan the server reads is memoised a minute per token**, and the browser
+  sends the plan it believes it is on (`x-ember-plan`) so a change — a redeemed
+  code, a payment — skips the memo. The hint is never trusted; it only forces a
+  re-read. In development the Plan tab's preview writes `ember_plan_preview`, which
+  the server honours outside production only.
 - **A sponsor row has no impression or click tracking, so ember cannot tell a
   sponsor how many people saw it.** That will be a commercial problem the first time
   somebody asks. The answer is aggregate server-side counting, not a pixel, and it

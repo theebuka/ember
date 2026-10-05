@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Transaction } from "@/lib/api/types";
-import { findOversell } from "./derive";
+import { findOversell, openSymbols } from "./derive";
 
 /**
  * What a valid transaction looks like, and what to say when it isn't.
@@ -96,13 +96,26 @@ const base = z.object({
  * would otherwise be found months later by someone reconciling against a
  * broker statement.
  */
+/** What the asset field says when a plan's holdings limit stops a new position. */
+export function holdingLimitMessage(limit: number): string {
+  return `Free tracks up to ${limit} holdings. Sell one, or get Pro to add more.`;
+}
+
 export function transactionSchema({
   existing,
   editingId,
+  holdingLimit = null,
 }: {
   existing: readonly Transaction[];
   /** Set when editing, so the row being replaced doesn't count against itself. */
   editingId?: string;
+  /**
+   * Open positions the plan allows, or `null` for no limit (decision 288). Only
+   * a buy that opens a *new* position is refused: adding to, selling or editing
+   * what is already held always gets through, and so does a book already over
+   * the limit — a lapse takes nothing away.
+   */
+  holdingLimit?: number | null;
 }) {
   const previous = editingId
     ? existing.find((t) => t.id === editingId)
@@ -131,6 +144,18 @@ export function transactionSchema({
     if (!Number.isFinite(candidate.quantity)) return;
 
     const withoutCandidate = existing.filter((t) => t.id !== candidate.id);
+
+    if (holdingLimit !== null && candidate.side === "buy") {
+      const open = openSymbols(withoutCandidate);
+      if (!open.has(candidate.symbol) && open.size >= holdingLimit) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["symbol"],
+          message: holdingLimitMessage(holdingLimit),
+        });
+        return;
+      }
+    }
     const merged = [...withoutCandidate, candidate];
 
     /**

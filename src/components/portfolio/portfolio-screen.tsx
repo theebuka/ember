@@ -29,12 +29,18 @@ import { useHydrated } from "@/hooks/use-hydrated";
 import { useInstruments, useQuotes, useRates, useSeries } from "@/hooks/use-market-data";
 import { ApiError } from "@/lib/api/client";
 import type { Candle, Range, Transaction } from "@/lib/api/types";
+import { usePlan } from "@/hooks/use-plan";
+import { rangeAllowed } from "@/lib/plan";
+
+const RANGE_LIST: Range[] = ["1W", "1M", "3M", "1Y", "ALL"];
 import { formatMoney } from "@/lib/market/format";
 import { USD_PER_UNIT } from "@/lib/market/universe";
 import { derivePortfolio, portfolioValueSeries } from "@/lib/portfolio/derive";
 import { sampleTransactions } from "@/lib/portfolio/sample";
 import { usePortfolio } from "@/store/use-portfolio";
 import { usePreferences } from "@/store/use-preferences";
+import { useLedger } from "@/hooks/use-ledger";
+import { LockedHoldings } from "@/components/plan/locked";
 
 /**
  * Everything the user's money is doing, and everything ember watches for them.
@@ -82,11 +88,17 @@ export function PortfolioScreen() {
   const router = useRouter();
   const params = useSearchParams();
   const view = parseView(params.get("view"));
-  const [range, setRange] = useState<Range>("3M");
+  const [chosenRange, setRange] = useState<Range>("3M");
+  const { plan } = usePlan();
+  // Free charts the last month (decision 288), so a range it can't show falls
+  // back to 1M rather than drawing an empty chart.
+  const range: Range = rangeAllowed(chosenRange, plan) ? chosenRange : "1M";
+  const lockedRanges = RANGE_LIST.filter((r) => !rangeAllowed(r, plan));
   const [editing, setEditing] = useState<Editing | null>(null);
   const [importing, setImporting] = useState(false);
 
-  const transactions = usePortfolio((s) => s.transactions);
+  // What the plan shows; `ledger` is every row, for writes (decision 289).
+  const { transactions, all: ledger, locked: lockedHoldings } = useLedger();
   const isSample = usePortfolio((s) => s.isSample);
   const add = usePortfolio((s) => s.add);
   const addMany = usePortfolio((s) => s.addMany);
@@ -106,6 +118,10 @@ export function PortfolioScreen() {
   const instruments = useMemo(
     () => instrumentsQuery.data?.instruments ?? [],
     [instrumentsQuery.data],
+  );
+  const instrumentBy = useMemo(
+    () => new Map(instruments.map((i) => [i.symbol, i])),
+    [instruments],
   );
   const quotes = useMemo(() => quotesQuery.data?.quotes ?? [], [quotesQuery.data]);
   const rates = ratesQuery.data?.rates ?? USD_PER_UNIT;
@@ -208,7 +224,7 @@ export function PortfolioScreen() {
     // Captured before the clear, and stripped of ids so `loadSample` reissues
     // them — the flag it sets is the point, otherwise undo would restore the
     // rows without restoring the "this isn't yours" label.
-    const previous = transactions.map((tx) => ({
+    const previous = ledger.map((tx) => ({
       symbol: tx.symbol,
       side: tx.side,
       quantity: tx.quantity,
@@ -228,7 +244,7 @@ export function PortfolioScreen() {
   /* ── Render ──────────────────────────────────────────────────────────── */
 
   const loading = !hydrated || quotesQuery.isPending || instrumentsQuery.isPending;
-  const isEmpty = hydrated && transactions.length === 0;
+  const isEmpty = hydrated && ledger.length === 0;
   const quotesError = quotesQuery.error;
 
   return (
@@ -299,6 +315,7 @@ export function PortfolioScreen() {
                         points={valuePoints}
                         range={range}
                         onRangeChange={setRange}
+                        lockedRanges={lockedRanges}
                         base={base}
                       />
                     )}
@@ -356,6 +373,13 @@ export function PortfolioScreen() {
                       onSelect={(symbol) => setEditing({ mode: "add", symbol })}
                     />
                   </>
+                )}
+                {!loading && (
+                  <LockedHoldings
+                    symbols={lockedHoldings}
+                    instruments={instrumentBy}
+                    className="mt-8"
+                  />
                 )}
               </Section>
             )}
@@ -468,7 +492,7 @@ export function PortfolioScreen() {
             key={editing.mode === "edit" ? editing.tx.id : `add-${editing.symbol ?? ""}`}
             instruments={instruments}
             quotes={quotes}
-            existing={transactions}
+            existing={ledger}
             editing={editing.mode === "edit" ? editing.tx : undefined}
             defaults={
               editing.mode === "add" && editing.symbol
@@ -485,7 +509,7 @@ export function PortfolioScreen() {
         open={importing}
         onOpenChange={setImporting}
         instruments={instruments}
-        existing={transactions}
+        existing={ledger}
         onImport={handleImport}
       />
     </>

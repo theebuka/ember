@@ -146,10 +146,11 @@ export function AuthScreen() {
             </span>
 
             <h2 className="mt-5 text-title font-semibold text-ink">
-              Keep your data across devices
+              Sign in to ember
             </h2>
             <p className="mt-2 text-body text-stone">
-              Back up your trades, watchlist and settings, and use them on any device.
+              An account holds your plan. With Pro, your trades, watchlist and
+              settings sync to every device you sign in on.
             </p>
 
             <div className="mt-7">

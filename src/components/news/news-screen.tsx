@@ -23,10 +23,10 @@ import { newsForSymbols } from "@/lib/market/news";
 import { USD_PER_UNIT } from "@/lib/market/universe";
 import { derivePortfolio } from "@/lib/portfolio/derive";
 import { resolveWatchlist } from "@/store/use-watchlist";
-import { usePortfolio } from "@/store/use-portfolio";
 import { usePreferences } from "@/store/use-preferences";
 import { useWatchlist } from "@/store/use-watchlist";
 import { cn } from "@/lib/utils";
+import { useLedger } from "@/hooks/use-ledger";
 
 /**
  * News.
@@ -76,7 +76,8 @@ export function NewsScreen() {
   const [openId, setOpenId] = useState<string | null>(null);
 
   const base = usePreferences((s) => s.baseCurrency);
-  const transactions = usePortfolio((s) => s.transactions);
+  // What the plan shows (decision 289).
+  const { transactions } = useLedger();
   const watching = useWatchlist((s) => s.symbols);
 
   const newsQuery = useNews();

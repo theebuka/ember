@@ -20,9 +20,9 @@ import {
 import { useAdviceActions } from "@/store/use-advice-actions";
 import { useAlertLog } from "@/store/use-alert-log";
 import { useNotifications } from "@/store/use-notifications";
-import { usePortfolio } from "@/store/use-portfolio";
 import { usePreferences } from "@/store/use-preferences";
 import { useWatchlist } from "@/store/use-watchlist";
+import { useLedger } from "@/hooks/use-ledger";
 
 /**
  * The only thing in ember that reaches out rather than waiting to be opened.
@@ -71,7 +71,8 @@ export function useFindingAlerts(): void {
   // the switch is what records that they did.
   const active = hydrated && (opportunities || risks) && permission === "granted";
 
-  const transactions = usePortfolio((s) => s.transactions);
+  // What the plan shows (decision 289).
+  const { transactions } = useLedger();
   const watching = useWatchlist((s) => s.symbols);
 
   const instrumentsQuery = useInstruments();

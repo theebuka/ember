@@ -21,9 +21,14 @@ import { cn } from "@/lib/utils";
 
 /** What Pro adds, in the order the comparison and a subscriber's plan page list it. */
 export const PRO_INCLUDES: { text: string; feature: Feature }[] = [
-  { text: "Every finding, ranked by urgency", feature: "unlimited-findings" },
-  { text: "Push alerts with no daily cap", feature: "unlimited-alerts" },
-  { text: "The digest by email, daily or weekly", feature: "email-digest" },
+  { text: "Every call in full: buy or sell, when, how much, and the stop", feature: "all-calls" },
+  { text: "International stocks and currencies", feature: "all-markets" },
+  { text: "Alerts on your phone and by email, even with ember closed", feature: "push-alerts" },
+  { text: "Unlimited holdings, each watched for trouble", feature: "more-holdings" },
+  { text: "An unlimited watchlist", feature: "bigger-watchlist" },
+  { text: "Sync across your devices", feature: "sync" },
+  { text: "Your full portfolio history", feature: "chart-history" },
+  { text: "The latest calls in the track record", feature: "recent-calls" },
   { text: "No sponsor slots", feature: "no-sponsors" },
 ];
 
@@ -62,10 +67,11 @@ export function PlanComparison({
   const saving = Math.round(yearlySaving() * 100);
 
   const freeItems = [
-    `The ${free.findings} most urgent findings`,
-    `${free.alertsPerDay} push alerts a day`,
-    "Every in-app alert, uncapped",
-    "Full analysis on every call",
+    `${free.calls} calls a day in full, on US stocks and crypto`,
+    `Up to ${free.holdings} holdings, with every warning on them`,
+    `A watchlist of ${free.watchlist}`,
+    "Alerts while ember is open",
+    `The methodology, and the track record up to ${(free.recentCallsHiddenDays ?? 0) / 7} weeks ago`,
   ];
   const proItems = PRO_INCLUDES;
 

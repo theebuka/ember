@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
+import { usePlan } from "@/hooks/use-plan";
+import { canUse } from "@/lib/plan";
 import { useSession } from "@/hooks/use-session";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -203,7 +205,12 @@ export function useSync(): void {
     [user],
   );
 
-  const engaged = hydrated && ready && available && user !== null;
+  // Sync is part of Pro (decision 288). A free account signs in to pay, and
+  // its data stays on the device it was entered on. The server cannot refuse
+  // these writes yet — RLS reads no plan — so this is the gate for now (§8).
+  const { plan, ready: planReady } = usePlan();
+  const engaged =
+    hydrated && ready && available && user !== null && planReady && canUse("sync", plan);
 
   /**
    * One effect, one timer, for both reasons to sync.

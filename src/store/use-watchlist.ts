@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { stampOnChange } from "@/lib/sync/stamp";
+import type { Plan } from "@/lib/plan";
 
 /**
  * Which instruments the user is following.
@@ -23,10 +24,15 @@ import { stampOnChange } from "@/lib/sync/stamp";
 interface WatchlistState {
   symbols: string[] | null;
 
-  add: (symbol: string) => void;
-  /** `universe` is only read when the list is still the "everything" default. */
-  remove: (symbol: string, universe: readonly string[]) => void;
-  toggle: (symbol: string, universe: readonly string[]) => void;
+  /**
+   * `current` is the list as the reader sees it — `resolveWatchlist`'s answer —
+   * which is only different from `symbols` while that is the "everything"
+   * default. On Pro that default is the universe, so adding to it changes
+   * nothing; on free it is nothing, so the first add starts a real list.
+   */
+  add: (symbol: string, current: readonly string[]) => void;
+  remove: (symbol: string, current: readonly string[]) => void;
+  toggle: (symbol: string, current: readonly string[]) => void;
   /**
    * Restore an exact previous value, sentinel included.
    *
@@ -46,27 +52,18 @@ export const useWatchlist = create<WatchlistState>()(
     (set) => ({
       symbols: null,
 
-      add: (symbol) =>
-        set((s) => {
-          if (s.symbols === null) return s; // already following everything
-          if (s.symbols.includes(symbol)) return s;
-          return { symbols: [...s.symbols, symbol] };
-        }),
+      add: (symbol, current) =>
+        set((s) => (current.includes(symbol) ? s : { symbols: [...current, symbol] })),
 
-      remove: (symbol, universe) =>
-        set((s) => ({
-          symbols: (s.symbols ?? [...universe]).filter((x) => x !== symbol),
+      remove: (symbol, current) =>
+        set(() => ({ symbols: current.filter((x) => x !== symbol) })),
+
+      toggle: (symbol, current) =>
+        set(() => ({
+          symbols: current.includes(symbol)
+            ? current.filter((x) => x !== symbol)
+            : [...current, symbol],
         })),
-
-      toggle: (symbol, universe) =>
-        set((s) => {
-          const current = s.symbols ?? [...universe];
-          return {
-            symbols: current.includes(symbol)
-              ? current.filter((x) => x !== symbol)
-              : [...current, symbol],
-          };
-        }),
 
       setSymbols: (symbols) => set({ symbols }),
 
@@ -84,12 +81,16 @@ stampOnChange(useWatchlist, "ember:watchlist");
  * Also drops anything no longer in the universe — a persisted list can outlive
  * a delisting or a rename, and a watchlist row with no instrument behind it
  * would render as a blank line the user can't remove.
+ *
+ * **"Everything" is a Pro default.** Free watches up to a limit, so the sentinel
+ * resolves to nothing there and the reader builds a list (decision 288).
  */
 export function resolveWatchlist(
   symbols: string[] | null,
   universe: readonly string[],
+  plan: Plan = "pro",
 ): string[] {
-  if (symbols === null) return [...universe];
+  if (symbols === null) return plan === "pro" ? [...universe] : [];
   const known = new Set(universe);
   return symbols.filter((s) => known.has(s));
 }

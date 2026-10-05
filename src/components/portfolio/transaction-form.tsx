@@ -28,7 +28,11 @@ import { Textarea } from "@/components/ui/textarea";
 import type { Instrument, Quote, Transaction } from "@/lib/api/types";
 import { MARKET_LABELS } from "@/lib/api/types";
 import { formatMoney, formatQuantity } from "@/lib/market/format";
-import { quantityHeldAt } from "@/lib/portfolio/derive";
+import { openSymbols, quantityHeldAt } from "@/lib/portfolio/derive";
+import { PlanCard } from "@/components/plan/upsell";
+import { usePlan } from "@/hooks/use-plan";
+import { holdingLimit } from "@/lib/plan";
+import { usePortfolio } from "@/store/use-portfolio";
 import {
   toTransaction,
   todayForInput,
@@ -76,8 +80,17 @@ export function TransactionForm({
   onSubmit: (values: Omit<Transaction, "id">) => void;
   onCancel: () => void;
 }) {
+  const { plan } = usePlan();
+  const isSample = usePortfolio((s) => s.isSample);
+  // A sample book is exempt: it is a demonstration, and it already holds more
+  // than free's limit. The limit applies from the reader's own first trade.
+  const limit = isSample ? null : holdingLimit(plan);
   const schema = useMemo(
-    () => transactionSchema({ existing, editingId: editing?.id }),
+    () => transactionSchema({ existing, editingId: editing?.id, holdingLimit: limit }),
+    [existing, editing?.id, limit],
+  );
+  const open = useMemo(
+    () => openSymbols(existing.filter((t) => t.id !== editing?.id)),
     [existing, editing?.id],
   );
 
@@ -124,6 +137,11 @@ export function TransactionForm({
   const priceText = watched.price ?? "";
   const feesText = watched.fees ?? "";
   const dateText = watched.date ?? "";
+
+  // Said as soon as the asset is picked, rather than on submit: the schema
+  // refuses the same case, but nobody should fill in a whole trade first.
+  const limitHit =
+    limit !== null && side === "buy" && symbol !== "" && !open.has(symbol) && open.size >= limit;
 
   const instrument = instruments.find((i) => i.symbol === symbol);
   const quote = quotes.find((q) => q.symbol === symbol);
@@ -212,7 +230,11 @@ export function TransactionForm({
                     ))}
                   </SelectContent>
                 </Select>
-                <FormMessage />
+                {limitHit ? (
+                  <PlanCard feature="more-holdings" className="mt-1" />
+                ) : (
+                  <FormMessage />
+                )}
               </FormItem>
             )}
           />

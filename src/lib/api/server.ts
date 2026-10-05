@@ -3,6 +3,7 @@ import "server-only";
 import type {
   Candle,
   Currency,
+  LockedCall,
   MarketKind,
   NewsItem,
   Range,
@@ -13,6 +14,7 @@ import { RISK_PROFILES } from "@/lib/api/types";
 import { getProvider } from "@/lib/market/providers";
 import { trendingFrom } from "@/lib/market/news";
 import { INSTRUMENT_BY_SYMBOL } from "@/lib/market/universe";
+import { holdingLimit, inFreeMarkets, unlockedCalls, type Plan } from "@/lib/plan";
 import { buildContext, loadUniverse, type Universe } from "@/lib/signals/context";
 import { assess, qualifies, type Assessment } from "@/lib/signals/ensemble";
 import { buildFindings, type Finding } from "@/lib/signals/findings";
@@ -233,6 +235,83 @@ export function trimAdvice(response: AdviceResponse, limit = ADVICE_PAGE) {
   };
 }
 
+/* ── Locks ─────────────────────────────────────────────────────────────── */
+
+const DAY_MS = 86_400_000;
+
+/** Today's free calls, per profile. See `freeCallsFor`. */
+const dailyPicks = new Map<string, Set<string>>();
+
+function inFreeMarketsBySymbol(symbol: string): boolean {
+  const spec = INSTRUMENT_BY_SYMBOL.get(symbol);
+  return spec ? inFreeMarkets(spec) : false;
+}
+
+/**
+ * The calls a plan sees in full, or `null` for every one (decision 288).
+ *
+ * **Chosen once a day, per profile, and the same for every free reader.** "Three
+ * a day" is the promise, so the picks hold for the UTC day rather than shifting
+ * each time the ranking is recomputed. Not held while the universe is still
+ * filling, because a pick from a partial universe may not be one of the day's
+ * strongest.
+ *
+ * Per server instance, like the advice memo: a fresh instance may pick again.
+ */
+export function freeCallsFor(plan: Plan, advice: AdviceResponse): Set<string> | null {
+  if (plan === "pro") return null;
+  const key = `${advice.riskProfile}:${Math.floor(advice.at / DAY_MS)}`;
+  const held = dailyPicks.get(key);
+  if (held) return held;
+
+  const picks = unlockedCalls(
+    plan,
+    advice.assessments,
+    new Set(advice.actionable),
+    inFreeMarketsBySymbol,
+  )!;
+  if (advice.pending === 0) {
+    const day = key.slice(key.indexOf(":"));
+    for (const old of dailyPicks.keys()) if (!old.endsWith(day)) dailyPicks.delete(old);
+    dailyPicks.set(key, picks);
+  }
+  return picks;
+}
+
+function lockedCall(assessment: Assessment, actionable: ReadonlySet<string>): LockedCall {
+  return {
+    symbol: assessment.symbol,
+    market: assessment.market,
+    price: assessment.price,
+    actionable: actionable.has(assessment.symbol),
+    reason: inFreeMarketsBySymbol(assessment.symbol) ? "calls" : "markets",
+  };
+}
+
+/**
+ * `/api/advice` as this plan sees it.
+ *
+ * Pro gets the page of full assessments it always got. Free gets its few
+ * unlocked calls in full and **every other read as a `LockedCall`** — the
+ * instrument and its price, never the direction. All of them rather than a page:
+ * a locked row is ~80 bytes, and the count is the point.
+ */
+export function presentAdvice(advice: AdviceResponse, plan: Plan) {
+  const unlocked = freeCallsFor(plan, advice);
+  const trimmed = trimAdvice(advice);
+  if (!unlocked) return { ...trimmed, plan, locked: [] as LockedCall[] };
+
+  const actionable = new Set(advice.actionable);
+  return {
+    ...trimmed,
+    plan,
+    assessments: advice.assessments.filter((a) => unlocked.has(a.symbol)),
+    locked: advice.assessments
+      .filter((a) => !unlocked.has(a.symbol))
+      .map((a) => lockedCall(a, actionable)),
+  };
+}
+
 /* ── Findings ──────────────────────────────────────────────────────────── */
 
 /**
@@ -323,6 +402,9 @@ export interface FindingsResponse {
   synthetic: boolean;
   /** Instruments whose history had not arrived yet. See `AdviceResponse`. */
   pending: number;
+  plan: Plan;
+  /** Opportunities this plan does not show in full. Risks are never locked. */
+  locked: LockedCall[];
 }
 
 /**
@@ -345,10 +427,12 @@ export async function getFindings({
   riskProfile,
   positions,
   watching,
+  plan,
 }: {
   riskProfile: RiskProfile;
   positions: readonly PositionInput[];
   watching: readonly string[] | null;
+  plan: Plan;
 }): Promise<FindingsResponse> {
   const now = Date.now();
   const [advice, universe, rates] = await Promise.all([
@@ -357,7 +441,13 @@ export async function getFindings({
     getProvider().getConversionRates(),
   ]);
 
-  const exposures = withWeights(positions, advice.assessments, rates);
+  // Weighed against the whole book, then — on a plan with a holdings limit —
+  // watched for trouble on the largest few. A free reader can't log more than
+  // the limit; this is the book of somebody who lapsed, or the sample.
+  const weighed = withWeights(positions, advice.assessments, rates);
+  const limit = holdingLimit(plan);
+  const exposures =
+    limit === null ? weighed : [...weighed].sort((a, b) => b.weight - a.weight).slice(0, limit);
 
   const findings = buildFindings({
     assessments: advice.assessments,
@@ -371,9 +461,23 @@ export async function getFindings({
     now,
   });
 
+  // Risks are never locked. Opportunities are, outside the plan's free calls.
+  const unlocked = freeCallsFor(plan, advice);
+  const shown = unlocked
+    ? findings.filter((f) => f.kind === "risk" || unlocked.has(f.symbol))
+    : findings;
+  const actionable = new Set(advice.actionable);
+  const locked = unlocked
+    ? findings
+        .filter((f) => f.kind === "opportunity" && !unlocked.has(f.symbol))
+        .map((f) => lockedCall(f.assessment, actionable))
+    : [];
+
   return {
     riskProfile,
-    findings: findings.slice(0, FINDINGS_PAGE),
+    plan,
+    locked,
+    findings: shown.slice(0, FINDINGS_PAGE),
     found: {
       opportunity: findings.filter((f) => f.kind === "opportunity").length,
       risk: findings.filter((f) => f.kind === "risk").length,

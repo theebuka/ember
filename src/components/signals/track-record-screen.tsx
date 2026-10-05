@@ -209,7 +209,7 @@ export function TrackRecordScreen() {
 
               <div className="mt-5 border-t border-line pt-4">
                 <h3 className="eyebrow mb-2">Where the calls landed</h3>
-                <ReturnDistribution returns={result.trades.map((t) => t.return)} />
+                <ReturnDistribution returns={result.returns} />
               </div>
             </section>
 
@@ -288,6 +288,21 @@ export function TrackRecordScreen() {
                   />
                 }
               />
+              {/* The newest calls are listed on Pro only; the server leaves
+                  them out of the list and every figure above still counts
+                  them. Said here, where the list visibly stops short. */}
+              {result && result.withheld > 0 && result.hiddenDays !== null && (
+                <p className="mb-3 text-caption text-stone">
+                  {result.withheld} calls from the last {result.hiddenDays / 7} weeks are
+                  part of Pro. Every figure above counts them.{" "}
+                  <Link
+                    href="/settings?tab=plan"
+                    className="text-brand-text underline underline-offset-2"
+                  >
+                    See plans
+                  </Link>
+                </p>
+              )}
               {trades.length === 0 ? (
                 <p className="py-2 text-caption text-stone">
                   No calls in this slice.

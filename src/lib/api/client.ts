@@ -2,6 +2,7 @@ import type {
   AssetMetricGroup,
   Currency,
   Instrument,
+  LockedCall,
   MarketKind,
   NewsItem,
   Quote,
@@ -16,6 +17,7 @@ import type {
 import type { BacktestResult } from "@/lib/signals/backtest";
 import type { Assessment } from "@/lib/signals/ensemble";
 import type { Finding } from "@/lib/signals/findings";
+import type { Plan } from "@/lib/plan";
 
 /**
  * The only data entry point components are allowed to use.
@@ -30,6 +32,7 @@ import type { Finding } from "@/lib/signals/findings";
  */
 
 export type { Assessment } from "@/lib/signals/ensemble";
+export type { LockedCall } from "@/lib/api/types";
 export type { Contribution, Stance } from "@/lib/signals/ensemble";
 export type { Finding, FindingKind } from "@/lib/signals/findings";
 export type {
@@ -67,10 +70,28 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * The plan this browser believes it is on, sent with every request.
+ *
+ * Never trusted: the server reads the plan from the session (`plan-server.ts`).
+ * It only tells the server its minute-long memo of that read is stale — a
+ * reader who has just redeemed a code or paid would otherwise see locks until
+ * the memo expired. Set by `usePlanRefresh`.
+ */
+let planHint: Plan | null = null;
+
+export function setPlanHint(plan: Plan | null): void {
+  planHint = plan;
+}
+
+function hinted(headers: Record<string, string>): Record<string, string> {
+  return planHint ? { ...headers, "x-ember-plan": planHint } : headers;
+}
+
 async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(path, { signal, headers: { accept: "application/json" } });
+    response = await fetch(path, { signal, headers: hinted({ accept: "application/json" }) });
   } catch (cause) {
     // A thrown fetch is the network, not the server — almost always offline.
     if (cause instanceof DOMException && cause.name === "AbortError") throw cause;
@@ -101,7 +122,7 @@ async function post<T>(path: string, body: unknown, signal?: AbortSignal): Promi
     response = await fetch(path, {
       method: "POST",
       signal,
-      headers: { "content-type": "application/json", accept: "application/json" },
+      headers: hinted({ "content-type": "application/json", accept: "application/json" }),
       body: JSON.stringify(body),
     });
   } catch (cause) {
@@ -206,6 +227,10 @@ export interface AdviceResponse {
    * a feed silently ranking 80 of 110 is a feed making a claim it cannot keep.
    */
   pending: number;
+  /** The plan the server answered for. */
+  plan: Plan;
+  /** Every read this plan doesn't show in full, ranked. Empty on Pro. */
+  locked: LockedCall[];
 }
 
 /** What the user's book looks like to the server. Four derived numbers, no log. */
@@ -232,6 +257,9 @@ export interface FindingsResponse {
    * a feed silently ranking 80 of 110 is a feed making a claim it cannot keep.
    */
   pending: number;
+  plan: Plan;
+  /** Opportunities this plan doesn't show in full. Risks are never locked. */
+  locked: LockedCall[];
 }
 
 export interface NewsResponse {
@@ -249,6 +277,12 @@ export interface FxResponse {
 }
 
 export interface TrackRecordResponse extends BacktestResult {
+  /** Every call's return, including the ones `trades` leaves out. */
+  returns: number[];
+  /** Newest calls this plan doesn't list; the summary still counts them. */
+  withheld: number;
+  /** How far back they go, or `null` when nothing is held back. */
+  hiddenDays: number | null;
   riskProfile: RiskProfile;
   at: number;
   synthetic: boolean;
@@ -258,6 +292,8 @@ export interface AssetResponse {
   instrument: Instrument;
   quote: Quote | null;
   assessment: Assessment | null;
+  /** The engine has a read here that this plan doesn't show. */
+  locked: boolean;
   actionable: boolean;
   groups: AssetMetricGroup[];
   riskProfile: RiskProfile;
@@ -352,6 +388,8 @@ export function fetchTrackRecord(profile: RiskProfile, signal?: AbortSignal) {
 /** One instrument's calls from the backtest — the asset page's history. */
 export interface SymbolCallsResponse {
   trades: BacktestResult["trades"];
+  withheld: number;
+  hiddenDays: number | null;
   riskProfile: RiskProfile;
   at: number;
   synthetic: boolean;

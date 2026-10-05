@@ -1,7 +1,15 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { canUse, findingLimit, planFrom, subscriptionFrom } from "./plan";
+import {
+  canUse,
+  inFreeMarkets,
+  PLAN_RULES,
+  planFrom,
+  rangeAllowed,
+  subscriptionFrom,
+  unlockedCalls,
+} from "./plan";
 
 /**
  * Two rules about money that should fail a build rather than a review.
@@ -78,15 +86,48 @@ describe("a lapsed plan takes nothing away", () => {
   });
 
   /**
-   * The cap shortens the answer; it never removes the engine's view. If this ever
-   * reads 0, a free user opens Home to an empty inbox and concludes the app is
-   * broken rather than that it is free.
+   * Free is a taste, not nothing. If this ever reads 0, a free reader opens
+   * Signals to a wall of locks and concludes the app is broken.
    */
   it("never leaves a free reader with nothing", () => {
-    expect(findingLimit("free")).toBeGreaterThan(0);
-    expect(findingLimit("pro")).toBeNull();
-    expect(canUse("unlimited-findings", "free")).toBe(false);
-    expect(canUse("unlimited-findings", "pro")).toBe(true);
+    expect(PLAN_RULES.free.calls).toBeGreaterThan(0);
+    expect(PLAN_RULES.free.holdings).toBeGreaterThan(0);
+    expect(canUse("all-calls", "free")).toBe(false);
+    expect(canUse("all-calls", "pro")).toBe(true);
+  });
+});
+
+describe("which calls a plan sees in full", () => {
+  const ranked = ["7203", "AAPL", "EURUSD", "BTC", "MSFT", "NVDA", "ETH"].map((symbol) => ({ symbol }));
+  const free = new Set(["AAPL", "BTC", "MSFT", "NVDA", "ETH"]);
+  const isFree = (s: string) => free.has(s);
+
+  it("gives Pro every call", () => {
+    expect(unlockedCalls("pro", ranked, new Set(["AAPL"]), isFree)).toBeNull();
+  });
+
+  it("gives free the strongest that match the profile, on free markets only", () => {
+    const actionable = new Set(["7203", "AAPL", "EURUSD", "BTC", "NVDA", "ETH"]);
+    // 7203 and EURUSD rank higher but are outside free's markets; MSFT doesn't match.
+    expect([...unlockedCalls("free", ranked, actionable, isFree)!]).toEqual(["AAPL", "BTC", "NVDA"]);
+  });
+
+  it("never unlocks a read that doesn't match the profile", () => {
+    expect(unlockedCalls("free", ranked, new Set(), isFree)!.size).toBe(0);
+  });
+
+  it("covers US stocks and crypto, and nothing else", () => {
+    expect(inFreeMarkets({ market: "equity", exchange: "XNYS" })).toBe(true);
+    expect(inFreeMarkets({ market: "crypto" })).toBe(true);
+    expect(inFreeMarkets({ market: "equity", exchange: "XLON" })).toBe(false);
+    expect(inFreeMarkets({ market: "equity", exchange: "XNSA" })).toBe(false);
+    expect(inFreeMarkets({ market: "fx" })).toBe(false);
+  });
+
+  it("charts the last month on free and everything on Pro", () => {
+    expect(rangeAllowed("1M", "free")).toBe(true);
+    expect(rangeAllowed("1Y", "free")).toBe(false);
+    expect(rangeAllowed("ALL", "pro")).toBe(true);
   });
 });
 

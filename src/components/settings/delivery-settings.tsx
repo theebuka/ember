@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { usePlan } from "@/hooks/use-plan";
 import { useSession } from "@/hooks/use-session";
 import { PlanCard, PlanChip } from "@/components/plan/upsell";
-import { canUse, PLAN_RULES } from "@/lib/plan";
+import { canUse } from "@/lib/plan";
 import {
   isPushBlocked,
   PushError,
@@ -60,6 +60,7 @@ export function DeliverySettings() {
   const { user } = useSession();
   const { plan } = usePlan();
   const mayEmail = canUse("email-digest", plan);
+  const mayPush = canUse("push-alerts", plan);
   // `null` while the browser is being asked. It started as `"unavailable"`, so
   // every visit opened on "This browser doesn't support push" for the length of
   // an async check, on browsers that support it perfectly well.
@@ -164,11 +165,10 @@ export function DeliverySettings() {
           <span className="flex items-center gap-2">
             <DeviceMobile className="size-4 text-stone" />
             Push to this device
+            {!mayPush && <PlanChip />}
           </span>
         }
-        description={
-          push === null ? "Checking…" : pushDescription(push, canUse("unlimited-alerts", plan))
-        }
+        description={push === null ? "Checking…" : pushDescription(push)}
         control={
           <Switch
             checked={push === "on"}
@@ -179,12 +179,17 @@ export function DeliverySettings() {
             // control disabled forever with a not-allowed cursor. A switch that
             // silently refuses is worse than one that is visibly off (decision
             // 047); the reason is in the description beside it.
-            disabled={pushBusy || push === null || isPushBlocked(push)}
+            // A free account can still switch off a subscription it made on Pro.
+            disabled={
+              pushBusy || push === null || isPushBlocked(push) || (!mayPush && push !== "on")
+            }
             onCheckedChange={() => void togglePush()}
             aria-label="Push notifications to this device"
           />
         }
-      />
+      >
+        {!mayPush && <PlanCard feature="push-alerts" className="mt-3.5" />}
+      </SettingRow>
 
       {/* The in-app test lives with the alert switches above; it exercises the
           same display code. A real send needs the VAPID key — `npm run push:test`. */}
@@ -251,7 +256,7 @@ export function DeliverySettings() {
  */
 const DEV = process.env.NODE_ENV !== "production";
 
-function pushDescription(state: PushState, uncapped: boolean): string {
+function pushDescription(state: PushState): string {
   switch (state) {
     case "blocked":
       return "Blocked by this browser. Allow notifications in this site's settings.";
@@ -272,8 +277,6 @@ function pushDescription(state: PushState, uncapped: boolean): string {
     case "unavailable":
       return "This browser doesn't support push. On iPhone, add ember to your home screen first.";
     default:
-      return uncapped
-        ? "Alerts when ember is closed. Turn on for each device."
-        : `Alerts when ember is closed. Turn on for each device. Up to ${PLAN_RULES.free.alertsPerDay} a day on Free.`;
+      return "Alerts when ember is closed. Turn on for each device.";
   }
 }

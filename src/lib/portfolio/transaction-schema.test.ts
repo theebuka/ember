@@ -162,3 +162,27 @@ describe("toTransaction", () => {
     expect(tx.note).toBe("Trimmed");
   });
 });
+
+describe("the holdings limit (decision 288)", () => {
+  // NVDA and AAPL are open; a limit of 2 is full.
+  const limited = (values: TransactionFormValues) =>
+    transactionSchema({ existing: LOG, holdingLimit: 2 }).safeParse(values);
+
+  it("refuses a buy that opens a new position past the limit", () => {
+    const result = limited(form({ symbol: "MSFT" }));
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0].path).toEqual(["symbol"]);
+  });
+
+  it("lets a buy add to a position already held", () => {
+    expect(limited(form({ symbol: "AAPL", date: "2025-08-01" })).success).toBe(true);
+  });
+
+  it("never stops a sell", () => {
+    expect(limited(form({ side: "sell", quantity: "5", date: "2025-08-01" })).success).toBe(true);
+  });
+
+  it("has no limit when none is given", () => {
+    expect(transactionSchema({ existing: LOG }).safeParse(form({ symbol: "MSFT" })).success).toBe(true);
+  });
+});

@@ -4,6 +4,10 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Check, Eye, Plus } from "@/components/common/icon";
 import { SignalCard, SignalCardSkeleton } from "@/components/signals/signal-card";
+import { LockedBadge, LockedRead } from "@/components/plan/locked";
+import { inFreeMarkets, watchlistLimit } from "@/lib/plan";
+import { usePlan } from "@/hooks/use-plan";
+import { PlanInterstitial } from "@/components/plan/upsell";
 import { ErrorState } from "@/components/common/error-state";
 import { PageBody } from "@/components/common/page-body";
 import { SectionHeader } from "@/components/common/section-header";
@@ -47,6 +51,7 @@ import { usePortfolio } from "@/store/use-portfolio";
 import { usePreferences } from "@/store/use-preferences";
 import { resolveWatchlist, useWatchlist } from "@/store/use-watchlist";
 import { cn } from "@/lib/utils";
+import { useLedger } from "@/hooks/use-ledger";
 
 /**
  * One instrument, end to end.
@@ -74,7 +79,8 @@ export function AssetScreen({ symbol }: { symbol: string }) {
 
   const riskProfile = usePreferences((s) => s.riskProfile);
   const base = usePreferences((s) => s.baseCurrency);
-  const transactions = usePortfolio((s) => s.transactions);
+  // What the plan shows; `ledger` is every row, for writes (decision 289).
+  const { transactions, all: ledger } = useLedger();
   const addTransaction = usePortfolio((s) => s.add);
   const removeTransaction = usePortfolio((s) => s.remove);
 
@@ -97,7 +103,14 @@ export function AssetScreen({ symbol }: { symbol: string }) {
     () => (instrumentsQuery.data?.instruments ?? []).map((i) => i.symbol),
     [instrumentsQuery.data],
   );
-  const isWatched = hydrated && resolveWatchlist(watched, universe).includes(symbol);
+  const { plan, ready: planReady } = usePlan();
+  const watching = useMemo(
+    () => resolveWatchlist(watched, universe, plan),
+    [watched, universe, plan],
+  );
+  const isWatched = hydrated && planReady && watching.includes(symbol);
+  const watchLimit = watchlistLimit(plan);
+  const [upsell, setUpsell] = useState(false);
 
   /**
    * Is there anything to reserve room for?
@@ -141,6 +154,9 @@ export function AssetScreen({ symbol }: { symbol: string }) {
     symbol,
   ]);
 
+  /** Calls from the last few weeks, which this plan doesn't list. */
+  const recentWithheld = trackRecordQuery.data?.withheld ?? 0;
+
   /** Past calls the engine made on this instrument, newest first. */
   const pastCalls = useMemo(
     () =>
@@ -155,12 +171,16 @@ export function AssetScreen({ symbol }: { symbol: string }) {
   const toggleWatch = () => {
     const previous = watched === null ? null : [...watched];
     if (isWatched) {
-      removeFromWatchlist(symbol, universe);
+      removeFromWatchlist(symbol, watching);
       undoableToast(`Stopped following ${symbol}`, {
         onUndo: () => setWatchlist(previous),
       });
     } else {
-      addToWatchlist(symbol);
+      if (watchLimit !== null && watching.length >= watchLimit) {
+        setUpsell(true);
+        return;
+      }
+      addToWatchlist(symbol, watching);
       undoableToast(`Following ${symbol}`, {
         onUndo: () => setWatchlist(previous),
       });
@@ -376,6 +396,11 @@ export function AssetScreen({ symbol }: { symbol: string }) {
               // already name it, and a third time was the call repeating it.
               identity={false}
             />
+          ) : asset.locked && instrument ? (
+            <LockedRead
+              symbol={symbol}
+              feature={inFreeMarkets(instrument) ? "all-calls" : "all-markets"}
+            />
           ) : instrument?.dataState === "collecting" ? (
             /**
              * A wait, not a judgement — and the difference is the whole reason
@@ -456,13 +481,19 @@ export function AssetScreen({ symbol }: { symbol: string }) {
             href="/signals/track-record"
             linkLabel="Full record"
           />
+          {recentWithheld > 0 && (
+            <p className="mb-2 flex flex-wrap items-center gap-2 text-caption text-stone">
+              <LockedBadge size="sm" feature="recent-calls" />
+              {recentWithheld} more recent {recentWithheld === 1 ? "call" : "calls"} on Pro.
+            </p>
+          )}
           {trackRecordQuery.isPending ? (
             <Skeleton className="h-20 w-full" />
-          ) : pastCalls.length === 0 ? (
+          ) : pastCalls.length === 0 && recentWithheld === 0 ? (
             <p className="py-2 text-caption text-stone">
               No past calls on {symbol}.
             </p>
-          ) : (
+          ) : pastCalls.length === 0 ? null : (
             <ul className="divide-y divide-line">
               {pastCalls.map((trade) => (
                 <li
@@ -509,6 +540,8 @@ export function AssetScreen({ symbol }: { symbol: string }) {
         </p>
       </PageBody>
 
+      <PlanInterstitial feature="bigger-watchlist" open={upsell} onOpenChange={setUpsell} />
+
       <TradeModal
         open={logging}
         onOpenChange={setLogging}
@@ -518,7 +551,7 @@ export function AssetScreen({ symbol }: { symbol: string }) {
         <TransactionForm
           instruments={instrumentsQuery.data?.instruments ?? []}
           quotes={quotesQuery.data?.quotes ?? []}
-          existing={transactions}
+          existing={ledger}
           defaults={{
             symbol,
             price: asset?.quote ? String(asset.quote.price) : "",

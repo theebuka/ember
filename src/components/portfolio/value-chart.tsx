@@ -1,6 +1,8 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useState } from "react";
+import { LockSimple } from "@/components/common/icon";
+import { PlanInterstitial } from "@/components/plan/upsell";
 import { ChangeText } from "@/components/market/change-chip";
 import { Segmented } from "@/components/common/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,16 +39,34 @@ export function ValueChart({
   points,
   range,
   onRangeChange,
+  lockedRanges = [],
   base,
   className,
 }: {
   points: readonly ValuePoint[];
   range: Range;
   onRangeChange: (range: Range) => void;
+  /** Ranges the reader's plan doesn't chart. Pressing one opens the plans. */
+  lockedRanges?: readonly Range[];
   base: BaseCurrency;
   className?: string;
 }) {
   const gradientId = useId();
+  const [upsell, setUpsell] = useState(false);
+  const options = RANGES.map((r) =>
+    lockedRanges.includes(r.value)
+      ? {
+          value: r.value,
+          ariaLabel: `${r.label}, part of Pro`,
+          label: (
+            <>
+              <LockSimple weight="fill" className="size-3 text-faint" />
+              {r.label}
+            </>
+          ),
+        }
+      : r,
+  );
 
   const first = points[0];
   const last = points[points.length - 1];
@@ -83,12 +103,13 @@ export function ValueChart({
 
         <Segmented
           value={range}
-          onChange={onRangeChange}
-          options={RANGES}
+          onChange={(next) => (lockedRanges.includes(next) ? setUpsell(true) : onRangeChange(next))}
+          options={options}
           size="sm"
           aria-label="Chart range"
           className="shrink-0"
         />
+        <PlanInterstitial feature="chart-history" open={upsell} onOpenChange={setUpsell} />
       </div>
 
       {points.length < 2 ? (
