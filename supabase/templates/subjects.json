@@ -1,0 +1,18 @@
+{
+  "Magic link": {
+    "file": "magic-link.html",
+    "subject": "Your ember sign-in link"
+  },
+  "Confirm signup": {
+    "file": "confirm-signup.html",
+    "subject": "Confirm your email for ember"
+  },
+  "Change email address": {
+    "file": "change-email.html",
+    "subject": "Confirm your new email address"
+  },
+  "Reauthentication": {
+    "file": "reauthentication.html",
+    "subject": "Your ember verification code"
+  }
+}

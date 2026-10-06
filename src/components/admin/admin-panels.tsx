@@ -7,7 +7,7 @@ import { CodesPanel } from "@/components/admin/codes-panel";
 import { BroadcastComposer } from "@/components/admin/broadcast-composer";
 import { PricingPanel } from "@/components/admin/pricing-panel";
 import { SuspensionPanel } from "@/components/admin/suspension-panel";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AdminEmpty } from "@/components/admin/fields";
 import { useNow } from "@/hooks/use-now";
 import { useSession } from "@/hooks/use-session";
 import { ADMIN_ACTION_LABELS, type AdminAction } from "@/lib/admin";
@@ -94,32 +94,27 @@ function AdminLog() {
   }, []);
 
   return (
-    <SettingGroup title="Log" description="Append-only." boxed={false}>
+    <SettingGroup title="Activity" description="Every admin action, newest first. Nobody can edit it.">
       {rows === null ? (
-        <Skeleton className="h-[1lh] w-full text-caption" />
+        <AdminEmpty>Loading…</AdminEmpty>
       ) : rows.length === 0 ? (
-        <p className="text-caption text-stone">Nothing done here yet.</p>
+        <AdminEmpty>Nothing done here yet.</AdminEmpty>
       ) : (
-        <div className="divide-y divide-line border-y border-line">
-          {rows.map((row) => (
-            <div key={row.id} className="flex items-baseline gap-3 py-3">
-              <p className="min-w-0 flex-1 text-caption text-graphite">
-                {ADMIN_ACTION_LABELS[row.action as AdminAction] ?? row.action}
-                {typeof row.detail.title === "string" && (
-                  <span className="text-stone"> — {row.detail.title}</span>
-                )}
-              </p>
-              {now !== null && (
-                <time
-                  dateTime={row.at}
-                  className="shrink-0 text-micro text-stone tabular-nums"
-                >
-                  {formatRelative(Date.parse(row.at), now)}
-                </time>
+        rows.map((row) => (
+          <div key={row.id} className="flex items-baseline gap-3 px-4 py-3 sm:px-5">
+            <p className="min-w-0 flex-1 text-caption text-ink">
+              {ADMIN_ACTION_LABELS[row.action as AdminAction] ?? row.action}
+              {typeof row.detail.title === "string" && (
+                <span className="text-stone"> · {row.detail.title}</span>
               )}
-            </div>
-          ))}
-        </div>
+            </p>
+            {now !== null && (
+              <time dateTime={row.at} className="shrink-0 text-micro text-stone tabular-nums">
+                {formatRelative(Date.parse(row.at), now)}
+              </time>
+            )}
+          </div>
+        ))
       )}
     </SettingGroup>
   );

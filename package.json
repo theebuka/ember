@@ -18,7 +18,8 @@
     "digest:email": "node scripts/send-digests.mjs --channel=email --cadence=daily",
     "push:test": "node scripts/send-test-push.mjs",
     "push:keys": "node scripts/generate-vapid-keys.mjs",
-    "dev:https": "next dev --experimental-https"
+    "dev:https": "next dev --experimental-https",
+    "emails": "node scripts/build-email-templates.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",

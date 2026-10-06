@@ -30,6 +30,17 @@
 
 import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
+import {
+  COLOR,
+  FONT,
+  MONO,
+  button,
+  escapeHtml,
+  footerLine,
+  note,
+  paragraph,
+  renderEmail,
+} from "./email/layout.mjs";
 
 /* ── Arguments ───────────────────────────────────────────────────────────── */
 
@@ -279,7 +290,7 @@ function whenPhrase(assessment, now) {
   const hours = Math.max(1, Math.round((opensAt - now) / HOUR));
   return hours < 24
     ? `the window opens in about ${hours} ${hours === 1 ? "hour" : "hours"}`
-    : `the window opens in about ${Math.round(hours / 24)} days`;
+    : `the window opens in about ${Math.round(hours / 24)} ${Math.round(hours / 24) === 1 ? "day" : "days"}`;
 }
 
 /**
@@ -301,81 +312,107 @@ function composeEmail({ picks, cadence, unsubscribeToken }) {
   const count = picks.length;
   const subject =
     count === 1
-      ? `${picks[0].symbol} — one call on your watchlist`
+      ? `${actionLabel(picks[0].action)} ${picks[0].symbol}: a call on your watchlist`
       : `${count} calls on your watchlist`;
 
   const lines = picks.slice(0, 12).map((a) => ({
     symbol: a.symbol,
-    action: actionLabel(a.action),
+    name: a.name ?? "",
+    action: a.action,
+    label: actionLabel(a.action),
     confidence: `${a.confidenceLabel} · ${a.confidence}`,
     when: whenPhrase(a, now),
     detail: a.summary ?? "",
   }));
+  const more = count - lines.length;
 
+  // The page itself, and a one-click endpoint for the mail client (RFC 8058):
+  // a client's own unsubscribe button POSTs, and a page cannot answer a POST.
   const unsubscribeUrl = `${APP_URL}/unsubscribe?token=${unsubscribeToken}`;
+  const oneClickUrl = `${APP_URL}/api/unsubscribe?token=${unsubscribeToken}`;
+  const settingsUrl = `${APP_URL}/settings?tab=preferences#alerts`;
+  const period = cadence === "daily" ? "today" : "this week";
+  const lead =
+    count === 1
+      ? `One instrument you follow matches your risk profile ${period}.`
+      : `${count} instruments you follow match your risk profile ${period}.`;
 
   const text = [
-    `${count === 1 ? "One instrument" : `${count} instruments`} you follow ${count === 1 ? "clears" : "clear"} your bar.`,
+    lead,
     "",
     ...lines.map(
-      (l) => `${l.action} ${l.symbol} — ${l.confidence}. ${l.when}.\n  ${l.detail}`,
+      (l) => `${l.label} ${l.symbol}${l.name ? ` (${l.name})` : ""}\n  ${l.confidence}. ${capitalise(l.when)}.\n  ${l.detail}`,
     ),
+    ...(more > 0 ? ["", `And ${more} more in ember.`] : []),
     "",
     `Open ember: ${APP_URL}/signals`,
     "",
-    "This digest covers the instruments on your watchlist. It cannot warn you about",
-    "a position you hold — that needs your holdings, and ember does not keep them on",
-    "the server. Those warnings stay in the app and in push notifications.",
+    "This digest covers your watchlist. It can't warn you about a position you",
+    "hold: that needs your holdings, which ember doesn't keep on its servers.",
+    "Those warnings come in the app and as push notifications.",
     "",
     "ember gives information, not financial advice.",
+    `Email settings: ${settingsUrl}`,
     `Unsubscribe: ${unsubscribeUrl}`,
   ].join("\n");
 
   const rows = lines
-    .map(
-      (l) => `
+    .map((l, i) => {
+      const tone =
+        l.action === "buy" || l.action === "accumulate"
+          ? [COLOR.up, COLOR.upTint, "em-up"]
+          : l.action === "sell" || l.action === "reduce"
+            ? [COLOR.down, COLOR.downTint, "em-down"]
+            : [COLOR.stone, COLOR.surface2, "em-well"];
+      return `
       <tr>
-        <td style="padding:14px 0;border-bottom:1px solid #ECEDF1;">
-          <div style="font-size:15px;color:#0B0C0F;">
-            <strong style="font-weight:600;">${l.action} ${l.symbol}</strong>
-            <span style="color:#62656F;"> · ${l.confidence}</span>
-          </div>
-          <div style="font-size:13px;color:#62656F;margin-top:3px;">${l.when}</div>
-          <div style="font-size:13px;color:#2E3038;margin-top:5px;">${l.detail}</div>
+        <td class="em-row" style="padding:16px 0;${i > 0 ? `border-top:1px solid ${COLOR.line};` : ""}">
+          <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
+            <tr>
+              <td valign="top" width="100" style="width:100px;padding:1px 12px 0 0;white-space:nowrap;">
+                <span class="${tone[2]}" style="display:inline-block;padding:3px 8px;border-radius:6px;background:${tone[1]};color:${tone[0]};font-family:${FONT};font-size:12px;line-height:16px;font-weight:600;">${escapeHtml(l.label)}</span>
+              </td>
+              <td valign="top">
+                <p class="em-ink" style="margin:0;font-family:${FONT};font-size:15px;line-height:22px;color:${COLOR.ink};">
+                  <span style="font-family:${MONO};font-size:13px;font-weight:600;letter-spacing:0.5px;">${escapeHtml(l.symbol)}</span>${l.name ? `<span class="em-muted" style="color:${COLOR.stone};"> &nbsp;${escapeHtml(l.name)}</span>` : ""}
+                </p>
+                <p class="em-text" style="margin:2px 0 0;font-family:${FONT};font-size:13px;line-height:20px;color:${COLOR.graphite};">${escapeHtml(l.confidence)} &middot; ${escapeHtml(capitalise(l.when))}</p>
+                ${l.detail ? `<p class="em-muted" style="margin:6px 0 0;font-family:${FONT};font-size:13px;line-height:20px;color:${COLOR.stone};">${escapeHtml(l.detail)}</p>` : ""}
+              </td>
+            </tr>
+          </table>
         </td>
-      </tr>`,
-    )
+      </tr>`;
+    })
     .join("");
 
-  const html = `<!doctype html>
-<html><body style="margin:0;padding:0;background:#F5F6F8;">
-  <div style="max-width:560px;margin:0 auto;padding:28px 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
-    <div style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#62656F;">ember</div>
-    <h1 style="font-size:22px;line-height:1.3;color:#0B0C0F;margin:10px 0 4px;font-weight:600;">
-      ${count === 1 ? "One instrument you follow" : `${count} instruments you follow`}
-    </h1>
-    <p style="font-size:15px;color:#62656F;margin:0 0 18px;">
-      ${count === 1 ? "clears" : "clear"} your ${cadence === "daily" ? "bar today" : "bar this week"}.
-    </p>
-    <table style="width:100%;border-collapse:collapse;">${rows}</table>
-    <p style="margin:22px 0 0;">
-      <a href="${APP_URL}/signals" style="display:inline-block;background:#2563EB;color:#fff;text-decoration:none;font-size:15px;font-weight:600;padding:11px 18px;border-radius:999px;">Open ember</a>
-    </p>
-    <p style="font-size:13px;color:#62656F;line-height:1.55;margin:24px 0 0;">
-      This digest covers the instruments on your watchlist. <strong style="font-weight:600;">It cannot
-      warn you about a position you hold</strong> — that needs your holdings, and ember does not keep
-      them on the server. Those warnings stay in the app and in push notifications.
-    </p>
-    <p style="font-size:13px;color:#62656F;margin:14px 0 0;">
-      ember gives information, not financial advice.
-    </p>
-    <p style="font-size:12px;color:#9A9CA6;margin:14px 0 0;">
-      <a href="${unsubscribeUrl}" style="color:#9A9CA6;">Unsubscribe from digests</a>
-    </p>
-  </div>
-</body></html>`;
+  const html = renderEmail({
+    title: count === 1 ? "A call on your watchlist" : `${count} calls on your watchlist`,
+    eyebrow: cadence === "daily" ? "Daily digest" : "Weekly digest",
+    preheader: lines
+      .slice(0, 3)
+      .map((l) => `${l.label} ${l.symbol}`)
+      .join(", ")
+      .concat(more > 0 || lines.length > 3 ? " and more" : ""),
+    body: [
+      paragraph(escapeHtml(lead), { top: 8 }),
+      `<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:20px 0 0;border-top:1px solid ${COLOR.line};border-bottom:1px solid ${COLOR.line};" class="em-row">${rows}</table>`,
+      more > 0 ? paragraph(`And ${more} more in ember.`, { muted: true, size: 13, top: 12 }) : "",
+      button("See the calls", `${APP_URL}/signals`),
+      note(
+        "This digest covers your watchlist. <strong style=\"font-weight:600;\">It can't warn you about a position you hold</strong>: that needs your holdings, which ember doesn't keep on its servers. Those warnings come in the app and as push notifications.",
+      ),
+    ].join("\n"),
+    footer: footerLine(
+      `You get this because digests are on for your ember account. <a href="${settingsUrl}" class="em-link" style="color:${COLOR.stone};text-decoration:underline;">Email settings</a> &nbsp;&middot;&nbsp; <a href="${unsubscribeUrl}" class="em-link" style="color:${COLOR.stone};text-decoration:underline;">Unsubscribe</a>`,
+    ),
+  });
 
-  return { subject, html, text, unsubscribeUrl };
+  return { subject, html, text, unsubscribeUrl: oneClickUrl };
+}
+
+function capitalise(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 /** The push payload. `public/sw.js` has been waiting for this shape since phase 9. */

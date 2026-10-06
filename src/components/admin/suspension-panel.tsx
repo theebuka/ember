@@ -4,11 +4,11 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
-import { SettingGroup } from "@/components/settings/setting-row";
+import { SettingBlock, SettingGroup } from "@/components/settings/setting-row";
+import { AdminActions, AdminEmpty, AdminField } from "@/components/admin/fields";
 import { recordAdminAction } from "@/components/admin/record";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
   SUSPENSION_CAVEAT,
@@ -138,96 +138,83 @@ export function SuspensionPanel({ user }: { user: User }) {
   }
 
   return (
-    <SettingGroup
-      title="Accounts"
-      description="Suspend sync and delivery for one account."
-      boxed={false}
-    >
-      {/* Two rows of chips and one sentence, where this was six full clauses in
-          a tinted box. The nouns carry the contrast — three things stop, three
-          do not — and the sentence says the part that genuinely needs prose. */}
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
-        <span className="eyebrow text-stone">Stops</span>
-        {SUSPENSION_STOPS.map((label) => (
-          <span
-            key={label}
-            className="rounded-full bg-surface-2 px-2.5 py-1 text-micro font-medium text-graphite"
-          >
-            {label}
-          </span>
-        ))}
-      </div>
-      <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
-        <span className="eyebrow text-stone">Cannot</span>
-        {SUSPENSION_DOES_NOT_STOP.map((label) => (
-          <span
-            key={label}
-            className="rounded-full px-2.5 py-1 text-micro text-stone line-through decoration-faint"
-          >
-            {label}
-          </span>
-        ))}
-      </div>
-      <p className="mt-3 max-w-[48ch] text-caption text-stone">{SUSPENSION_CAVEAT}</p>
-
-      <div className="mt-6 space-y-4">
-        <div>
-          <Label htmlFor="suspend-id">
-            Account id <span className="ml-1.5 font-normal text-stone">uuid</span>
-          </Label>
-          <Input
-            id="suspend-id"
-            value={target}
-            onChange={(e) => setTarget(e.target.value)}
-            className="mt-1.5 font-mono text-caption"
-            placeholder="00000000-0000-0000-0000-000000000000"
-          />
-        </div>
-        <div>
-          <Label htmlFor="suspend-reason">
-            Reason <span className="ml-1.5 font-normal text-stone">they read this</span>
-          </Label>
-          <Input
-            id="suspend-reason"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            className="mt-1.5"
-            placeholder="Repeated automated sync."
-          />
-        </div>
-        <Button size="lg" variant="outline" onClick={suspend} disabled={working}>
-          {working ? "Suspending…" : "Suspend sync and delivery"}
-        </Button>
-      </div>
-
-      <div className="mt-7">
-        <p className="eyebrow text-stone">
-          {rows === null
-            ? "Loading"
-            : rows.length === 0
-              ? "No accounts suspended"
-              : `${rows.length} suspended`}
-        </p>
-        {rows !== null && rows.length > 0 && (
-          <div className="mt-1.5 divide-y divide-line border-y border-line">
-            {rows.map((row) => (
-              <div key={row.user_id} className="flex items-center gap-3 py-3.5">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-mono text-caption text-ink">
-                    {row.user_id}
-                  </p>
-                  <p className="mt-0.5 text-micro text-stone">
-                    {row.reason ?? "No reason recorded."}
-                  </p>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => restore(row)}>
-                  Lift
-                </Button>
-              </div>
-            ))}
+    <>
+      <SettingGroup
+        title="Suspend an account"
+        description={SUSPENSION_CAVEAT}
+      >
+        {/* What it does and what it can't, as two rows of the box rather than
+            two lines of chips floating under the heading. */}
+        <dl className="divide-y divide-line">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 px-4 py-3 sm:px-5">
+            <dt className="w-16 shrink-0 text-caption font-medium text-ink">Stops</dt>
+            <dd className="text-caption text-graphite">{SUSPENSION_STOPS.join(", ")}</dd>
           </div>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 px-4 py-3 sm:px-5">
+            <dt className="w-16 shrink-0 text-caption font-medium text-ink">Keeps</dt>
+            <dd className="text-caption text-stone">{SUSPENSION_DOES_NOT_STOP.join(", ")}</dd>
+          </div>
+        </dl>
+
+        <SettingBlock className="space-y-5">
+          <AdminField id="suspend-id" label="Account id" hint="the uuid in Supabase's auth table">
+            <Input
+              id="suspend-id"
+              value={target}
+              onChange={(e) => setTarget(e.target.value)}
+              className="font-mono text-caption"
+              placeholder="00000000-0000-0000-0000-000000000000"
+            />
+          </AdminField>
+          <AdminField id="suspend-reason" label="Reason" hint="they read this">
+            <Input
+              id="suspend-reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Repeated automated sync."
+            />
+          </AdminField>
+        </SettingBlock>
+
+        <AdminActions>
+          <Button
+            variant="secondary"
+            onClick={suspend}
+            disabled={working || target.trim() === ""}
+          >
+            {working ? "Suspending…" : "Suspend sync and delivery"}
+          </Button>
+        </AdminActions>
+      </SettingGroup>
+
+      <SettingGroup
+        title="Suspended"
+        action={
+          rows && rows.length > 0 ? (
+            <span className="text-caption text-stone tabular-nums">{rows.length}</span>
+          ) : undefined
+        }
+      >
+        {rows === null ? (
+          <AdminEmpty>Loading…</AdminEmpty>
+        ) : rows.length === 0 ? (
+          <AdminEmpty>No accounts are suspended.</AdminEmpty>
+        ) : (
+          rows.map((row) => (
+            <div key={row.user_id} className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-mono text-caption text-ink">{row.user_id}</p>
+                <p className="mt-0.5 text-micro text-stone">
+                  {row.reason ?? "No reason recorded."}
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => restore(row)}>
+                Restore
+              </Button>
+            </div>
+          ))
         )}
-      </div>
-    </SettingGroup>
+      </SettingGroup>
+    </>
   );
 }

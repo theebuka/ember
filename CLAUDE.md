@@ -103,6 +103,8 @@ npx vitest run       # unit tests — 396 passing (engine, exposure triggers,
 npm run push:keys    # a VAPID keypair in .env shape. Generate ONCE — a second
                      #   pair invalidates every stored subscription
 npm run push:test    # sign a real payload and post it to the push service
+npm run emails       # write the Supabase auth email templates to
+                     #   supabase/templates/ — paste them into the dashboard
 npm run dev:https    # dev over TLS on localhost. Not enough for a phone: the
                      #   cert is self-signed and browsers won't register a
                      #   service worker behind an untrusted cert. For push on
@@ -155,6 +157,8 @@ scripts/
 │                            source of every number quoted in §8
 ├─ warm.mjs ★                fills the market cache by driving the real routes,
 │                            polling until `pending` reaches zero
+├─ email/layout.mjs ★        every email's layout — the digest and the auth
+│                            templates (`build-email-templates.mjs`)
 └─ generate-icons.mjs        PWA icons, the iOS launch bitmaps, and the
                              `<link>` list that points at them — all from the
                              one ember-point SVG
@@ -170,7 +174,7 @@ src/
 │  ├─ api/                   quotes · series · advice · instruments · fx ·
 │  │                         track-record · strategies · asset · risk-preview ·
 │  │                         findings ★ (POST — the only route carrying a book) ·
-│  │                         news · notices
+│  │                         news · notices · unsubscribe (one-click POST)
 │  ├─ auth/                   sign-in + the magic-link callback (optional)
 │  ├─ notifications/          the inbox
 │  ├─ asset/[symbol]/        prerendered per instrument
@@ -970,6 +974,9 @@ See `docs/decisions/` for full ADRs. Summary:
 | 287 | **A speed pass, measured** | Asked for directly ("the app is notoriously slow"). Server routes were already fast warm (3–60ms); the cost was in the browser. Measured and fixed: Home fetched a month of bars for **214 instruments to draw 5 sparklines** (462 KB → 9 KB, ranked first); the watchlist did the same for the whole universe (now what is followed, rows `content-visibility: auto`); the asset page downloaded the **whole 1.15 MB track record** for one symbol (`?symbol=`, ~7 KB); the track record **rendered 2,116 calls twice** (50, then more). Script per page **1.35 MB → 0.82–0.94 MB** (≈400 → 255 KB gzip): Supabase (245 KB) loads on first use and never for a signed-out reader, `motion` (118 KB, one animation) is gone, the trade form with react-hook-form and zod loads with its modal, cmdk with ⌘K on desktop only, and the admin panels for admins only. Signed-in page loads no longer wait on `getUser()`'s round trip before the inbox can render. Lighthouse mobile: Signals 68 → 80, Asset 77–83 → 88, Home 79 (TBT 43 → 1–15ms); desktop 97–100. Not changed, and why: the doubled API requests in `next dev` are React's development double-mount cancelling the first fetch (absent in production); first visits to a route in `next dev` compile it; and on live data a cold server still spends ~8s on the universe and ~10s on the track record — `npm run warm` after a restart |
 | 288 | **Free is a taste; Pro is the product** — supersedes ADR 0038's gate test, and decisions 181–184 | At the user's direction: the free plan was nearly everything, so Pro was "less friction" and its two delivery benefits did not yet run. Free now sees 3 calls a day in full — the strongest matching the profile, on US stocks and crypto — and every other call as a lock with the instrument and price; 5 holdings, a watchlist of 10, alerts only while ember is open, no sync, a month of chart history. Pro is every call on every market, push and email, unlimited holdings and watchlist, sync, full history, no sponsors. Kept free on purpose: the methodology and track record (how a stranger decides to trust ember), and every warning on what you hold — selling "your stop broke" would make people hate the app. **The lock is server-side**: the routes read the plan from the session and send a `LockedCall` with no direction, because a call hidden on screen is a call in the network tab. "Everything" on the watchlist is now a Pro default; on free it resolves to nothing and the first add starts a list. A sample book is exempt from the holdings limit until the reader's own first trade |
 | 289 | **A lapse is a return to free; the server keeps everything** — supersedes 185 | At the user's direction: a lapsed account gets free's benefits, not Pro's. Over a limit it sees its five largest holdings (by today's value, falling back to cost) and its first five watched instruments, and every total, the chart and the warnings are measured over those; the rest are locked rows, named and not valued. Nothing is deleted, on the device or on the server, so resubscribing restores it at once. In the same change: the free watchlist is 5 (it was 10); free's track record and an asset's past calls leave out the last four weeks of calls, because a recent call usually still points the way a locked one does — the list is cut on the server and every figure, the return distribution included, still counts them; and `0012` puts `is_pro()` on every synced write, keeping read and delete with the owner so account deletion works on any plan |
+| 290 | **The edge refresh reads the session; it doesn't ask who it belongs to** | Reported as clicks not responding. Signed in, every navigation — and every client-side route fetch — waited on `getUser()` in `proxy.ts`, a Supabase round trip (757ms measured in development) to answer a question the proxy never uses: it exists to rotate an expiring token. `getSession()` goes to the network only when the token is near expiry. Who a request belongs to is still decided by `getClaims()` (the plan) and by RLS. Separately, `next dev` compiles each route on first visit and never prefetches, so it will always feel slower than a production build |
+| 291 | **The Admin tab uses Settings' hierarchy** | Decision 284 never reached it: four of its six groups were unboxed, its labels were shadcn's off-scale 14px, and a form, a preview and a list ran together under one heading. Now every group is a bordered box like the rest of Settings, each form and its list are separate groups (New broadcast / Published, New code / Codes, Suspend an account / Suspended, Activity), fields are 15px row labels (`components/admin/fields.tsx`), and a form's action sits on a hairline row at the bottom of its box. Found on the way: the admin's own list of notices dropped `placement`, so a pinned broadcast never showed as pinned and Unpin could not be reached. The Plan pane is 840px, the modal's width, because the comparison is two columns; every other pane keeps the 672px measure |
+| 292 | **Every email is one layout, written for email clients** | The auth emails were Supabase's defaults and the digest was a bare `div`. `scripts/email/layout.mjs` renders both: tables and inline styles (Outlook renders with Word), no images (the mark is a coloured cell, so it draws with images blocked, and nothing is fetched when a mail is opened), a system font stack, a padded-cell button, a preheader, the link written out under the button, and dark mode where the client supports it. `npm run emails` writes the four Supabase templates to `supabase/templates/` to paste into the dashboard. The digest's `List-Unsubscribe-Post` header had pointed at a page, which cannot answer the POST a mail client sends; `/api/unsubscribe` answers it with the same definer function (0004) |
 
 ---
 
@@ -1036,6 +1043,11 @@ See `docs/decisions/` for full ADRs. Summary:
   till. §7's three pre-revenue blockers are unresolved — no merchant of record with
   Nigerian payouts, a host that forbids commercial use, and an unlicensed price
   feed — and the upsell says so plainly rather than offering a waitlist.
+- **The auth emails are written and not installed.** Supabase sends them, so the
+  four templates in `supabase/templates/` have to be pasted into the dashboard,
+  and Supabase's built-in sender (a few an hour, from its own address) replaced
+  with Resend's SMTP before anyone real signs in. The README there says how.
+  The digest has the same design and still has never been sent.
 - **`0012` is applied, and not yet observed refusing.** Writing a synced row needs
   `is_pro()` in RLS; a signed-in free account's write being refused, and a Pro
   one's accepted, have not been driven against the project.

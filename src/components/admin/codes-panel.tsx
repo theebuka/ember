@@ -6,11 +6,11 @@ import type { User } from "@supabase/supabase-js";
 import { Copy } from "@/components/common/icon";
 import { Segmented } from "@/components/common/segmented";
 import { recordAdminAction } from "@/components/admin/record";
+import { AdminActions, AdminEmpty, AdminField } from "@/components/admin/fields";
 import { SettingBlock, SettingGroup } from "@/components/settings/setting-row";
 import { Tag } from "@/components/signals/call-parts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -145,104 +145,114 @@ export function CodesPanel({ user }: { user: User }) {
   );
 
   return (
-    <SettingGroup
-      title="Redemption codes"
-      description="Each code adds a set period of Pro to the account that redeems it. It doesn't renew."
-    >
-      <SettingBlock>
-        <form onSubmit={create} className="space-y-5" noValidate>
-          <div className="space-y-2">
-            <p className="text-caption font-medium text-graphite">Period</p>
-            <Segmented
-              aria-label="Period"
-              value={period}
-              onChange={setPeriod}
-              options={PERIOD_OPTIONS}
-              className="flex w-full flex-wrap"
-            />
-            {period === "custom" && (
-              <div className="flex items-center gap-3 pt-1">
-                <Input
-                  id="code-days"
-                  inputMode="numeric"
-                  value={customDays}
-                  onChange={(event) => setCustomDays(event.target.value.replace(/\D/g, ""))}
-                  aria-label="Days of Pro"
-                  className="w-28"
-                />
-                <span className="text-caption text-stone">days</span>
-              </div>
-            )}
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid content-start gap-2">
-              <Label htmlFor="code-uses">Uses</Label>
-              <Input
-                id="code-uses"
-                inputMode="numeric"
-                value={uses}
-                onChange={(event) => setUses(event.target.value.replace(/\D/g, ""))}
+    <>
+      <SettingGroup
+        title="New code"
+        description="Adds a set period of Pro to the account that redeems it. It doesn't renew."
+      >
+        <form onSubmit={create} noValidate>
+          <SettingBlock className="space-y-5">
+            <AdminField label="Period">
+              <Segmented
+                aria-label="Period"
+                value={period}
+                onChange={setPeriod}
+                options={PERIOD_OPTIONS}
+                className="flex w-full flex-wrap"
               />
-              <p className="text-micro text-stone">How many accounts can redeem it.</p>
-            </div>
-            <div className="grid content-start gap-2">
-              <Label htmlFor="code-expiry">Redeemable</Label>
-              <Select value={expiry} onValueChange={setExpiry}>
-                <SelectTrigger id="code-expiry" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CODE_EXPIRIES.map((option) => (
-                    <SelectItem key={option.label} value={option.days === null ? "never" : String(option.days)}>
-                      {option.days === null ? "Until revoked" : option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-micro text-stone">After this it can&apos;t be redeemed.</p>
-            </div>
-          </div>
+              {period === "custom" && (
+                <div className="flex items-center gap-3 pt-1">
+                  <Input
+                    id="code-days"
+                    inputMode="numeric"
+                    value={customDays}
+                    onChange={(event) => setCustomDays(event.target.value.replace(/\D/g, ""))}
+                    aria-label="Days of Pro"
+                    className="w-28"
+                  />
+                  <span className="text-caption text-stone">days</span>
+                </div>
+              )}
+            </AdminField>
 
-          <div className="grid gap-2">
-            <Label htmlFor="code-note">Note</Label>
-            <Input
-              id="code-note"
-              value={note}
-              maxLength={140}
-              placeholder="Who it's for"
-              onChange={(event) => setNote(event.target.value)}
-            />
-          </div>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <AdminField id="code-uses" label="Uses" note="How many accounts can redeem it.">
+                <Input
+                  id="code-uses"
+                  inputMode="numeric"
+                  value={uses}
+                  onChange={(event) => setUses(event.target.value.replace(/\D/g, ""))}
+                />
+              </AdminField>
+              <AdminField id="code-expiry" label="Redeemable" note="After this it can't be redeemed.">
+                <Select value={expiry} onValueChange={setExpiry}>
+                  <SelectTrigger id="code-expiry" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CODE_EXPIRIES.map((option) => (
+                      <SelectItem
+                        key={option.label}
+                        value={option.days === null ? "never" : String(option.days)}
+                      >
+                        {option.days === null ? "Until revoked" : option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </AdminField>
+            </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+            <AdminField id="code-note" label="Note" hint="only admins see it">
+              <Input
+                id="code-note"
+                value={note}
+                maxLength={140}
+                placeholder="Who it's for"
+                onChange={(event) => setNote(event.target.value)}
+              />
+            </AdminField>
+          </SettingBlock>
+
+          {/* The one just made, large enough to read out, with the copy beside it. */}
+          {created && (
+            <SettingBlock className="flex flex-wrap items-center gap-3 border-t border-line bg-brand-tint/50">
+              <div className="min-w-0 flex-1">
+                <p className="text-micro font-medium text-brand-text">New code</p>
+                <p className="mono-label mt-0.5 text-heading text-ink">{created}</p>
+              </div>
+              <CopyButton code={created} />
+            </SettingBlock>
+          )}
+
+          <AdminActions problem={problem}>
             <Button type="submit" disabled={busy || problem !== null}>
-              {busy ? "Creating…" : `Create a ${describePeriod(Number.isInteger(days) && days > 0 ? days : 1)} code`}
+              {busy
+                ? "Creating…"
+                : `Create a ${describePeriod(Number.isInteger(days) && days > 0 ? days : 1)} code`}
             </Button>
-            {problem && <p className="text-micro text-stone">{problem}</p>}
-          </div>
+          </AdminActions>
         </form>
-      </SettingBlock>
+      </SettingGroup>
 
-      {/* The one just made, large enough to read out, with the copy beside it. */}
-      {created && (
-        <SettingBlock className="flex flex-wrap items-center gap-3 bg-surface-2">
-          <div className="min-w-0 flex-1">
-            <p className="text-micro text-stone">New code</p>
-            <p className="mono-label text-heading text-ink">{created}</p>
-          </div>
-          <CopyButton code={created} />
-        </SettingBlock>
-      )}
-
-      {rows === null ? null : rows.length === 0 ? (
-        <SettingBlock>
-          <p className="text-caption text-stone">No codes yet.</p>
-        </SettingBlock>
-      ) : (
-        rows.map((row) => <CodeLine key={row.code} row={row} onRevoke={revoke} />)
-      )}
-    </SettingGroup>
+      <SettingGroup
+        title="Codes"
+        description="The last twenty."
+        action={
+          rows && rows.length > 0 ? (
+            <span className="text-caption text-stone tabular-nums">{rows.length}</span>
+          ) : undefined
+        }
+      >
+        {rows === null ? (
+          <AdminEmpty>Loading…</AdminEmpty>
+        ) : rows.length === 0 ? (
+          <AdminEmpty>No codes yet.</AdminEmpty>
+        ) : (
+          rows.map((row) => <CodeLine key={row.code} row={row} onRevoke={revoke} />)
+        )}
+      </SettingGroup>
+    </>
   );
 }
 

@@ -194,7 +194,15 @@ export function SettingsScreen() {
           {/* One measure, every width. A settings pane has no "more" to give
               (decision 065): a switch 1,400px from its label is worse than a
               narrow column. */}
-          <div className={cn("min-w-0 max-w-2xl", atIndex && "max-lg:hidden")}>
+          {/* The plan comparison is two columns side by side and needs the room
+              the modal gives it; every other pane keeps the reading measure. */}
+          <div
+            className={cn(
+              "min-w-0",
+              current === "plan" ? "max-w-[52.5rem]" : "max-w-2xl",
+              atIndex && "max-lg:hidden",
+            )}
+          >
             <SettingsPaneHeader title={section.label} description={section.description} />
 
             {/* 40px between groups, 12px from a group's heading to its rows. */}

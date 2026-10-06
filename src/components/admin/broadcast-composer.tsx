@@ -5,12 +5,13 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
 import { Megaphone, Send, Trash } from "@/components/common/icon";
-import { SettingGroup } from "@/components/settings/setting-row";
+import { SettingBlock, SettingGroup } from "@/components/settings/setting-row";
+import { AdminActions, AdminEmpty, AdminField } from "@/components/admin/fields";
+import { Tag } from "@/components/signals/call-parts";
 import { NoticeRow } from "@/components/notifications/notice-row";
 import { recordAdminAction } from "@/components/admin/record";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -97,6 +98,12 @@ export function BroadcastComposer({
         action: (row.action as string | null) ?? undefined,
         publishedAt: row.published_at as string,
         pinned: (row.pinned as boolean | null | undefined) ?? false,
+        // Read like the public route does: a row from before 0007 that was
+        // pinned was pinned as a card. Without this the list never showed a
+        // pin, and Unpin was unreachable.
+        placement:
+          (row.placement as Broadcast["placement"] | null | undefined) ??
+          (row.pinned ? "card" : "inbox"),
       }));
     },
   });
@@ -204,9 +211,9 @@ export function BroadcastComposer({
 
   return (
     <>
-      <SettingGroup title="Broadcast" description="Everyone sees this." boxed={false}>
-        <div className="space-y-4">
-          <Field
+      <SettingGroup title="New broadcast" description="Everyone sees it, signed in or not.">
+        <SettingBlock className="space-y-5">
+          <AdminField
             id="broadcast-title"
             label="Title"
             count={`${draft.title.length}/${BROADCAST_LIMITS.title}`}
@@ -217,9 +224,9 @@ export function BroadcastComposer({
               onChange={(e) => set("title", e.target.value)}
               placeholder="The track record was re-measured"
             />
-          </Field>
+          </AdminField>
 
-          <Field
+          <AdminField
             id="broadcast-body"
             label="Body"
             count={`${draft.body.length}/${BROADCAST_LIMITS.body}`}
@@ -231,10 +238,10 @@ export function BroadcastComposer({
               rows={4}
               placeholder="What changed, and why it matters."
             />
-          </Field>
+          </AdminField>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field id="broadcast-href" label="Link" hint="a screen in ember">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <AdminField id="broadcast-href" label="Link" hint="a screen in ember">
               {/* A list, not a text box. The first broadcast ever published
                   pointed at a path that did not exist, and every reader who
                   followed it got a 404 — see `BROADCAST_LINKS`. */}
@@ -264,8 +271,8 @@ export function BroadcastComposer({
                   ))}
                 </SelectContent>
               </Select>
-            </Field>
-            <Field id="broadcast-action" label="Action label" hint="defaults to View">
+            </AdminField>
+            <AdminField id="broadcast-action" label="Button" hint="defaults to View">
               <Input
                 id="broadcast-action"
                 value={draft.action}
@@ -273,170 +280,125 @@ export function BroadcastComposer({
                 disabled={draft.href === ""}
                 placeholder="See the record"
               />
-            </Field>
+            </AdminField>
           </div>
+        </SettingBlock>
 
-          <div>
-            <Label>Where it appears</Label>
-            {/* Three exclusive choices, not a switch, because there are three
-                states and a boolean can only hold two. Radios rather than a
-                segmented control: each option needs a sentence explaining what
-                it costs the reader, and a segmented control has nowhere to put
-                one. */}
-            <div className="mt-2 space-y-2">
-              {(["inbox", "card", "bar"] as const).map((value) => {
-                const on = draft.placement === value;
-                return (
-                  <label
-                    key={value}
-                    className={cn(
-                      "flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors",
-                      on
-                        ? "border-brand/40 bg-brand/5"
-                        : "border-line hover:bg-surface-2",
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name="placement"
-                      value={value}
-                      checked={on}
-                      onChange={() => set("placement", value)}
-                      className="mt-1 size-4 shrink-0 accent-[var(--color-brand)]"
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-caption font-medium text-ink">
-                        {PLACEMENT_LABELS[value]}
-                      </span>
-                      <span className="mt-0.5 block text-micro text-stone">
-                        {PLACEMENT_HINTS[value]}
-                      </span>
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
+        {/* Three exclusive choices, not a switch, because there are three states
+            and a boolean can only hold two. Rows rather than a segmented control:
+            each option needs a line saying what it costs the reader. */}
+        <fieldset>
+          <legend className="sr-only">Where it appears</legend>
+          {(["inbox", "card", "bar"] as const).map((value) => {
+            const on = draft.placement === value;
+            return (
+              <label
+                key={value}
+                className={cn(
+                  "flex cursor-pointer items-center gap-3 border-t border-line px-4 py-3.5 transition-colors sm:px-5",
+                  on ? "bg-brand-tint/50" : "hover:bg-surface-2",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="placement"
+                  value={value}
+                  checked={on}
+                  onChange={() => set("placement", value)}
+                  className="size-4 shrink-0 accent-[var(--color-brand)]"
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-caption font-medium text-ink">
+                    {PLACEMENT_LABELS[value]}
+                  </span>
+                  <span className="block text-micro text-stone">
+                    {PLACEMENT_HINTS[value]}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+        </fieldset>
 
-          {/* The preview is the product, not a nicety — see the file header. */}
-          <div>
-            <p className="eyebrow text-stone">As they will see it</p>
-            <div className="mt-1.5 border-y border-line">
-              <NoticeRow
-                notice={{
-                  id: "preview",
-                  kind: "broadcast",
-                  tone: "neutral",
-                  title: draft.title.trim() || "Untitled",
-                  body: draft.body.trim() || "Nothing written yet.",
-                  // Never rendered — `now={null}` below suppresses the
-                  // timestamp — and a literal rather than `Date.now()` because
-                  // reading the clock during render is impure, which React's
-                  // own lint rule is right to refuse.
-                  at: 0,
-                  href: draft.href.trim() || undefined,
-                  action: draft.action.trim() || undefined,
-                }}
-                // No relative time in the preview: "now" is the only thing it
-                // could ever say, and a timestamp that cannot be wrong is a
-                // timestamp that teaches the reader nothing.
-                now={null}
-              />
-            </div>
+        {/* The preview is the product, not a nicety — see the file header. */}
+        <SettingBlock className="bg-surface-2/60">
+          <p className="text-micro font-medium text-stone">Preview</p>
+          <div className="mt-2 rounded-xl border border-line bg-ground px-4">
+            <NoticeRow
+              notice={{
+                id: "preview",
+                kind: "broadcast",
+                tone: "neutral",
+                title: draft.title.trim() || "Untitled",
+                body: draft.body.trim() || "Nothing written yet.",
+                // Never rendered — `now={null}` below suppresses the timestamp —
+                // and a literal rather than `Date.now()` because reading the
+                // clock during render is impure.
+                at: 0,
+                href: draft.href.trim() || undefined,
+                action: draft.action.trim() || undefined,
+              }}
+              now={null}
+            />
           </div>
+        </SettingBlock>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button size="lg" onClick={publish} disabled={problem !== null || sending}>
-              <Send />
-              {sending ? "Publishing…" : "Publish"}
-            </Button>
-            {problem && <p className="text-caption text-stone">{problem}</p>}
-          </div>
-        </div>
+        <AdminActions problem={problem}>
+          <Button onClick={publish} disabled={problem !== null || sending}>
+            <Send />
+            {sending ? "Publishing…" : "Publish"}
+          </Button>
+        </AdminActions>
       </SettingGroup>
 
       <SettingGroup
-        title="Live"
-        description={
-          stored.length > 0
-            ? `${stored.length} published from the dashboard.`
-            : "Nothing published yet."
+        title="Published"
+        description="Release notes ship with the build and aren't listed here."
+        action={
+          stored.length > 0 ? (
+            <span className="text-caption text-stone tabular-nums">{stored.length}</span>
+          ) : undefined
         }
-        boxed={false}
       >
-        {stored.length === 0 ? (
-          <p className="text-caption text-stone">
-            Nothing published yet. The release notes in the inbox ship with the
-            build and cannot be withdrawn here.
-          </p>
+        {live.isPending ? (
+          <AdminEmpty>Loading…</AdminEmpty>
+        ) : stored.length === 0 ? (
+          <AdminEmpty>Nothing published yet.</AdminEmpty>
         ) : (
-          <div className="divide-y divide-line border-y border-line">
-            {stored.map((notice) => (
-              <div key={notice.id} className="flex items-start gap-3 py-3.5">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-baseline gap-x-2">
-                    <p className="text-body font-medium text-ink">{notice.title}</p>
-                    {notice.placement && notice.placement !== "inbox" && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-brand/10 px-2 py-0.5 text-micro font-medium text-brand-text">
-                        <Megaphone className="size-3" />
-                        {notice.placement === "bar" ? "Bar" : "Card"}
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1 line-clamp-2 text-caption text-stone">
-                    {notice.body}
-                  </p>
-                </div>
-                <div className="flex shrink-0 gap-1">
+          stored.map((notice) => (
+            <div key={notice.id} className="flex items-start gap-3 px-4 py-3.5 sm:px-5">
+              <div className="min-w-0 flex-1">
+                <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="text-caption font-medium text-ink">{notice.title}</span>
                   {notice.placement && notice.placement !== "inbox" && (
-                    <Button variant="ghost" size="sm" onClick={() => demote(notice)}>
-                      Unpin
-                    </Button>
+                    <Tag tone="brand">
+                      <Megaphone className="size-3" />
+                      {notice.placement === "bar" ? "Bar" : "Card"}
+                    </Tag>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-stone"
-                    onClick={() => withdraw(notice)}
-                    aria-label={`Withdraw ${notice.title}`}
-                  >
-                    <Trash />
-                  </Button>
-                </div>
+                </p>
+                <p className="mt-0.5 line-clamp-2 text-micro text-stone">{notice.body}</p>
               </div>
-            ))}
-          </div>
+              <div className="flex shrink-0 gap-1">
+                {notice.placement && notice.placement !== "inbox" && (
+                  <Button variant="ghost" size="sm" onClick={() => demote(notice)}>
+                    Unpin
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-stone"
+                  onClick={() => withdraw(notice)}
+                  aria-label={`Withdraw ${notice.title}`}
+                >
+                  <Trash />
+                </Button>
+              </div>
+            </div>
+          ))
         )}
       </SettingGroup>
     </>
-  );
-}
-
-function Field({
-  id,
-  label,
-  hint,
-  count,
-  children,
-}: {
-  id: string;
-  label: string;
-  hint?: string;
-  count?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <div className="mb-1.5 flex items-baseline justify-between gap-2">
-        <Label htmlFor={id}>
-          {label}
-          {hint && <span className="ml-1.5 font-normal text-stone">{hint}</span>}
-        </Label>
-        {count && (
-          <span className={cn("text-micro tabular-nums text-stone")}>{count}</span>
-        )}
-      </div>
-      {children}
-    </div>
   );
 }

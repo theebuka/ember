@@ -55,22 +55,23 @@ export async function refreshSession(
     },
   });
 
-  // Required, not incidental: `getUser()` is what triggers the refresh. Drop
-  // this call and the cookie handler above never fires.
   /**
-   * **Bounded, because every page waits on it.** `getUser()` is a round trip to
-   * Supabase on every navigation by a signed-in reader — measured at 757ms in
-   * development — and a free-tier project that has paused does not refuse, it
-   * hangs. ADR 0031 made accounts optional precisely so a sleeping project could
-   * not take the app down; an unbounded await here quietly undid that for
-   * everybody who had ever signed in.
+   * **`getSession()`, not `getUser()`, and that is the whole cost of this file.**
+   * `getUser()` asks Supabase who the token belongs to — a round trip on every
+   * navigation by a signed-in reader, measured at 757ms in development, and
+   * every client-side navigation waited on it before anything moved. This
+   * function does not need that answer: it exists to rotate an expiring token,
+   * and nothing here trusts the session. `getSession()` reads the cookie and
+   * goes to the network only when the token is near expiry, so a reader with a
+   * fresh token pays nothing. Who a request belongs to is decided where it
+   * matters, by `getClaims()` in `lib/api/plan-server.ts` and by RLS.
    *
-   * Losing the race is safe. The browser client refreshes its own session, the
-   * page renders as it would have, and the only cost is that this request did
-   * not rotate the cookie — the next one will try again.
+   * **Still bounded.** A refresh is a round trip, and a paused free-tier project
+   * hangs rather than refusing (ADR 0031). Losing the race is safe: the browser
+   * client refreshes its own session and the next request tries again.
    */
   const refreshed = await Promise.race([
-    supabase.auth.getUser().then(() => true),
+    supabase.auth.getSession().then(() => true),
     new Promise<false>((resolve) => setTimeout(() => resolve(false), REFRESH_BUDGET_MS)),
   ]).catch(() => false);
 
