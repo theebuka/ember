@@ -141,6 +141,11 @@ export function useFindingAlerts(): void {
           ? [finding.headline, finding.risk?.action.label].filter(Boolean).join(" · ")
           : opportunityBody(alert, finding, instrument);
 
+      // The call itself, not Home: "View" from a toast raised while the reader
+      // was already on Home navigated to the page they were on, so the press
+      // looked like nothing more than closing the toast.
+      const href = `/asset/${encodeURIComponent(finding.symbol)}`;
+
       remember({
         // The finding id plus the window it was fired for. `finding.id` alone
         // is `kind:symbol`, which repeats every time a call comes back round —
@@ -151,7 +156,7 @@ export function useFindingAlerts(): void {
         title,
         body,
         at: Date.now(),
-        href: "/",
+        href,
       });
 
       // A tab the user is looking at gets the in-app version.
@@ -159,7 +164,7 @@ export function useFindingAlerts(): void {
         toast(title, {
           description: body,
           duration: 12_000,
-          action: { label: "View", onClick: () => router.push("/") },
+          action: { label: "View", onClick: () => router.push(href) },
         });
         return;
       }
@@ -171,7 +176,7 @@ export function useFindingAlerts(): void {
         // signal on the same instrument don't replace one another in the
         // OS tray — the same reason `kind` is in the log's key.
         tag: `ember-${finding.id}`,
-        url: "/",
+        url: href,
       });
     },
     [router, remember],
