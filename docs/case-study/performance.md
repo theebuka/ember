@@ -55,11 +55,11 @@ does seeded.
 
 | Screen | Profile | Perf | A11y | Best practices | SEO | LCP | TBT | CLS |
 |---|---|---|---|---|---|---|---|---|
-| Home | mobile | 81 | 100 | 100 | 100 | 5.0 s | 75 ms | 0.000 |
-| Signals feed | mobile | 81 | 100 | 100 | 100 | 5.1 s | 11 ms | 0.000 |
-| Asset detail | mobile | 83 | 100 | 100 | 100 | 4.8 s | 13 ms | 0.002 |
-| Home | desktop | 98 | 100 | 100 | 100 | 1.1 s | 0 ms | 0.015 |
-| Signals feed | desktop | 99 | 100 | 100 | 100 | 0.9 s | 0 ms | 0.008 |
+| Home | mobile | 82 | 100 | 100 | 100 | 5.0 s | 45 ms | 0.050 |
+| Signals feed | mobile | 83 | 100 | 100 | 100 | 4.8 s | 10 ms | 0.000 |
+| Asset detail | mobile | 84 | 100 | 100 | 100 | 4.6 s | 19 ms | 0.002 |
+| Home | desktop | 99 | 100 | 100 | 100 | 1.0 s | 0 ms | 0.042 |
+| Signals feed | desktop | 99 | 100 | 100 | 100 | 1.0 s | 0 ms | 0.007 |
 | Asset detail | desktop | 99 | 100 | 100 | 100 | 1.0 s | 0 ms | 0.001 |
 
 Mobile is Lighthouse's throttled profile — simulated slow 4G with a 4×

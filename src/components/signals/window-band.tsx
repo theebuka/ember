@@ -183,16 +183,18 @@ function WindowScale({
         {formatWindowTime(execution.closesAt)}
       </span>
       <span className="text-stone">·</span>
-      <span className="num">
+      <span className="num whitespace-nowrap">
         peak {formatWindowTime(execution.peakAt)}
       </span>
       {size !== "sm" && (
         <>
           <span className="text-stone">·</span>
-          <span className="num">
-            {formatDuration(execution.closesAt - execution.opensAt)}
+          {/* One unit, so a narrow row never strands "GMT+1" on a line of
+              its own. */}
+          <span className="whitespace-nowrap">
+            <span className="num">{formatDuration(execution.closesAt - execution.opensAt)}</span>{" "}
+            <span className="mono-label text-micro text-stone">{timeZoneLabel(now)}</span>
           </span>
-          <span className="mono-label text-micro text-stone">{timeZoneLabel(now)}</span>
         </>
       )}
     </div>

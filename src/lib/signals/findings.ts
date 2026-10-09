@@ -29,9 +29,9 @@ export interface Finding {
    * Deliberately not an id off the assessment: `assess()` restamps `createdAt`
    * every cycle, so there is no stable assessment identity to borrow (decision
    * 026). Deliberately *including* kind: a risk and an opportunity can be live
-   * on the same symbol at once — a position over its concentration cap while
-   * the read still says accumulate — and one must not silently overwrite the
-   * other in the log.
+   * on the same symbol at once — a watch on an upcoming event while the read
+   * still says accumulate — and one must not silently overwrite the other in
+   * the log. (A risk that sells suppresses the opportunity; decision 306.)
    */
   id: string;
   kind: FindingKind;
@@ -112,6 +112,7 @@ export function buildFindings({
        decision — the card lists the rest underneath. */
 
     const instrument = instruments.get(symbol);
+    let overridden = false;
 
     if (position && instrument) {
       const signals = evaluateExposure({
@@ -127,13 +128,20 @@ export function buildFindings({
 
       const worst = signals[0];
       if (worst) {
+        // A risk that sells and a read that buys are one decision about one
+        // position, so they are one row. Shown as two, Home told somebody to
+        // close ETH directly above "Buy ETH", each with its own stop.
+        overridden = worst.action.sellFraction > 0;
+        const leansBuy = overridden && assessment.score > 0 && qualifies(assessment, riskProfile);
         findings.push({
           id: `risk:${symbol}`,
           kind: "risk",
           symbol,
           market: assessment.market,
           headline: worst.headline,
-          detail: worst.detail,
+          detail: leansBuy
+            ? `${worst.detail} ember's read on ${symbol} still leans buy, but this comes first, so it isn't suggesting you add to it.`
+            : worst.detail,
           urgency: worst.urgency,
           // A risk is always ready. It is a statement about a position you
           // already have, not an invitation to open one — there is nothing to
@@ -155,8 +163,13 @@ export function buildFindings({
        voices. On something *not* held it is still real information (don't buy
        this), and the feed keeps showing it; the inbox does not, because there
        is nothing for the user to do about an instrument they have never
-       owned. */
+       owned.
 
+       A buy on a position ember has just told you to cut is not shown either:
+       the risk row above says the read still leans buy, and that the position
+       comes first. */
+
+    if (overridden) continue;
     if (!qualifies(assessment, riskProfile)) continue;
     if (assessment.score <= 0) continue;
 
@@ -167,7 +180,7 @@ export function buildFindings({
       kind: "opportunity",
       symbol,
       market: assessment.market,
-      headline: `${assessment.action === "buy" ? "Buy" : "Accumulate"} ${symbol}${position ? " — adding to what you hold" : ""}`,
+      headline: `${assessment.action === "buy" ? "Buy" : "Accumulate"} ${symbol}${position ? ", adding to what you hold" : ""}`,
       detail: assessment.summary,
       urgency: opportunityUrgency(assessment, watched, followed !== null),
       ready,

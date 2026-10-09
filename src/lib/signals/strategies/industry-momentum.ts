@@ -40,7 +40,7 @@ export const industryMomentum: Strategy = withMomentumRisk({
     title: "Do Industries Explain Momentum?",
     where: "Journal of Finance 54(4)",
     claim:
-      "Industry portfolios exhibit strong and persistent momentum, and controlling for it accounts for much of individual-stock momentum profits — the industry effect is the more robust of the two.",
+      "Industry portfolios exhibit strong and persistent momentum, and controlling for it accounts for much of individual-stock momentum profits; the industry effect is the more robust of the two.",
   },
 
   evaluate(ctx) {

@@ -76,7 +76,7 @@ export const connorsRsi2: Strategy = {
         strategyId: "connors-rsi2",
         score: clamp(0.35 + depth * 0.65, 0, 1),
         confidence: clamp(0.4 + depth * 0.4, 0.3, 0.85),
-        rationale: `RSI(2) at ${value.toFixed(0)} — a sharp pullback while price holds ${pct(distanceFromTrend)} above its 200-day average. Exits above the 5-day average.`,
+        rationale: `RSI(2) at ${value.toFixed(0)}: a sharp pullback while price holds ${pct(distanceFromTrend)} above its 200-day average. Exits above the 5-day average.`,
         horizonDays: 5,
         halfLifeDays: 2,
       };
@@ -90,7 +90,7 @@ export const connorsRsi2: Strategy = {
         strategyId: "connors-rsi2",
         score: clamp(-0.2 - stretch * 0.4, -0.6, 0),
         confidence: clamp(0.3 + stretch * 0.3, 0.25, 0.7),
-        rationale: `RSI(2) at ${value.toFixed(0)} and price above its 5-day average — stretched short term. The published rule takes profit here rather than adding.`,
+        rationale: `RSI(2) at ${value.toFixed(0)} and price above its 5-day average, stretched short term. The published rule takes profit here rather than adding.`,
         horizonDays: 5,
         halfLifeDays: 2,
       };
@@ -101,7 +101,7 @@ export const connorsRsi2: Strategy = {
       score: 0,
       quiet: true,
       confidence: 0.2,
-      rationale: `RSI(2) at ${value.toFixed(0)} — neither stretched nor washed out. No short-term edge either way.`,
+      rationale: `RSI(2) at ${value.toFixed(0)}, neither stretched nor washed out. No short-term edge either way.`,
       horizonDays: 5,
       halfLifeDays: 2,
     };

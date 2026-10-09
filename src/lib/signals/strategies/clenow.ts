@@ -123,7 +123,7 @@ export const clenow: Strategy = withMomentumRisk({
       // R² is literally a measure of how well the trend explains the price,
       // so it is the honest confidence for this strategy.
       confidence: clamp(own.r2 * 0.9 + peerConfidence(universe) * 0.1, 0.15, 0.95),
-      rationale: `Trending at ${pct(own.annualisedSlope)} annualised with an R² of ${own.r2.toFixed(2)} — ${ordinal(rank)} of ${universe}, ${trendNote}.`,
+      rationale: `Trending at ${pct(own.annualisedSlope)} annualised with an R² of ${own.r2.toFixed(2)}, ${ordinal(rank)} of ${universe}, ${trendNote}.`,
       horizonDays: 90,
       halfLifeDays: 40,
     };

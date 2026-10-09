@@ -102,7 +102,10 @@ export function ValueChart({
           <ChangeText value={change} className="text-caption font-medium">
             {formatMoney(change, base, { signed: true })}
           </ChangeText>
-          <p className="mt-1 text-micro text-stone">Unrealized, {PERIOD[range]}</p>
+          {/* "From the market", not "Unrealized": the figure leaves out money you
+              added, so it can be red under a line that rose because you added
+              it (ADR 0007). The label has to say which of the two it is. */}
+          <p className="mt-1 text-micro text-stone">From the market, {PERIOD[range]}</p>
         </div>
 
         <Segmented
@@ -123,7 +126,7 @@ export function ValueChart({
           className="flex items-center justify-center rounded-lg bg-surface-2 text-caption text-stone"
           style={{ height: CHART_HEIGHT }}
         >
-          Not enough history yet — the line starts a day after your first trade.
+          Not enough history yet. The line starts a day after your first trade.
         </div>
       ) : (
         <Plot points={points} gradientId={gradientId} change={change} base={base} />
@@ -188,7 +191,7 @@ function Plot({
       // denominator, and every candidate is wrong on a book that received
       // contributions during the range — dividing by the starting cost read
       // 224% on a portfolio that grew by deposits.
-      aria-label={`Portfolio value ${formatMoney(last.value, base)}. Unrealized gain ${formatMoney(change, base, { signed: true })} over the selected range.`}
+      aria-label={`Portfolio value ${formatMoney(last.value, base)}. ${formatMoney(change, base, { signed: true })} from the market over the selected range, leaving out money you added.`}
     >
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">

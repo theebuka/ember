@@ -23,7 +23,7 @@ import {
 import { useStrategies, useTrackRecord } from "@/hooks/use-market-data";
 import { ApiError, type BacktestTrade } from "@/lib/api/client";
 import { RISK_PROFILES } from "@/lib/api/types";
-import { formatPercent, formatRatio, formatShortDate } from "@/lib/market/format";
+import { formatDate, formatPercent, formatRatio } from "@/lib/market/format";
 import { usePreferences } from "@/store/use-preferences";
 import { cn } from "@/lib/utils";
 
@@ -361,7 +361,7 @@ function TradesTable({ trades }: { trades: readonly BacktestTrade[] }) {
               </span>
             </div>
             <p className="num mt-0.5 text-micro text-stone">
-              {formatShortDate(trade.entryAt)} → {formatShortDate(trade.exitAt)} ·{" "}
+              {formatDate(trade.entryAt)} → {trade.open ? "open" : formatDate(trade.exitAt)} ·{" "}
               {trade.holdBars} {trade.holdBars === 1 ? "trading day" : "trading days"} · {formatPercent(trade.weight, { decimals: 1 })}{" "}
               size
               {trade.stopped && " · stopped out"}
@@ -395,10 +395,10 @@ function TradesTable({ trades }: { trades: readonly BacktestTrade[] }) {
                   </div>
                 </TableCell>
                 <TableCell className="num text-caption text-graphite">
-                  {formatShortDate(trade.entryAt)}
+                  {formatDate(trade.entryAt)}
                 </TableCell>
                 <TableCell className="num text-caption text-graphite">
-                  {formatShortDate(trade.exitAt)}
+                  {trade.open ? "Still open" : formatDate(trade.exitAt)}
                   {trade.stopped && (
                     <span className="ml-1.5 text-micro text-stone">stopped</span>
                   )}

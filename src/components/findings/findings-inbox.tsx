@@ -14,7 +14,13 @@ import { useFindings, useInstruments, useQuotes, useRates } from "@/hooks/use-ma
 import { ApiError, type Finding } from "@/lib/api/client";
 import type { Instrument, Transaction } from "@/lib/api/types";
 import { ACTION_LABELS } from "@/lib/api/types";
-import { formatQuantity, quantityPrecision } from "@/lib/market/format";
+import {
+  formatQuantity,
+  priceForInput,
+  quantityForInput,
+  quantityPrecision,
+} from "@/lib/market/format";
+import { noteForCall, suggestionLine } from "@/components/signals/call-parts";
 import { USD_PER_UNIT } from "@/lib/market/universe";
 import { convert, derivePortfolio, positionInputs } from "@/lib/portfolio/derive";
 import { todayForInput } from "@/lib/portfolio/dates";
@@ -205,7 +211,7 @@ export function FindingsInbox() {
     });
     setExecuting(null);
 
-    undoableToast("Executed", {
+    undoableToast("Trade logged", {
       description: `${values.side === "buy" ? "Bought" : "Sold"} ${formatQuantity(
         values.quantity,
         instrument?.market ?? "equity",
@@ -299,7 +305,7 @@ export function FindingsInbox() {
             className={open.length > 0 ? "mt-6" : undefined}
             calls={locked}
             instruments={bySymbol}
-            pageSize={5}
+            rows={false}
             title={`${locked.length} more ${locked.length === 1 ? "opportunity" : "opportunities"} on Pro`}
           />
         )}
@@ -344,10 +350,14 @@ export function FindingsInbox() {
       <TradeModal
         open={executing !== null}
         onOpenChange={(next) => !next && setExecuting(null)}
-        title={
-          executing?.finding.kind === "risk" ? "Log reduction" : "Log this trade"
+        title="Log trade"
+        description={
+          executing
+            ? executing.finding.kind === "risk" && executing.finding.risk
+              ? `ember suggests: ${executing.finding.risk.action.label.toLowerCase()}. Enter what you actually sold.`
+              : suggestionLine(executing.finding.assessment, executing.instrument)
+            : undefined
         }
-        description="Pre-filled from ember's suggestion. Enter what you actually paid."
       >
         {executing && (
           <TransactionForm
@@ -365,18 +375,20 @@ export function FindingsInbox() {
               quantity:
                 executing.quantity === null
                   ? ""
-                  : String(
-                      Number(
-                        executing.quantity.toFixed(
-                          quantityPrecision(executing.instrument.market),
+                  : executing.finding.kind === "risk"
+                    ? // A sale of what you hold: exact, or rounding could ask
+                      // to sell more than the position and meet the oversell guard.
+                      String(
+                        Number(
+                          executing.quantity.toFixed(quantityPrecision(executing.instrument.market)),
                         ),
-                      ),
-                    ),
-              price: String(executing.finding.assessment.price),
+                      )
+                    : quantityForInput(executing.quantity, executing.instrument.market),
+              price: priceForInput(executing.instrument, executing.finding.assessment.price),
               date: todayForInput(),
               // Stamps the ledger with where the trade came from, so the track
               // record can later tell followed calls from the user's own ideas.
-              note: noteFor(executing.finding),
+              note: noteFor(executing.finding, executing.instrument),
             }}
             onSubmit={(values) => handleExecuted(executing.finding, values)}
             onCancel={() => setExecuting(null)}
@@ -387,12 +399,11 @@ export function FindingsInbox() {
   );
 }
 
-function noteFor(finding: Finding): string {
+function noteFor(finding: Finding, instrument: Instrument): string {
   if (finding.kind === "risk" && finding.risk) {
     return `ember risk · ${finding.risk.trigger}`;
   }
-  const { action, confidence, confidenceLabel } = finding.assessment;
-  return `ember ${ACTION_LABELS[action]} · ${confidenceLabel} ${confidence}`;
+  return noteForCall(finding.assessment, instrument);
 }
 
 /**

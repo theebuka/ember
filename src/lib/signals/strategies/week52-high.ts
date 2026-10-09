@@ -39,7 +39,7 @@ export const week52High: Strategy = withMomentumRisk({
     title: "The 52-Week High and Momentum Investing",
     where: "Journal of Finance 59(5)",
     claim:
-      "A stock's price relative to its 52-week high predicts future returns more strongly than past twelve-month return does, and dominates it when both are included — consistent with investors anchoring on the high.",
+      "A stock's price relative to its 52-week high predicts future returns more strongly than past twelve-month return does, and dominates it when both are included, consistent with investors anchoring on the high.",
   },
 
   evaluate(ctx) {
@@ -78,7 +78,7 @@ export const week52High: Strategy = withMomentumRisk({
         0.15,
         0.75,
       ),
-      rationale: `${where} — ${ordinal(rank)}-closest of ${members} in its market. The high is the anchor good news has to argue past.`,
+      rationale: `${where}, ${ordinal(rank)}-closest of ${members} in its market. The high is the anchor good news has to argue past.`,
       // George and Hwang hold six months. The window is wide because an
       // anchoring effect has no moment.
       horizonDays: 120,

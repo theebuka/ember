@@ -53,7 +53,7 @@ export const cryptoMvrv: Strategy = {
 
     const reading =
       mvrvZ < 0
-        ? "below the aggregate cost basis of holders — historically where bottoms have formed"
+        ? "below the aggregate cost basis of holders, historically where bottoms have formed"
         : mvrvZ > 6
           ? "in the region that has marked every cycle top so far"
           : "in the middle of its historical range";

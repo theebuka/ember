@@ -268,7 +268,7 @@ export function MethodologyScreen() {
                 <ProfileStat
                   label="Single-position cap"
                   value={`${(RISK_PROFILES[riskProfile].maxWeight * 100).toFixed(0)}%`}
-                  hint="of the book"
+                  hint="of your portfolio"
                 />
                 {/* Both halves of the bar, because both move with the
                     profile and the second one is usually the binding

@@ -39,13 +39,12 @@ export function GreetingLine({ className }: { className?: string }) {
 
   return (
     /**
-     * One `aria-live` region over both lines, not one each.
-     *
-     * They arrive in the same commit and they are one thought; two polite
-     * regions would queue two announcements, and the second would interrupt a
-     * screen-reader user mid-sentence for a pleasantry.
+     * Not a live region. It was one (a single region over both lines, so they
+     * announced once), and that still meant a screen reader interrupted every
+     * visit to Home for a pleasantry. The lines are read in their place in the
+     * page like everything else.
      */
-    <div className={className} aria-live="polite">
+    <div className={className}>
       {/**
        * Not a heading, and it should not look like one.
        *

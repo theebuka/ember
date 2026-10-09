@@ -105,7 +105,7 @@ export const dualMomentum: Strategy = withMomentumRisk({
         strategyId: "dual-momentum",
         score: clamp(-(0.3 + 0.7 * (1 - relative)), -1, -0.05),
         confidence: clamp(peerConfidence(universe) * 0.4 + decisiveness * 0.5, 0.3, 0.9),
-        rationale: `Trailed cash over twelve months — ${pct(own)} against ${pct(ctx.riskFreeRate)}. Absolute momentum says hold none of it, and it beat ${beaten} of ${universe - 1} peers.`,
+        rationale: `Trailed cash over twelve months, ${pct(own)} against ${pct(ctx.riskFreeRate)}. Absolute momentum says hold none of it, and it beat ${beaten} of ${universe - 1} peers.`,
         horizonDays: 30,
         halfLifeDays: 21,
       };

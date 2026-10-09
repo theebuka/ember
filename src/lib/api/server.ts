@@ -339,7 +339,7 @@ export interface PositionInput {
 }
 
 /**
- * Each position's share of the book, computed here rather than accepted.
+ * Each position's share of your portfolio, computed here rather than accepted.
  *
  * Everything is converted to USD purely as a common denominator — a *share* is
  * invariant to the unit, so the user's chosen base currency is irrelevant to

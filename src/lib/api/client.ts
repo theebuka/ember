@@ -156,7 +156,7 @@ export const queryKeys = {
     ["series", [...symbols].sort().join(","), range] as const,
   advice: (profile: RiskProfile) => ["advice", profile] as const,
   /**
-   * Keyed by the *content* of the book, not by its identity.
+   * Keyed by the *content* of your portfolio, not by its identity.
    *
    * Findings depend on what you hold, so a logged trade has to produce a new
    * key or the inbox keeps answering yesterday's question. Symbols and

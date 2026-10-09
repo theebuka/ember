@@ -201,6 +201,8 @@ function ConvictionArt({ profile }: { profile: RiskProfile }) {
  * every width.
  */
 const ORBIT_RADIUS = 30.5;
+/** Where a market's name sits: outside the ring, clear of the point's glow. */
+const LABEL_RADIUS = 42;
 
 const ORBIT: Record<MarketKind, number> = {
   equity: -90,
@@ -232,17 +234,30 @@ function MarketsArt({ markets }: { markets: Record<MarketKind, boolean> }) {
           <div
             key={market}
             className={cn(
-              "absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5",
+              "absolute inset-0",
               "transition-opacity duration-300 ease-out motion-reduce:transition-none",
               on ? "opacity-100" : "opacity-25",
             )}
-            style={{
-              left: `${50 + Math.cos(rad) * ORBIT_RADIUS}%`,
-              top: `${50 + Math.sin(rad) * ORBIT_RADIUS}%`,
-            }}
           >
-            <EmberPoint size={on ? 34 : 26} glow={on} />
-            <span className="text-micro font-medium whitespace-nowrap text-[#8E919B]">
+            <div
+              className="absolute -translate-x-1/2 -translate-y-1/2"
+              style={{
+                left: `${50 + Math.cos(rad) * ORBIT_RADIUS}%`,
+                top: `${50 + Math.sin(rad) * ORBIT_RADIUS}%`,
+              }}
+            >
+              <EmberPoint size={on ? 34 : 26} glow={on} />
+            </div>
+            {/* Outside the ring, along the same angle. Stacked under the
+                point, the lower two labels sat on the ring and its stroke ran
+                through "Forex" and "Crypto". */}
+            <span
+              className="absolute -translate-x-1/2 -translate-y-1/2 text-micro font-medium whitespace-nowrap text-[#8E919B]"
+              style={{
+                left: `${50 + Math.cos(rad) * LABEL_RADIUS}%`,
+                top: `${50 + Math.sin(rad) * LABEL_RADIUS}%`,
+              }}
+            >
               {MARKET_LABELS[market]}
             </span>
           </div>

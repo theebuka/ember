@@ -109,6 +109,15 @@ export function formatQuotePrice(instrument: Instrument, value: number): string 
 }
 
 /**
+ * A price as it goes into a form field: the instrument's own precision, no
+ * currency, no grouping. `String(price)` pre-filled "12.69792680031", which
+ * overflowed the field on a phone and is a price nobody paid.
+ */
+export function priceForInput(instrument: Instrument, value: number): string {
+  return String(Number(value.toFixed(instrument.precision)));
+}
+
+/**
  * How finely a quantity in this market is worth quoting.
  *
  * Shared by the display formatter and by anything that pre-fills a quantity
@@ -146,6 +155,20 @@ export function formatApproxQuantity(value: number, market: MarketKind): string 
         : { maximumFractionDigits: 4 }
       : { maximumFractionDigits: market === "fx" ? 0 : 2 };
   return new Intl.NumberFormat(LOCALE, options).format(value);
+}
+
+/**
+ * A suggested size as it goes into the trade form: rounded the way
+ * `formatApproxQuantity` prints it, without grouping. The form opened on
+ * "75.50574729 LINK", a quantity nobody would type.
+ */
+export function quantityForInput(value: number, market: MarketKind): string {
+  if (market === "crypto") {
+    return String(
+      Math.abs(value) < 1 ? Number(value.toPrecision(4)) : Number(value.toFixed(4)),
+    );
+  }
+  return String(Number(value.toFixed(market === "fx" ? 0 : 2)));
 }
 
 /* ── Percentages ───────────────────────────────────────────────────────── */

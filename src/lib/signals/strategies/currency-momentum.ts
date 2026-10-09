@@ -99,7 +99,7 @@ export const currencyMomentum: Strategy = {
         0.15,
         0.7,
       ),
-      rationale: `Holding ${base} against ${quote} returned ${pct(own)} over three months, ${pct(carryTerm(ownCarry))} of it carry — ${ordinal(rank)} of ${column.length} pairs.`,
+      rationale: `Holding ${base} against ${quote} returned ${pct(own)} over three months, ${pct(carryTerm(ownCarry))} of it carry, ${ordinal(rank)} of ${column.length} pairs.`,
       // One to three months, per the paper, and it decays fast — currency
       // momentum reverses at longer horizons where equity momentum does not.
       horizonDays: 45,

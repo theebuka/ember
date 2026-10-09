@@ -380,7 +380,7 @@ export interface RiskProfileConfig {
   consequence: string;
   /** Annualised portfolio volatility the sizing model aims for. */
   volTarget: number;
-  /** Hard cap on any single position, as a fraction of the book. */
+  /** Hard cap on any single position, as a fraction of your portfolio. */
   maxWeight: number;
   /** Minimum blended conviction before a recommendation is surfaced. */
   actionThreshold: number;

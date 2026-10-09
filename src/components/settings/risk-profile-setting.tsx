@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { ChevronDown } from "@/components/common/icon";
 import { Segmented } from "@/components/common/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRiskPreview } from "@/hooks/use-market-data";
@@ -41,8 +43,17 @@ export function RiskProfileSetting({
   value,
   onChange,
   bleed = false,
+  compact = false,
   className,
 }: {
+  /**
+   * One line of consequence, with the table behind "Compare profiles".
+   *
+   * Onboarding's second screen was a six-row table of engine settings in front
+   * of somebody who had used ember for thirty seconds. The count is the one
+   * figure that answers their question; the rest is one press away.
+   */
+  compact?: boolean;
   value: RiskProfile;
   onChange: (value: RiskProfile) => void;
   /**
@@ -58,6 +69,8 @@ export function RiskProfileSetting({
 }) {
   const preview = useRiskPreview();
   const profiles = preview.data?.profiles;
+  const [comparing, setComparing] = useState(!compact);
+  const today = profiles?.find((p) => p.profile === value);
 
   return (
     <div className={className}>
@@ -69,32 +82,54 @@ export function RiskProfileSetting({
         className="flex w-full [&>button]:flex-1"
       />
 
-      <p className="mt-3 text-caption text-stone">
-        {RISK_PROFILES[value].consequence}
-      </p>
+      <p className="mt-3 text-caption text-stone">{RISK_PROFILES[value].consequence}</p>
 
-      <div
-        className={cn(
-          "mt-4 border-line",
-          // -mx-5 tracks `--card-spacing`; the two move together.
-          // Tracks `PageBody`'s padding, which steps to 16px below 360px so
-          // the header's four controls fit at 320. A fixed `-mx-5` there
-          // hangs 4px off each edge and scrolls the page sideways.
-          bleed ? "-mx-4 border-y min-[360px]:-mx-5" : "rounded-xl border",
-        )}
-      >
-        {preview.isPending ? (
-          <ComparisonSkeleton />
-        ) : profiles ? (
-          <Comparison profiles={profiles} selected={value} />
-        ) : (
-          <p className="p-3.5 text-caption text-stone">
-            Today&apos;s comparison didn&apos;t load, so these are the profile settings only.
-            {" "}
-            {STATIC_SUMMARY[value]}
+      {compact && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          {/* Reserves its line while the preview loads, so nothing below moves. */}
+          <p className="num text-caption font-medium text-ink">
+            {today
+              ? `${today.actionable} of ${today.assessed} instruments make the cut today.`
+              : "\u00A0"}
           </p>
-        )}
-      </div>
+          <button
+            type="button"
+            onClick={() => setComparing((v) => !v)}
+            aria-expanded={comparing}
+            className="tap-target inline-flex items-center gap-1 rounded-sm text-caption font-medium text-brand-text underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            {comparing ? "Hide comparison" : "Compare profiles"}
+            <ChevronDown
+              aria-hidden
+              className={cn("size-3.5 transition-transform", comparing && "rotate-180")}
+            />
+          </button>
+        </div>
+      )}
+
+      {comparing && (
+        <div
+          className={cn(
+            "mt-4 border-line",
+            // -mx-5 tracks `--card-spacing`; the two move together.
+            // Tracks `PageBody`'s padding, which steps to 16px below 360px so
+            // the header's four controls fit at 320. A fixed `-mx-5` there
+            // hangs 4px off each edge and scrolls the page sideways.
+            bleed ? "-mx-4 border-y min-[360px]:-mx-5" : "rounded-xl border",
+          )}
+        >
+          {preview.isPending ? (
+            <ComparisonSkeleton />
+          ) : profiles ? (
+            <Comparison profiles={profiles} selected={value} />
+          ) : (
+            <p className="p-3.5 text-caption text-stone">
+              Today&apos;s comparison didn&apos;t load, so these are the profile settings only.{" "}
+              {STATIC_SUMMARY[value]}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -139,13 +174,15 @@ function Comparison({
       render: (p) => String(p.confidenceFloor),
     },
     {
-      label: "Typical size",
-      hint: "of the book",
+      // Median, and measured on today's calls: a bolder profile takes more,
+      // weaker calls and sizes each smaller, so this row can fall as the cap
+      // rises. "Typical size" read as a bug.
+      label: "Median call",
+      hint: "size, today",
       // An em dash rather than 0%: a profile recommending nothing has no
       // typical size, and printing zero would say it recommends nothing-sized
       // positions.
-      render: (p) =>
-        p.typicalSize === null ? "—" : formatPercent(p.typicalSize, { decimals: 1 }),
+      render: (p) => (p.typicalSize === null ? "—" : formatPercent(p.typicalSize, { decimals: 1 })),
     },
     {
       label: "Position cap",
@@ -218,7 +255,6 @@ function Comparison({
           ))}
         </tbody>
       </table>
-
     </>
   );
 }

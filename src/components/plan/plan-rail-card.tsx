@@ -75,7 +75,7 @@ function RailCard() {
           className="pointer-events-none absolute -top-12 -right-10 size-32 rounded-full bg-brand/15 blur-2xl"
         />
         <div className="relative">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-brand text-white">
+          <span className="flex size-8 items-center justify-center rounded-xl bg-brand text-white">
             <Sparkle weight="fill" className="size-4" />
           </span>
           <h2 className="mt-3 text-caption font-semibold text-ink">ember Pro</h2>

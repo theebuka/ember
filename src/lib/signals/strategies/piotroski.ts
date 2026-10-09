@@ -107,7 +107,7 @@ export const piotroski: Strategy = {
       // Piotroski is decisive at the extremes and close to noise in the
       // middle, so confidence tracks distance from the midpoint.
       confidence: clamp(Math.abs(score - 4.5) / 4.5, 0.15, 0.85),
-      rationale: `F-Score of ${score} out of 9 — ${detail}.`,
+      rationale: `F-Score of ${score} out of 9: ${detail}.`,
       horizonDays: 250,
       halfLifeDays: 120,
     };

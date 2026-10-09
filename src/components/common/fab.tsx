@@ -125,11 +125,17 @@ function useCovers(id: string | undefined): boolean {
     measure();
     const resize = new ResizeObserver(measure);
     resize.observe(document.body);
+    // The target can be swapped in, or moved, without the body changing size:
+    // a skeleton replaced by the real control at the same height left the FAB
+    // over "Activity" until the first scroll.
+    const mutations = new MutationObserver(measure);
+    mutations.observe(document.body, { childList: true, subtree: true });
     window.addEventListener("scroll", measure, { passive: true });
     window.addEventListener("resize", measure);
     return () => {
       cancelAnimationFrame(frame);
       resize.disconnect();
+      mutations.disconnect();
       window.removeEventListener("scroll", measure);
       window.removeEventListener("resize", measure);
     };

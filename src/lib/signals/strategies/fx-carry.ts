@@ -64,7 +64,7 @@ export const fxCarry: Strategy = {
       strategyId: "fx-carry",
       score,
       confidence: clamp(Math.abs(riskAdjusted) / 0.8, 0.15, 0.75),
-      rationale: `${base} pays ${pct(ctx.fx.baseRate)} against ${quote}'s ${pct(ctx.fx.quoteRate)}, so ${direction} ${pct(Math.abs(differential))} a year — ${(Math.abs(riskAdjusted)).toFixed(2)}× the pair's ${pct(vol)} volatility.`,
+      rationale: `${base} pays ${pct(ctx.fx.baseRate)} against ${quote}'s ${pct(ctx.fx.quoteRate)}, so ${direction} ${pct(Math.abs(differential))} a year, ${(Math.abs(riskAdjusted)).toFixed(2)}× the pair's ${pct(vol)} volatility.`,
       horizonDays: 90,
       halfLifeDays: 60,
     };

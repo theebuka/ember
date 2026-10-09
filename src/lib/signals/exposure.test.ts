@@ -561,4 +561,30 @@ describe("buildFindings", () => {
 
     expect(findings.map((f) => f.symbol)).toEqual(["NVDA", "AAPL"]);
   });
+
+  /**
+   * Decision 306. Home once said "close ETH, it's through its stop" directly
+   * above "Buy ETH, adding to what you hold", each with its own stop. A risk
+   * that sells is the decision about that position; the buy folds into it.
+   */
+  it("never tells you to cut a position and add to it at once", () => {
+    const findings = build({
+      assessments: [assessment({ action: "buy", score: 0.6, confidence: 45 })],
+      positions: [position({ weight: 0.4 })],
+    });
+
+    expect(findings.map((f) => f.kind)).toEqual(["risk"]);
+    expect(findings[0].risk?.action.sellFraction).toBeGreaterThan(0);
+    expect(findings[0].detail).toContain("still leans buy");
+  });
+
+  it("still offers the buy on a healthy position", () => {
+    const findings = build({
+      assessments: [assessment({ action: "buy", score: 0.6, confidence: 45 })],
+      positions: [position()],
+    });
+
+    expect(findings.map((f) => f.kind)).toEqual(["opportunity"]);
+    expect(findings[0].headline).toBe("Buy NVDA, adding to what you hold");
+  });
 });

@@ -39,7 +39,7 @@ export const residualMomentum: Strategy = withMomentumRisk({
     title: "Residual Momentum",
     where: "Journal of Empirical Finance 18(3)",
     claim:
-      "Ranking stocks on twelve-month momentum measured in Fama–French residuals, scaled by residual volatility, earns the same return as conventional momentum at roughly half the volatility — because conventional momentum carries unintended factor exposure.",
+      "Ranking stocks on twelve-month momentum measured in Fama–French residuals, scaled by residual volatility, earns the same return as conventional momentum at roughly half the volatility, because conventional momentum carries unintended factor exposure.",
   },
 
   evaluate(ctx) {
@@ -75,7 +75,7 @@ export const residualMomentum: Strategy = withMomentumRisk({
         0.15,
         0.8,
       ),
-      rationale: `Ran ${direction} what its market beta implies over the twelve months to a month ago, by ${Math.abs(row.residualT).toFixed(1)} standard errors — ${ordinal(rank)} of ${members} once factor exposure is stripped out.`,
+      rationale: `Ran ${direction} what its market beta implies over the twelve months to a month ago, by ${Math.abs(row.residualT).toFixed(1)} standard errors, ${ordinal(rank)} of ${members} once factor exposure is stripped out.`,
       horizonDays: 90,
       halfLifeDays: 55,
     };

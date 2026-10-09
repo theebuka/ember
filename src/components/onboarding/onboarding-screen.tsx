@@ -292,6 +292,7 @@ export function OnboardingScreen() {
               <RiskProfileSetting
                 value={riskProfile}
                 onChange={setRiskProfile}
+                compact
                 className="mt-7"
               />
             </section>

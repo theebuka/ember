@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { CaretRight, Check, Clock, Undo2, X } from "@/components/common/icon";
 import { ActionBadge } from "@/components/signals/action-badge";
-import { CallHeader, useCallDetails } from "@/components/signals/call-parts";
+import { CallHeader, Tag, useCallDetails } from "@/components/signals/call-parts";
 import { WindowBand } from "@/components/signals/window-band";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -84,6 +84,7 @@ export function FindingRow({
         }
         symbol={finding.symbol}
         name={instrument.name}
+        tag={!isRisk && finding.held ? <Tag>you hold it</Tag> : undefined}
         price={formatQuotePrice(instrument, assessment.price)}
       />
 
@@ -91,35 +92,43 @@ export function FindingRow({
       {/* The headline is the way into the full read at every width. It was a
           link on phones only, with `tabIndex={-1}`, which left a keyboard user
           on a narrow window no way in but the symbol. */}
+      {/* An opportunity's headline is the reason, not "Buy LINK" under a Buy
+          badge beside LINK: the same three words twice. `finding.headline`
+          stays the notification's title, where nothing else names the call.
+          A risk keeps both lines, because its detail is the consequence. */}
       <p className="mt-2.5 text-body font-medium text-ink">
         <Link
           href={href}
           className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          {finding.headline}
+          {isRisk ? finding.headline : assessment.summary}
         </Link>
       </p>
-      <p className="mt-1 text-caption text-stone">{finding.detail}</p>
+      {isRisk && (
+        <p className="mt-1 max-w-[48ch] text-caption text-pretty text-stone">{finding.detail}</p>
+      )}
 
       {/* ── When, or why ─────────────────────────────────────────────────── */}
       {isRisk ? null : (
         <div className="mt-3.5">
           <WindowBand window={assessment.window} />
-          <p className="mt-1.5 flex items-start gap-1.5 text-caption text-stone">
-            <span aria-hidden className="flex h-[1lh] shrink-0 items-center">
-              <Clock className="size-3.5" />
-            </span>
-            <span>
-              {finding.ready
-                ? `Open now, until ${now === null ? "—" : formatWindowTime(assessment.window.closesAt)}`
-                : finding.opensAt === null
+          {/* Only when the band's own line doesn't already say it. Open now,
+              until Sat 01:48 was the band's caption a second time. */}
+          {!finding.ready && (
+            <p className="mt-1.5 flex items-start gap-1.5 text-caption text-stone">
+              <span aria-hidden className="flex h-[1lh] shrink-0 items-center">
+                <Clock className="size-3.5" />
+              </span>
+              <span>
+                {finding.opensAt === null
                   ? `No tradeable window in the next ${describeHorizon(assessment.window)}.`
                   : /* The sentence v1 could not say. `isActionable` required an
                        open window before a call could surface at all, so a find
                        whose moment was two days out was simply thrown away. */
                     `The window opens ${now === null ? "soon" : formatWindowTime(finding.opensAt)}.`}
-            </span>
-          </p>
+              </span>
+            </p>
+          )}
         </div>
       )}
 
@@ -127,18 +136,15 @@ export function FindingRow({
       <div className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
         {isRisk && risk ? (
           <>
-            <span className="text-caption font-medium text-ink">
-              {risk.action.label}
-            </span>
+            <span className="text-caption font-medium text-ink">{risk.action.label}</span>
             <span className="num text-caption text-stone">
-              ≈ {formatApproxQuantity(risk.action.quantity, instrument.market)}{" "}
-              {finding.symbol}
+              ≈ {formatApproxQuantity(risk.action.quantity, instrument.market)} {finding.symbol}
             </span>
           </>
         ) : assessment.sizing ? (
           <>
             <span className="text-caption font-medium text-ink">
-              {formatPercent(assessment.sizing.weight, { decimals: 1 })} of the book
+              {formatPercent(assessment.sizing.weight, { decimals: 1 })} of your portfolio
             </span>
             {suggested && (
               <span className="num text-caption text-stone">
@@ -158,7 +164,7 @@ export function FindingRow({
           <>
             <span className="flex items-center gap-1.5 text-caption text-stone">
               <Check className="size-3.5 text-up" />
-              {handled.kind === "executed" ? "Executed" : "Cleared"}
+              {handled.kind === "executed" ? "Logged" : "Dismissed"}
             </span>
             {/* Deliberately not "Undo". The toast shown at the moment of
                 execution does undo — it removes the transaction it wrote. This
@@ -176,7 +182,7 @@ export function FindingRow({
                 column, and a 40px brand pill on every one turned the inbox
                 into a stack of competing calls to action. */}
             <Button size="sm" onClick={onExecute}>
-              {isRisk ? "Log reduction" : "Execute"}
+              Log trade
             </Button>
             <Button variant="ghost" size="sm" onClick={onDismiss}>
               <X />
@@ -199,8 +205,8 @@ export function FindingRow({
             <p className="text-micro text-stone">
               {isRisk && risk
                 ? `${risk.citation.authors} (${risk.citation.year}), ${risk.citation.title}.`
-                : (assessment.contributions[0] &&
-                    `${assessment.contributions[0].name} — ${assessment.contributions[0].citation.authors} (${assessment.contributions[0].citation.year}).`)}
+                : assessment.contributions[0] &&
+                  `${assessment.contributions[0].name}: ${assessment.contributions[0].citation.authors} (${assessment.contributions[0].citation.year}).`}
             </p>
           </div>
           <Button variant="outline" size="sm" asChild>
@@ -225,8 +231,7 @@ export function FindingRow({
  * matters.
  */
 function SeverityBadge({ severity }: { severity: "critical" | "warning" | "watch" }) {
-  const label =
-    severity === "critical" ? "Act now" : severity === "warning" ? "Warning" : "Watch";
+  const label = severity === "critical" ? "Act now" : severity === "warning" ? "Warning" : "Watch";
 
   return (
     <span
@@ -260,7 +265,6 @@ export function FindingRowSkeleton() {
       <Skeleton className="mt-1 h-[1lh] w-full text-caption" />
 
       <Skeleton className="mt-3.5 h-10 w-full rounded-md" />
-      <Skeleton className="mt-1.5 h-[1lh] w-1/2 text-caption" />
 
       <Skeleton className="mt-4 h-[1lh] w-2/3 text-caption" />
 

@@ -16,13 +16,25 @@ import { TradeModal, TransactionForm } from "@/components/portfolio/trade-modal"
 import { PageHeader } from "@/components/shell/page-header";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useNow } from "@/hooks/use-now";
-import { useAdvice, useInstruments, useQuotes, useRates } from "@/hooks/use-market-data";
+import {
+  useAdvice,
+  useFindings,
+  useInstruments,
+  useQuotes,
+  useRates,
+} from "@/hooks/use-market-data";
 import { ApiError, type Assessment } from "@/lib/api/client";
 import type { Instrument, Transaction } from "@/lib/api/types";
 import { ACTION_LABELS, RISK_PROFILES } from "@/lib/api/types";
-import { formatQuantity, quantityPrecision } from "@/lib/market/format";
+import {
+  formatQuantity,
+  priceForInput,
+  quantityForInput,
+  quantityPrecision,
+} from "@/lib/market/format";
+import { noteForCall, suggestionLine } from "@/components/signals/call-parts";
 import { USD_PER_UNIT } from "@/lib/market/universe";
-import { convert, derivePortfolio } from "@/lib/portfolio/derive";
+import { convert, derivePortfolio, positionInputs } from "@/lib/portfolio/derive";
 import { todayForInput } from "@/lib/portfolio/dates";
 import { undoableToast } from "@/lib/toast";
 import { findingId, handlingFor, useAdviceActions } from "@/store/use-advice-actions";
@@ -30,6 +42,7 @@ import { LockedCalls } from "@/components/plan/locked";
 import { usePortfolio } from "@/store/use-portfolio";
 import { usePreferences } from "@/store/use-preferences";
 import { useLedger } from "@/hooks/use-ledger";
+import { useWatchlist } from "@/store/use-watchlist";
 
 /**
  * The feed.
@@ -112,6 +125,31 @@ export function SignalsScreen() {
     [hydrated, transactions, quotesQuery.data, instruments, rates, base],
   );
 
+  /**
+   * Positions ember has told the reader to cut, by symbol.
+   *
+   * The same request Home makes, with the same key, so it is usually already
+   * cached. A buy on a position whose stop just broke is not something this
+   * screen should offer to execute (decision 306).
+   */
+  const watching = useWatchlist((s) => s.symbols);
+  const positions = useMemo(
+    () => (hydrated ? positionInputs(summary.positions) : []),
+    [hydrated, summary.positions],
+  );
+  const findingsQuery = useFindings(riskProfile, positions, watching, {
+    enabled: hydrated && positions.length > 0,
+  });
+  const cutting = useMemo(
+    () =>
+      new Map(
+        (findingsQuery.data?.findings ?? [])
+          .filter((f) => f.kind === "risk" && (f.risk?.action.sellFraction ?? 0) > 0)
+          .map((f) => [f.symbol, f]),
+      ),
+    [findingsQuery.data],
+  );
+
   const items = useMemo<FeedItem[]>(() => {
     const bySymbol = new Map(instruments.map((i) => [i.symbol, i]));
     const positions = new Map(summary.positions.map((p) => [p.symbol, p]));
@@ -186,6 +224,10 @@ export function SignalsScreen() {
    * Execute and meet the ledger's oversell error.
    */
   const blockedReasonFor = (item: FeedItem): string | null => {
+    const warning = cutting.get(item.assessment.symbol);
+    if (!REDUCING.has(item.assessment.action) && warning?.risk) {
+      return `Your position comes first. ${warning.risk.headline}, and ember suggests: ${warning.risk.action.label.toLowerCase()}.`;
+    }
     if (!REDUCING.has(item.assessment.action)) return null;
     if (item.heldQuantity > 0) return null;
     return `You don't hold ${item.assessment.symbol}, so there's nothing to ${
@@ -225,7 +267,7 @@ export function SignalsScreen() {
     });
     setExecuting(null);
 
-    undoableToast("Executed", {
+    undoableToast("Trade logged", {
       description: `${values.side === "buy" ? "Bought" : "Sold"} ${formatQuantity(values.quantity, item.instrument.market)} ${symbol}`,
       onUndo: () => {
         removeTransaction(id);
@@ -406,8 +448,12 @@ export function SignalsScreen() {
       <TradeModal
         open={executing !== null}
         onOpenChange={(next) => !next && setExecuting(null)}
-        title="Log this trade"
-        description="Pre-filled from ember's suggestion. Enter what you actually paid."
+        title="Log trade"
+        description={
+          executing
+            ? suggestionLine(executing.assessment, executing.instrument)
+            : undefined
+        }
       >
         {executing && (
           <TransactionForm
@@ -421,18 +467,22 @@ export function SignalsScreen() {
               quantity:
                 executing.suggested === null
                   ? ""
-                  : String(
-                      Number(
-                        executing.suggested.quantity.toFixed(
-                          quantityPrecision(executing.instrument.market),
+                  : REDUCING.has(executing.assessment.action)
+                    ? // Capped at the holding above, so it stays exact: rounded,
+                      // it could exceed the position and meet the oversell guard.
+                      String(
+                        Number(
+                          executing.suggested.quantity.toFixed(
+                            quantityPrecision(executing.instrument.market),
+                          ),
                         ),
-                      ),
-                    ),
-              price: String(executing.assessment.price),
+                      )
+                    : quantityForInput(executing.suggested.quantity, executing.instrument.market),
+              price: priceForInput(executing.instrument, executing.assessment.price),
               date: todayForInput(),
               // Stamps the ledger with where the trade came from, so the track
               // record can later tell followed calls from the user's own ideas.
-              note: `ember ${ACTION_LABELS[executing.assessment.action]} · ${executing.assessment.confidenceLabel} ${executing.assessment.confidence}`,
+              note: noteForCall(executing.assessment, executing.instrument),
             }}
             onSubmit={(values) => handleExecuted(executing, values)}
             onCancel={() => setExecuting(null)}

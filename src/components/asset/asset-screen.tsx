@@ -43,8 +43,10 @@ import {
   formatQuantity,
   formatQuotePrice,
   formatRatio,
-  formatShortDate,
+  formatDate,
+  priceForInput,
 } from "@/lib/market/format";
+import { suggestionLine } from "@/components/signals/call-parts";
 import { USD_PER_UNIT } from "@/lib/market/universe";
 import { derivePortfolio } from "@/lib/portfolio/derive";
 import { undoableToast } from "@/lib/toast";
@@ -422,6 +424,7 @@ export function AssetScreen({ symbol }: { symbol: string }) {
             <LockedRead
               symbol={symbol}
               feature={inFreeMarkets(instrument) ? "all-calls" : "all-markets"}
+              held={position !== null}
             />
           ) : instrument?.dataState === "collecting" ? (
             /**
@@ -457,7 +460,7 @@ export function AssetScreen({ symbol }: { symbol: string }) {
             small correction than a whole page of sections appearing at once. */}
         {!asset &&
           [0, 1].map((i) => (
-            <section key={i}>
+            <section key={i} aria-hidden>
               <SectionHeader title=" " />
               <div className="grid grid-cols-2 gap-x-5 gap-y-4 sm:grid-cols-3 lg:grid-cols-4">
                 {Array.from({ length: 4 }, (_, j) => (
@@ -527,8 +530,8 @@ export function AssetScreen({ symbol }: { symbol: string }) {
                       {trade.action}
                     </p>
                     <p className="num text-micro text-stone">
-                      {formatShortDate(trade.entryAt)} →{" "}
-                      {formatShortDate(trade.exitAt)} · {trade.holdBars} {trade.holdBars === 1 ? "trading day" : "trading days"}
+                      {formatDate(trade.entryAt)} →{" "}
+                      {trade.open ? "open" : formatDate(trade.exitAt)} · {trade.holdBars} {trade.holdBars === 1 ? "trading day" : "trading days"}
                       {trade.stopped && " · stopped out"}
                     </p>
                   </div>
@@ -567,8 +570,12 @@ export function AssetScreen({ symbol }: { symbol: string }) {
       <TradeModal
         open={logging}
         onOpenChange={setLogging}
-        title="Log a trade"
-        
+        title="Log trade"
+        description={
+          asset?.assessment && asset.actionable && instrument
+            ? suggestionLine(asset.assessment, instrument)
+            : undefined
+        }
       >
         <TransactionForm
           instruments={instrumentsQuery.data?.instruments ?? []}
@@ -576,7 +583,7 @@ export function AssetScreen({ symbol }: { symbol: string }) {
           existing={ledger}
           defaults={{
             symbol,
-            price: asset?.quote ? String(asset.quote.price) : "",
+            price: asset?.quote && instrument ? priceForInput(instrument, asset.quote.price) : "",
           }}
           onSubmit={handleLogged}
           onCancel={() => setLogging(false)}

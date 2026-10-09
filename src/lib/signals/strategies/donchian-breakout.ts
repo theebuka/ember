@@ -97,7 +97,7 @@ export const donchianBreakout: Strategy = {
       score: 0,
       quiet: true,
       confidence: 0.25,
-      rationale: `Inside its 20-day range, ${room.toFixed(1)} ATR from the nearest edge. No breakout to trade — the channel spans ${pctAbs((fast.upper - fast.lower) / price)} of price.`,
+      rationale: `Inside its 20-day range, ${room.toFixed(1)} ATR from the nearest edge. No breakout to trade. The channel spans ${pctAbs((fast.upper - fast.lower) / price)} of price.`,
       horizonDays: 45,
       halfLifeDays: 25,
     };

@@ -89,7 +89,7 @@ export const shortReversal: Strategy = {
         0.12,
         MAX_CONFIDENCE,
       ),
-      rationale: `Returned ${pct(row.reversal21)} over the past month — ${ordinal(rank)} of ${members} in its market. ${reading}`,
+      rationale: `Returned ${pct(row.reversal21)} over the past month, ${ordinal(rank)} of ${members} in its market. ${reading}`,
       // A one-month effect, and the tightest window in the app after
       // `connors-rsi2`. It has to be: the edge is gone inside a month.
       horizonDays: 21,

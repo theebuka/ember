@@ -46,7 +46,7 @@ export function ProfileButton({
   return (
     <Link
       href="/settings"
-      aria-label={name ? `Settings — signed in as ${name}` : "Settings"}
+      aria-label={name ? `Settings, signed in as ${name}` : "Settings"}
       className={cn(
         "tap-target inline-flex shrink-0 items-center justify-center rounded-full",
         "border border-line bg-surface-2 text-stone outline-none transition-colors",

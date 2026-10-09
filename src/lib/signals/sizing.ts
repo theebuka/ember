@@ -13,7 +13,7 @@ import { clamp } from "./indicators/stats";
 const CONVICTION_HAIRCUT = 0.25;
 
 export interface PositionSize {
-  /** Fraction of the book, already capped by the risk profile. */
+  /** Fraction of your portfolio, already capped by the risk profile. */
   weight: number;
   /** Stop distance in ATR multiples. */
   stopMultiple: number;
@@ -82,7 +82,7 @@ export function sizePosition({
 
   const note = capped
     ? `Capped at the ${(maxWeight * 100).toFixed(0)}% single-position limit for your risk profile.`
-    : `Sized so a ${stopMultiple.toFixed(1)} ATR stop costs ${(riskBudget * 100).toFixed(2)}% of the book, against ${(instrumentVol * 100).toFixed(0)}% annualised volatility.`;
+    : `Sized so a ${stopMultiple.toFixed(1)} ATR stop costs ${(riskBudget * 100).toFixed(2)}% of your portfolio, against ${(instrumentVol * 100).toFixed(0)}% annualised volatility.`;
 
   return {
     weight,

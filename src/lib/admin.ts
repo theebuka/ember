@@ -209,7 +209,7 @@ export function draftProblem(draft: BroadcastDraft): string | null {
   }
   if (draft.body.trim().length === 0) return "Say what changed, and why it matters.";
   if (draft.body.length > BROADCAST_LIMITS.body) {
-    return `Keep it under ${BROADCAST_LIMITS.body} characters — this is a notice, not a post.`;
+    return `Keep it under ${BROADCAST_LIMITS.body} characters. This is a notice, not a post.`;
   }
   // Checked against the list rather than against a shape. The first broadcast
   // ever sent shipped a 404 to every reader past a `startsWith("/")` test.

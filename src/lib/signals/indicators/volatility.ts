@@ -25,7 +25,7 @@ export function trueRange(candles: readonly Candle[]): (number | null)[] {
  *
  * ATR is the unit of risk everywhere in this engine: stops are placed in ATR
  * multiples and position sizes are set so that a stop costs a fixed fraction
- * of the book, which is what makes a signal on BTC and a signal on EURUSD
+ * of your portfolio, which is what makes a signal on BTC and a signal on EURUSD
  * comparable at all.
  */
 export function atr(candles: readonly Candle[], period = 14): (number | null)[] {

@@ -120,7 +120,7 @@ export function AlertSettings() {
       // notification itself works, which a toast wouldn't demonstrate.
       const shown = await showAlert({
         title: "NVDA · Accumulate",
-        body: "Window open until Thu 16:20 · 1.2% of book · stop $172.40",
+        body: "Window open until Thu 16:20 · 1.2% of portfolio · stop $172.40",
         tag: "ember-test",
         url: "/signals",
       });

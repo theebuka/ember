@@ -62,7 +62,7 @@ app rather than the redirect to setup:
 
 | | Desktop | Mobile |
 |---|---|---|
-| Performance | 98–99 | 81–83 |
+| Performance | 99 | 82–84 |
 | Accessibility | 100 | 100 |
 | Best practices | 100 | 100 |
 | SEO | 100 | 100 |
@@ -73,7 +73,7 @@ Mobile is the throttled profile — simulated slow 4G with a 4× CPU penalty.
 There is no image to blame: the critical path is the stylesheet and the app's
 own JavaScript, and mobile is where a 214-instrument universe costs something.
 The signals feed, the floor at 68 until recently, now measures 81: a free
-reader's response is 56 KB, because a locked call carries no working.
+reader's response is 58 KB, because a locked call carries no working.
 
 **Layout shift**, observed with a `PerformanceObserver` on a seeded ledger,
 because the shift left in this app is markup that only exists when there *is* a

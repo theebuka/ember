@@ -315,7 +315,7 @@ export function TransactionForm({
                     <button
                       type="button"
                       onClick={() =>
-                        form.setValue("price", String(quote.price), {
+                        form.setValue("price", String(Number(quote.price.toFixed(instrument?.precision ?? 2))), {
                           shouldValidate: true,
                         })
                       }

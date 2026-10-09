@@ -317,7 +317,7 @@ function buildNotes({
   } else if (market === "fx") {
     const t = zonedTime(peakAt, "UTC");
     if (t.hour >= 13 && t.hour < 17) {
-      notes.push("London and New York overlap — the tightest spreads of the day.");
+      notes.push("London and New York overlap, with the tightest spreads of the day.");
     } else if (t.hour >= 7 && t.hour < 13) {
       notes.push("London hours, before New York trading thins out.");
     } else {
@@ -351,7 +351,7 @@ function buildNotes({
       `The signal fades fast (a ${days === 1 ? "one-day" : `${days}-day`} half-life), so the window is short.`,
     );
   } else if (halfLifeDays >= 60) {
-    notes.push("A slow signal — the timing here is about execution, not urgency.");
+    notes.push("A slow signal. The timing here is about execution, not urgency.");
   }
 
   // Said plainly, because a narrower window with no stated reason reads as the

@@ -71,7 +71,7 @@ export function PlanComparison({
     `Up to ${free.holdings} holdings, with every warning on them`,
     `A watchlist of ${free.watchlist}`,
     "Alerts while ember is open",
-    `The methodology, and the track record up to ${(free.recentCallsHiddenDays ?? 0) / 7} weeks ago`,
+    `The methodology, and the track record except its last ${(free.recentCallsHiddenDays ?? 0) / 7} weeks`,
   ];
   const proItems = PRO_INCLUDES;
 

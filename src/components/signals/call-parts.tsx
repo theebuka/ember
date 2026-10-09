@@ -3,6 +3,9 @@
 import { useId, useState } from "react";
 import Link from "next/link";
 import { ChevronDown } from "@/components/common/icon";
+import type { Assessment } from "@/lib/api/client";
+import { ACTION_LABELS, type Instrument } from "@/lib/api/types";
+import { formatPercent, formatQuotePrice, formatWindowTime } from "@/lib/market/format";
 import { cn } from "@/lib/utils";
 
 /**
@@ -77,6 +80,34 @@ export function Tag({
       {children}
     </span>
   );
+}
+
+/**
+ * What ember suggested, said once more where the trade is logged.
+ *
+ * The form opened without the stop or the window the reader had just read,
+ * so acting on a call meant remembering it across a modal.
+ */
+export function suggestionLine(assessment: Assessment, instrument: Instrument): string {
+  const parts: string[] = [];
+  if (assessment.sizing) {
+    parts.push(`${formatPercent(assessment.sizing.weight, { decimals: 1 })} of your portfolio`);
+    parts.push(`stop ${formatQuotePrice(instrument, assessment.sizing.stopPrice)}`);
+  }
+  if (assessment.window.hasWindow) {
+    parts.push(`window until ${formatWindowTime(assessment.window.closesAt)}`);
+  }
+  return parts.length > 0
+    ? `ember suggested ${parts.join(", ")}. Enter what you actually paid.`
+    : "Enter what you actually paid.";
+}
+
+/** Stamped on a logged trade, so the ledger records the call and its stop. */
+export function noteForCall(assessment: Assessment, instrument: Instrument): string {
+  const stop = assessment.sizing
+    ? ` · stop ${formatQuotePrice(instrument, assessment.sizing.stopPrice)}`
+    : "";
+  return `ember ${ACTION_LABELS[assessment.action]} · ${assessment.confidenceLabel} ${assessment.confidence}${stop}`;
 }
 
 /**

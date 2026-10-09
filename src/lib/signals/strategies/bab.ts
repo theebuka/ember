@@ -52,7 +52,7 @@ export const bab: Strategy = {
     title: "Betting Against Beta",
     where: "Journal of Financial Economics 111(1)",
     claim:
-      "A portfolio long low-beta assets and short high-beta ones, each scaled to beta one, earned significant risk-adjusted returns in US equities, 19 other equity markets, Treasuries, credit and futures — consistent with leverage-constrained investors bidding up high-beta assets.",
+      "A portfolio long low-beta assets and short high-beta ones, each scaled to beta one, earned significant risk-adjusted returns in US equities, 19 other equity markets, Treasuries, credit and futures, consistent with leverage-constrained investors bidding up high-beta assets.",
   },
 
   evaluate(ctx) {
@@ -95,7 +95,7 @@ export const bab: Strategy = {
         0.12,
         MAX_CONFIDENCE,
       ),
-      rationale: `Beta of ${row.beta.toFixed(2)} — ${ordinal(lowest)}-lowest of ${members}, with the market explaining ${pctAbs(explained, 0)} of its moves. The defensive end of a market has historically paid more per unit of risk.`,
+      rationale: `Beta of ${row.beta.toFixed(2)}, ${ordinal(lowest)}-lowest of ${members}, with the market explaining ${pctAbs(explained, 0)} of its moves. The defensive end of a market has historically paid more per unit of risk.`,
       // A premium that takes a year to show up, stated as a year. The window
       // this produces is deliberately wide: there is no moment to catch.
       horizonDays: 250,

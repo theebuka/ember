@@ -265,7 +265,7 @@ function opportunityBody(
   const parts = [`Window open until ${formatWindowTime(alert.until)}`];
 
   if (sizing) {
-    parts.push(`${formatPercent(sizing.weight, { decimals: 1 })} of book`);
+    parts.push(`${formatPercent(sizing.weight, { decimals: 1 })} of portfolio`);
     parts.push(
       instrument
         ? `stop ${formatQuotePrice(instrument, sizing.stopPrice)}`

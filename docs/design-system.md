@@ -321,7 +321,7 @@ Two corollaries:
 
 - A restrained analyst, not a bot. `Moderate · 68`, never `🔥 HIGH`.
 - Buttons name their outcome and keep the name through the flow:
-  `Execute` → toast `Executed`.
+  `Log trade` → toast `Trade logged`.
 - Sentence case, active voice, no emoji in product UI.
 - Errors say what happened and what to do, in the interface's voice. They do
   not apologise and they are never vague.

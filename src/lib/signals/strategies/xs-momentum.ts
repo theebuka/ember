@@ -70,7 +70,7 @@ export const xsMomentum: Strategy = withMomentumRisk({
       score,
       confidence: clamp(peerConfidence(universe) * (0.4 + Math.abs(score) * 0.6), 0.15, 0.9),
       // "Up −17.3%" is not a sentence. The verb has to follow the sign.
-      rationale: `${own >= 0 ? "Up" : "Down"} ${pctAbs(own)} over the twelve months to a month ago — ${ordinal(rank)} of ${universe} in its market.`,
+      rationale: `${own >= 0 ? "Up" : "Down"} ${pctAbs(own)} over the twelve months to a month ago, ${ordinal(rank)} of ${universe} in its market.`,
       horizonDays: 90,
       halfLifeDays: 60,
     };

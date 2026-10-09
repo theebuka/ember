@@ -34,10 +34,16 @@ export interface BacktestTrade {
   exitPrice: number;
   /** Return in the direction of the call, so a good "reduce" is positive. */
   return: number;
-  /** The position size the engine suggested, as a fraction of the book. */
+  /** The position size the engine suggested, as a fraction of your portfolio. */
   weight: number;
   /** Whether the ATR stop was hit before the horizon elapsed. */
   stopped: boolean;
+  /**
+   * Still running: the horizon reaches past the last bar and the stop hasn't
+   * been hit, so `exitAt` is today and the return is a mark, not a result.
+   * Listed as "Exited Oct 9" with a figure beside it, it read as closed.
+   */
+  open: boolean;
   holdBars: number;
   score: number;
   confidence: number;
@@ -240,6 +246,7 @@ export function runBacktest({
         return: direction * (exitPrice / entryPrice - 1),
         weight: assessment.sizing.weight,
         stopped,
+        open: !stopped && entryIndex + holdBars > candles.length - 1,
         holdBars: exitIndex - entryIndex,
         score: assessment.score,
         confidence: assessment.confidence,

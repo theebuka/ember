@@ -11,9 +11,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { Assessment } from "@/lib/api/client";
 import type { BaseCurrency, Instrument } from "@/lib/api/types";
 import {
+  formatApproxQuantity,
   formatMoney,
   formatPercent,
-  formatQuantity,
   formatQuotePrice,
 } from "@/lib/market/format";
 import type { HandledCall } from "@/store/use-advice-actions";
@@ -153,12 +153,12 @@ export function SignalCard({
         {sizing ? (
           <>
             <span className="text-caption font-medium text-ink">
-              {formatPercent(sizing.weight, { decimals: 1 })} of the book
+              {formatPercent(sizing.weight, { decimals: 1 })} of your portfolio
             </span>
             {suggested && (
               <span className="num text-caption text-stone">
                 ≈ {formatMoney(suggested.value, base)} ·{" "}
-                {formatQuantity(suggested.quantity, instrument.market)}{" "}
+                {formatApproxQuantity(suggested.quantity, instrument.market)}{" "}
                 {instrument.symbol}
               </span>
             )}
@@ -186,7 +186,7 @@ export function SignalCard({
           <>
             <span className="flex items-center gap-1.5 text-caption text-stone">
               <Check className="size-3.5 text-up" />
-              {handled.kind === "executed" ? "Executed" : "Dismissed"}
+              {handled.kind === "executed" ? "Logged" : "Dismissed"}
             </span>
             {/* Deliberately not "Undo".
               The toast that appears the moment you execute *does* undo —
@@ -223,7 +223,7 @@ export function SignalCard({
         ) : actionable ? (
           <>
             <Button size="sm" onClick={onExecute}>
-              Execute
+              Log trade
             </Button>
             {onDismiss && (
               <Button variant="ghost" size="sm" onClick={onDismiss}>
@@ -258,7 +258,7 @@ export function SignalCard({
                 <span className="num text-caption font-medium text-ink">
                   {formatPercent(sizing.riskBudget, { decimals: 2 })}
                 </span>
-                <span className="ml-1 text-micro font-normal text-stone">of book</span>
+                <span className="ml-1 text-micro font-normal text-stone">of portfolio</span>
               </Figure>
               <Figure label="Size rule">
                 <span className="text-caption text-stone">{sizing.note}</span>

@@ -56,12 +56,12 @@ export interface HeldExposure {
   averageCost: number;
   /** Epoch millis of the first trade that opened this exposure. */
   openedAt: number;
-  /** Share of the book by market value, 0…1. */
+  /** Share of your portfolio by market value, 0…1. */
   weight: number;
 }
 
 export interface RiskAction {
-  /** Imperative and specific: "Reduce to 8% of the book". */
+  /** Imperative and specific: "Reduce to 8% of your portfolio". */
   label: string;
   /** Fraction of *this position* to sell, 0…1. */
   sellFraction: number;
@@ -125,7 +125,7 @@ const KELLY: Citation = {
   title: "A New Interpretation of Information Rate",
   where: "Bell System Technical Journal 35(4)",
   claim:
-    "There is a position size that maximises long-run growth, and betting above it lowers growth even when the edge is real — over-sizing a good idea is still a mistake.",
+    "There is a position size that maximises long-run growth, and betting above it lowers growth even when the edge is real: over-sizing a good idea is still a mistake.",
 };
 
 const SAVOR_WILSON: Citation = {
@@ -161,7 +161,7 @@ function reduceTo(
     label:
       target <= 0
         ? "Close the position"
-        : `Reduce to ${(target * 100).toFixed(1)}% of the book`,
+        : `Reduce to ${(target * 100).toFixed(1)}% of your portfolio`,
     sellFraction,
     quantity: position.quantity * sellFraction,
     targetWeight: target,
@@ -262,7 +262,7 @@ export function evaluateExposure({
     signals.push({
       trigger: "stop-breached",
       severity: "critical",
-      headline: `Through its stop — ${formatSigned(pnl)} from an average cost of ${formatQuotePrice(instrument, position.averageCost)}`,
+      headline: `Through its stop, ${formatSigned(pnl)} from an average cost of ${formatQuotePrice(instrument, position.averageCost)}`,
       detail: `Your ${stopMultiple.toFixed(1)} ATR stop is at ${formatQuotePrice(instrument, stopPrice)} and the price is ${through < 0.25 ? "just " : ""}below it. The position now risks more than it was sized for.`,
       action: reduceTo(
         position,
@@ -291,13 +291,18 @@ export function evaluateExposure({
       trigger: "thesis-decay",
       severity: flippedShare >= 0.6 ? "critical" : "warning",
       headline: `${names.join(" and ")} ${names.length > 1 ? "have" : "has"} turned against this since you opened it`,
-      detail: `${(flippedShare * 100).toFixed(0)}% of the weight behind the original read now points the other way. ${flipped[0].rationale}`,
+      // The rule's own working (R², an annualised slope) goes behind Details
+      // with the sizing note. In the visible line it was jargon on the row a
+      // reader acts from.
+      detail: `${(flippedShare * 100).toFixed(0)}% of the weight behind the original read now points the other way.`,
       action: reduceTo(
         position,
         supported,
-        supported > 0
-          ? "Sized on what still supports the position, not on what did when you bought it."
-          : "Nothing in today's read supports holding this at any size.",
+        `${
+          supported > 0
+            ? "Sized on what still supports the position, not on what did when you bought it."
+            : "Nothing in today's read supports holding this at any size."
+        } ${flipped[0].rationale}`,
       ),
       citation: flipped[0].citation,
       urgency: clamp(0.6 + flippedShare * 0.25, 0.6, 0.88),
@@ -335,7 +340,7 @@ export function evaluateExposure({
     signals.push({
       trigger: "regime-flip",
       severity: "warning",
-      headline: `${position.symbol} is in a stressed downtrend${entryAssessment ? ` — it wasn't when you opened this` : ""}`,
+      headline: `${position.symbol} is in a stressed downtrend${entryAssessment ? `, which it wasn't when you opened this` : ""}`,
       detail: `${regime.summary} Most strategies struggle in this kind of market, so your reason for holding is under strain.`,
       action: reduceTo(
         position,
@@ -360,7 +365,7 @@ export function evaluateExposure({
       trigger: "drawdown",
       severity: -pnl >= band * 2 ? "critical" : "warning",
       headline: `Down ${formatSigned(pnl)} from your entry`,
-      detail: `Your ${profile.label.toLowerCase()} profile treats a ${(band * 100).toFixed(0)}% loss as the point to decide again. ember isn't saying the position is wrong — only that keeping it should be a choice, not a default.`,
+      detail: `Your ${profile.label.toLowerCase()} profile treats a ${(band * 100).toFixed(0)}% loss as the point to decide again. ember isn't saying the position is wrong, only that keeping it should be a choice, not a default.`,
       action: reduceTo(
         position,
         supported,
@@ -380,12 +385,12 @@ export function evaluateExposure({
     signals.push({
       trigger: "concentration",
       severity: position.weight > profile.maxWeight * 2 ? "warning" : "watch",
-      headline: `${(position.weight * 100).toFixed(1)}% of the book, against a ${(profile.maxWeight * 100).toFixed(0)}% cap`,
-      detail: `Your ${profile.label.toLowerCase()} profile caps a single position at ${(profile.maxWeight * 100).toFixed(0)}%. ${pnl > 0 ? `This one has run ${formatSigned(pnl)} and grown past it on its own` : "This one is over the cap"} — a large position you never chose to size that way.`,
+      headline: `${(position.weight * 100).toFixed(1)}% of your portfolio, against a ${(profile.maxWeight * 100).toFixed(0)}% cap`,
+      detail: `Your ${profile.label.toLowerCase()} profile caps a single position at ${(profile.maxWeight * 100).toFixed(0)}%. ${pnl > 0 ? `This one has run ${formatSigned(pnl)} and grown past it on its own` : "This one is over the cap"}: a large position you never chose to size that way.`,
       action: reduceTo(
         position,
         profile.maxWeight,
-        `Back to your profile's cap. The position may be right, but ${(position.weight * 100).toFixed(1)}% of your book in one name is a risk of its own.`,
+        `Back to your profile's cap. The position may be right, but ${(position.weight * 100).toFixed(1)}% of your portfolio in one name is a risk of its own.`,
       ),
       citation: KELLY,
       urgency: clamp(0.35 + overshoot * 0.2, 0.35, 0.6),
@@ -407,7 +412,7 @@ export function evaluateExposure({
     signals.push({
       trigger: "event-risk",
       severity: "watch",
-      headline: `${EVENT_LABELS[next.kind]} inside ${describeHorizon(assessment.window)}, on ${(position.weight * 100).toFixed(1)}% of your book`,
+      headline: `${EVENT_LABELS[next.kind]} inside ${describeHorizon(assessment.window)}, on ${(position.weight * 100).toFixed(1)}% of your portfolio`,
       detail: `No ember strategy predicts scheduled announcements, so trade windows avoid them. You can hold through one, but no signal here supports it.`,
       action: reduceTo(
         position,

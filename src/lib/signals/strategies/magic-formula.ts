@@ -87,7 +87,7 @@ export const magicFormula: Strategy = {
       strategyId: "magic-formula",
       score,
       confidence: clamp(peerConfidence(universe.length) * 0.7, 0.15, 0.7),
-      rationale: `Earns ${pctAbs(ownYield)} on its enterprise value and ${pctAbs(ownRoc)} on operating capital — ${ordinal(yieldRank)} and ${ordinal(rocRank)} of ${universe.length} on the two rankings.`,
+      rationale: `Earns ${pctAbs(ownYield)} on its enterprise value and ${pctAbs(ownRoc)} on operating capital, ${ordinal(yieldRank)} and ${ordinal(rocRank)} of ${universe.length} on the two rankings.`,
       horizonDays: 250,
       halfLifeDays: 120,
     };

@@ -93,7 +93,7 @@ export function NextWindowCard({
               <dt className="text-micro text-stone">Size</dt>
               <dd className="num text-caption font-medium text-ink">
                 {formatPercent(sizing.weight, { decimals: 1 })}{" "}
-                <span className="font-normal text-stone">of book</span>
+                <span className="font-normal text-stone">of portfolio</span>
               </dd>
             </div>
 

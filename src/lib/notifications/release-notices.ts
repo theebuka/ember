@@ -18,7 +18,7 @@ export const RELEASE_NOTICES: Broadcast[] = [
   {
     id: "release:announcement-bar",
     title: "Notices can now appear on every screen",
-    body: "Important notices, like an outage, can now appear as a bar across the top of every screen. Dismissing the bar keeps the message here.",
+    body: "Important notices, like an outage, can now appear as a bar across the top of every screen.",
     publishedAt: "2026-08-18T09:00:00.000Z",
     // No link. It pointed at `/notifications` — the screen it is read on — so
     // its one action was a button that reloaded the page you were looking at.
