@@ -54,3 +54,6 @@ next-env.d.ts
 
 # design references — third-party screenshots, kept local only
 /screen inspo/
+
+# design critique snapshots (impeccable)
+.impeccable/
