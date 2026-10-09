@@ -19,7 +19,10 @@ export type StrategyId =
   | "week52-high"
   | "short-reversal"
   | "industry-momentum"
-  | "currency-momentum";
+  | "currency-momentum"
+  | "max-effect"
+  | "high-volume"
+  | "asset-growth";
 
 export type StrategyFamily =
   | "trend"
@@ -35,7 +38,20 @@ export type StrategyFamily =
    * filter and the risk profiles have to treat it differently from everything
    * else: it is the only family whose edge *improves* when the market falls.
    */
-  | "defensive";
+  | "defensive"
+  /**
+   * Avoiding lottery tickets: stocks with an extreme up-day are bid up by
+   * buyers who want a small chance of a large payoff, and underperform after.
+   */
+  | "lottery"
+  /** A stock that suddenly draws attention, read from its trading volume. */
+  | "attention"
+  /**
+   * How fast a company grows its balance sheet. Its own family rather than value
+   * or quality: it measures what the firm is doing with capital, not what the
+   * business earns or what the shares cost.
+   */
+  | "investment";
 
 /**
  * Where a strategy comes from.
@@ -141,6 +157,18 @@ export interface StrategySignal {
    * user verbatim, so it must read as plain English and never as a log line.
    */
   rationale: string;
+  /**
+   * The rule looked, and the thing it waits for has not happened: no breakout,
+   * no washed-out RSI, an ordinary week of volume.
+   *
+   * Shown to the reader, because "looked and found nothing" is worth seeing, and
+   * left out of everything that decides the call: the blend, the agreement and
+   * the coverage. A rule waiting for an event is not an opinion that the price
+   * will stay where it is, and counting it as one meant every event rule added
+   * to the engine pulled every call toward hold and every confidence down.
+   * The score of a quiet signal is always 0.
+   */
+  quiet?: boolean;
   /** Typical holding period the strategy implies, in days. */
   horizonDays: number;
   /**
@@ -160,9 +188,14 @@ export interface Strategy {
   /** Bars required before the strategy is allowed an opinion. */
   minBars: number;
   /**
-   * Returns null when the strategy genuinely has no view — insufficient
-   * history, missing fundamentals, or conditions its rules don't cover.
-   * Silence is a valid answer and is shown to the user as such.
+   * Returns null when the strategy cannot assess this instrument at all —
+   * missing fundamentals, no peers to rank against, no on-chain data. That is a
+   * fact about the data, not about the call, so it costs the call nothing; a
+   * listing too young for the rule's `minBars` is different, and does (see
+   * `assess`). Silence is a valid answer and is shown to the user as such.
+   *
+   * A rule that looked and is waiting for its event returns a `quiet` signal
+   * instead.
    */
   evaluate(ctx: StrategyContext): StrategySignal | null;
 }

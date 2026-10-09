@@ -191,6 +191,9 @@ export const STRATEGY_FAMILY_LABELS: Record<string, string> = {
   carry: "Carry",
   valuation: "Valuation",
   defensive: "Defensive",
+  lottery: "Lottery demand",
+  attention: "Attention",
+  investment: "Investment",
 };
 
 /**
@@ -433,8 +436,24 @@ export const RISK_PROFILES: Record<RiskProfile, RiskProfileConfig> = {
      * rises with independent voices that are each well-founded. That is an
      * ensemble change which moves every number in the app, and it is in §9 rather
      * than folded in here.
+     *
+     * **And a third time** (decision 303): three more rules took the floors to
+     * 33 / 25 / 20.
+     *
+     * **Decision 304 removed the bookkeeping half of that.** A rule that cannot
+     * assess an instrument, or is waiting for an event, no longer counts against
+     * it, and the three momentum rules that are one opinion count as one voice.
+     * Tests pin it: adding such a rule leaves every confidence unchanged. That
+     * moved the scale once more, so the floors were re-derived to the shares ADR
+     * 0013 chose (about 9%, 36% and 64% of 214): 32 / 24 / 17, measuring
+     * 21 / 75 / 136.
+     *
+     * What can still move them is a change in the *evidence*: a new rule that is
+     * weaker or more independent than the average lowers the average, because
+     * confidence is an average of how sure the rules are and how much they agree.
+     * That is a real change and wants re-measuring, not a count artefact.
      */
-    confidenceFloor: 37,
+    confidenceFloor: 32,
   },
   balanced: {
     label: "Balanced",
@@ -446,7 +465,7 @@ export const RISK_PROFILES: Record<RiskProfile, RiskProfileConfig> = {
     // Re-derived with the other two — see the note above. Now below the
     // "Moderate" label's boundary, so Balanced surfaces some calls badged `Low`
     // where previously only Aggressive did. The badge says so on the card.
-    confidenceFloor: 28,
+    confidenceFloor: 24,
   },
   aggressive: {
     label: "Aggressive",
@@ -458,7 +477,7 @@ export const RISK_PROFILES: Record<RiskProfile, RiskProfileConfig> = {
     // Well below the "Moderate" boundary, so an aggressive profile surfaces a
     // lot of calls badged `Low`. That's the trade it asked for, and the badge
     // says so on the card.
-    confidenceFloor: 23,
+    confidenceFloor: 17,
   },
 };
 

@@ -151,8 +151,8 @@ nine files. A change of face is that block plus the loader in `app/layout.tsx`.
 | Property | Geist (live) | Satoshi |
 |---|---|---|
 | `--face-figure-weight` | 600 | 600 |
-| `--face-figure-tracking` — 64px balance | −0.035em | −0.025em |
-| `--face-display-tracking` — 40px | −0.04em | −0.025em |
+| `--face-figure-tracking` — the balance | −0.035em | −0.025em |
+| `--face-display-tracking` — display | −0.04em | −0.025em |
 | `--face-title-tracking` — 28px titles | −0.03em | −0.02em |
 | `--face-wordmark-tracking` — the lockup | −0.045em | −0.03em |
 | `--face-label-tracking` — section labels | −0.006em | −0.005em |
@@ -186,16 +186,20 @@ numerals — the `1`, the `4` and the circular `0`.
 
 | Token | Size | Use |
 |---|---|---|
-| `text-figure` | 64px | Hero portfolio value |
-| `text-display` | 40px | Section-level figures |
-| `text-title` | 28px | Page titles |
-| `text-heading` | 20px | Card and section titles |
-| `text-body` | 17px | Body copy |
-| `text-caption` | 15px | Labels, table cells |
-| `text-micro` | 13px | Eyebrows, nav |
+| `text-figure` | 56px · 44px on a phone | Hero portfolio value |
+| `text-display` | 36px · 28px | Section-level figures, onboarding headings |
+| `text-title` | 28px · 22px | Page titles |
+| `text-heading` | 20px · 18px | Card and section titles |
+| `text-body` | 16px | Body copy |
+| `text-caption` | 14px | Labels, table cells |
+| `text-micro` | 12px | Footnotes, metadata |
 
-Every step moved up from v1. Body 15→17 and caption 13→15 do most of the work:
-the app was legible but small, and "make it feel larger" is mostly this.
+The top four steps are smaller below `md` (the `@media (width < 48rem)` block
+after `@theme`). Body and below are the same at every width. v2 had moved every
+step up (body 15→17); at that size a 402pt phone fitted too few words to a line,
+headings wrapped where they didn't need to, and screens read as crowded. The
+Figma file mirrors this with an "ember / Type" variable collection that has a
+Desktop and a Mobile mode.
 
 Adding a size means editing **two** files: the `@theme` block in `globals.css`,
 and the `font-size` group registered with tailwind-merge in `lib/utils.ts`.
@@ -248,8 +252,8 @@ right half. ADR 0021.
 
 **Inputs and selects are filled wells**, not bordered boxes. On a white page a
 1px outline around an empty rectangle is the weakest possible signal that
-something is editable. `text-body` at 17px also clears iOS's 16px
-zoom-on-focus threshold without the usual `text-base md:text-sm` dance.
+something is editable. `text-body` at 16px is exactly iOS's zoom-on-focus
+threshold, so inputs don't zoom, without the usual `text-base md:text-sm` dance.
 
 ---
 

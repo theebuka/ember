@@ -80,6 +80,9 @@ const nextConfig: NextConfig = {
       // 0039 wanted from the route in the first place: nothing about the reply
       // tells a prober whether the caller is an admin.
       { source: "/admin", destination: "/settings?tab=admin", permanent: true },
+      // The paths people guess, and that older links may use.
+      { source: "/track-record", destination: "/signals/track-record", permanent: true },
+      { source: "/methodology", destination: "/signals/methodology", permanent: true },
     ];
   },
 

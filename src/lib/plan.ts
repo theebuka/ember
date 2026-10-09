@@ -209,21 +209,27 @@ export function inFreeMarkets(instrument: { market: string; exchange?: string })
  * markets free covers. `ranked` is the feed's order (conviction × confidence), so
  * "strongest" means the same thing here as at the top of the Signals feed. The
  * same for every free reader on a profile; nothing about the person picks them.
+ *
+ * **Buys come first.** A sell is only useful to someone who holds the
+ * instrument, and the picks can't know who does, so a sell spent one of the
+ * three on "you don't hold ORCL, so there's nothing to sell". Sells fill the
+ * remaining slots only when there aren't enough buys. Anyone who does hold a
+ * position already gets its warnings free.
  */
 export function unlockedCalls(
   plan: Plan,
-  ranked: readonly { symbol: string }[],
+  ranked: readonly { symbol: string; action?: string }[],
   actionable: ReadonlySet<string>,
   isFreeMarket: (symbol: string) => boolean,
 ): Set<string> | null {
   const limit = PLAN_RULES[plan].calls;
   if (limit === null) return null;
-  const picks = new Set<string>();
-  for (const { symbol } of ranked) {
-    if (picks.size >= limit) break;
-    if (actionable.has(symbol) && isFreeMarket(symbol)) picks.add(symbol);
-  }
-  return picks;
+  const eligible = ranked.filter(
+    ({ symbol }) => actionable.has(symbol) && isFreeMarket(symbol),
+  );
+  const isBuy = (action?: string) => action === undefined || action === "buy" || action === "accumulate";
+  const ordered = [...eligible.filter((c) => isBuy(c.action)), ...eligible.filter((c) => !isBuy(c.action))];
+  return new Set(ordered.slice(0, limit).map((c) => c.symbol));
 }
 
 /**
@@ -329,7 +335,7 @@ export const UPSELL: Record<Feature, { title: string; body: string }> = {
   },
   "chart-history": {
     title: "See your whole history",
-    body: "Free charts the last month. Pro charts every range, back to your first trade.",
+    body: "Free charts the last month. Pro charts every range.",
   },
   "recent-calls": {
     title: "See the latest calls",

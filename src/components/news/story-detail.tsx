@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, ArrowUpRight, Newspaper } from "@/components/common/icon";
+import { CaretLeft, ArrowUpRight, Newspaper } from "@/components/common/icon";
 import { ChangeChip } from "@/components/market/change-chip";
 import { Button } from "@/components/ui/button";
 import { useNow } from "@/hooks/use-now";
@@ -61,7 +61,7 @@ export function StoryDetail({
           onClick={onBack}
           className="-ml-2.5 mb-4 text-stone lg:hidden"
         >
-          <ArrowLeft />
+          <CaretLeft />
           All headlines
         </Button>
       )}

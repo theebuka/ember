@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { ArrowRight, Sparkles, Wallet } from "@/components/common/icon";
+import { CaretRight, Sparkles, Wallet } from "@/components/common/icon";
 import { ErrorState } from "@/components/common/error-state";
 import { PAGE_COLUMNS, PageBody, PageColumns } from "@/components/common/page-body";
 import { Section } from "@/components/common/section";
@@ -12,6 +12,7 @@ import { FindingsInbox } from "@/components/findings/findings-inbox";
 import { ChangeChip } from "@/components/market/change-chip";
 import { DataSourceChip } from "@/components/market/data-source-chip";
 import { NotificationsButton } from "@/components/notifications/notifications-button";
+import { SearchButton } from "@/components/shell/search-button";
 import { MarketPulse, MarketPulseSkeleton, type PulseRow } from "@/components/market/market-pulse";
 import {
   AllocationBar,
@@ -179,6 +180,10 @@ export function Dashboard({
   const actions = (
     <>
       <DataSourceChip />
+      {/* Home's bar carries the lockup, the data chip, the bell and the
+          profile as well; below 360px the five overflow by 35px. Search is
+          one tab away there, on every other tab's header. */}
+      <SearchButton className="max-[359px]:hidden" />
       <NotificationsButton />
     </>
   );
@@ -330,7 +335,7 @@ function Balance({ summary }: { summary: PortfolioSummary }) {
       <Button variant="ghost" size="sm" asChild className="shrink-0 text-stone">
         <Link href="/portfolio">
           Portfolio
-          <ArrowRight />
+          <CaretRight />
         </Link>
       </Button>
     </div>
@@ -383,7 +388,7 @@ function EmptyBook({ onLoadSample }: { onLoadSample: () => void }) {
         </Button>
         <Button size="sm" variant="outline" onClick={onLoadSample}>
           <Sparkles />
-          Explore with sample data
+          Use sample data
         </Button>
       </div>
     </div>
@@ -395,7 +400,7 @@ function SampleNotice({ onClear }: { onClear: () => void }) {
     // One sentence with the action inside it: as a separate button it wrapped
     // to a line of its own on a phone, orphaned under the text it belonged to.
     <p className="mt-4 border-t border-line pt-3.5 text-micro text-stone">
-      Sample data — not your holdings.{" "}
+      This is sample data, not your holdings.{" "}
       <button type="button" onClick={onClear} className="tap-target font-medium text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
         Clear it
       </button>

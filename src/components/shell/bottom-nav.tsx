@@ -63,9 +63,10 @@ export function BottomNav() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  // Five items: 64px from 375px up (a 340px capsule); 56px below,
-                  // so it still fits a 320px screen with room either side.
-                  "flex h-14 w-14 flex-col items-center justify-center gap-1 rounded-full outline-none min-[375px]:w-16",
+                  // A pill, wider than it is tall: 70×52 from 400px (a 372px
+                  // capsule on a 402pt phone), 64 from 375px, 56 below so it
+                  // still fits 320px. At 64×56 the active fill read as a circle.
+                  "flex h-13 w-14 flex-col items-center justify-center gap-1 rounded-full outline-none min-[375px]:w-16 min-[400px]:w-[4.375rem]",
                   "transition-colors duration-150",
                   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
                   // A neutral pill, not the brand tint, at the user's

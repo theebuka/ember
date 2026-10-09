@@ -1,4 +1,5 @@
 import type { Strategy } from "../types";
+import { withMomentumRisk } from "./momentum-risk";
 import { clamp } from "../indicators/stats";
 import { crossSectionalScore, ordinal, pctAbs, peerConfidence, rankOf } from "./shared";
 
@@ -25,7 +26,7 @@ const MIN_MEMBERS = 8;
  * Measured against the highest *high*, not the highest close. The anchor people
  * actually remember is the print, and it is what a chart draws.
  */
-export const week52High: Strategy = {
+export const week52High: Strategy = withMomentumRisk({
   id: "week52-high",
   name: "52-week high proximity",
   family: "momentum",
@@ -84,4 +85,4 @@ export const week52High: Strategy = {
       halfLifeDays: 60,
     };
   },
-};
+}, { crash: true });

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check } from "@/components/common/icon";
+import { CaretLeft, CaretRight, Check } from "@/components/common/icon";
 import { StepArt } from "@/components/onboarding/onboarding-art";
 import { Logo } from "@/components/shell/logo";
 import { Button } from "@/components/ui/button";
@@ -286,7 +286,7 @@ export function PersonalizeScreen() {
                 className="text-stone"
                 onClick={() => setStep((s) => (s - 1) as Step)}
               >
-                <ArrowLeft />
+                <CaretLeft />
                 Back
               </Button>
             )}
@@ -301,7 +301,7 @@ export function PersonalizeScreen() {
               }}
             >
               {step === 2 ? "Open ember" : "Continue"}
-              <ArrowRight />
+              <CaretRight />
             </Button>
           </div>
         </footer>

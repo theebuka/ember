@@ -1,4 +1,5 @@
 import type { Strategy } from "../types";
+import { withMomentumRisk } from "./momentum-risk";
 import { clamp, latest } from "../indicators/stats";
 import { sma } from "../indicators/moving-averages";
 import { momentumRank } from "../indicators/regression";
@@ -29,7 +30,7 @@ const MAX_GAP = 0.15;
  * average, and any single-day gap beyond 15% inside the window disqualifies
  * the name — a jump that large is usually news, not trend.
  */
-export const clenow: Strategy = {
+export const clenow: Strategy = withMomentumRisk({
   id: "clenow",
   name: "Clenow momentum ranking",
   family: "momentum",
@@ -68,6 +69,7 @@ export const clenow: Strategy = {
       return {
         strategyId: "clenow",
         score: 0,
+        quiet: true,
         confidence: 0.5,
         rationale: `Disqualified: a ${pct(largestGap)} single-day move inside the ranking window. A jump that size is news, not trend.`,
         horizonDays: 90,
@@ -126,4 +128,4 @@ export const clenow: Strategy = {
       halfLifeDays: 40,
     };
   },
-};
+}, { crash: true });

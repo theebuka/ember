@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Megaphone, X } from "@/components/common/icon";
+import { CaretRight, Megaphone, X } from "@/components/common/icon";
 import { useNotifications } from "@/store/use-notifications";
 import type { Broadcast } from "@/lib/notifications/inbox";
 import { pinnedFrom, writeDismissedCookie } from "@/lib/notifications/pinned";
@@ -103,9 +103,10 @@ export function PinnedBanner({
             nowhere would be a 404 in a different costume. */}
         <Link
           href={notice.href ?? "/notifications"}
-          className="mt-2 inline-block text-caption font-medium text-brand-text underline-offset-4 hover:underline"
+          className="mt-2 inline-flex items-center gap-0.5 text-caption font-medium text-brand-text underline-offset-4 hover:underline"
         >
-          {notice.href ? (notice.action ?? "View") : "Read it"} →
+          {notice.href ? (notice.action ?? "View") : "Read it"}
+          <CaretRight className="size-3.5" />
         </Link>
       </div>
 

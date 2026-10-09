@@ -89,7 +89,7 @@ npm run build        # production build
 npm run start        # serve production build
 npm run lint         # eslint
 npx tsc --noEmit     # typecheck — run before declaring any phase done
-npx vitest run       # unit tests — 396 passing (engine, exposure triggers,
+npx vitest run       # unit tests — 425 passing (engine, exposure triggers,
                      #   finding ranking, backtest invariants, mock calendar,
                      #   portfolio math, CSV import + export round-trip, ledger
                      #   validation, watchlist resolve, alert scheduling for both
@@ -130,8 +130,8 @@ The four steps:
 
 | | |
 |---|---|
-| `audit.mjs` | axe-core · 15 routes × 2 themes × 2 widths, on a seeded book |
-| `capture.mjs` | 62 screenshots + a 320→1920 overflow sweep |
+| `audit.mjs` | axe-core · 20 screens × 2 themes × 2 widths, on a seeded book |
+| `capture.mjs` | 74 screenshots + a 320→1920 overflow sweep over 18 routes |
 | `perf.mjs` | Lighthouse scores, and layout shift observed on a seeded ledger |
 | `measure.mjs` | track record, payload sizes, cold/warm route timings |
 
@@ -364,7 +364,7 @@ The brand is **`#2563EB`**, chosen by the user. It is exactly Tailwind's `blue-6
 - Hairlines instead of shadows. **One exception:** `shadow-overlay`, for chrome that floats *over* scrolling content. Never on a card.
 - **Desktop is a frame: the rail on `canvas`, the page a white panel inset beside it** (`AppShell`). Anything in the rail sits on `canvas`, so it is `ground` with a hairline, never `surface-2` — which is a well *inside* a page and disappears on canvas. The panel is `overflow-clip`, not `overflow-hidden`, so it rounds its corners without becoming a scroll container and sticky headers still stick.
 - **`--radius` is 12px.** Buttons, chips and segmented controls stay fully round; containers and inputs use the scale. At 16px a 48px input was a pill in all but name.
-- **Section labels are sentence case, in ink** (`eyebrow`, 15px semibold). Never uppercase-and-tracked again: beside a lowercase grey hint it opened every block on two whispers, which is the terminal register, not the product one.
+- **Section labels are sentence case, in ink** (`eyebrow`, 14px semibold). Never uppercase-and-tracked again: beside a lowercase grey hint it opened every block on two whispers, which is the terminal register, not the product one.
 - **A phone gets a shorter version of a dense block, never a squeezed one.** Supporting lines (citations, rule notes, regime sentences) are `max-md:hidden` and live on the full read; nothing is abbreviated or truncated to fit.
 - **One page grid.** Every page body shares its header's left edge; a reading-width page caps its blocks (`PageBody narrow`, `PageHeader narrow`), never centres a column away from its title.
 - **What ends a page ends it at every width.** A disclaimer, a plan card or a sponsor row in a two-column page goes in `PageColumns`' `footer`, never at the bottom of the main column — on a phone the aside stacks after the main column, and the page's last line would land in its middle (decision 278).
@@ -398,7 +398,7 @@ The brand is **`#2563EB`**, chosen by the user. It is exactly Tailwind's `blue-6
 - **Geist** (variable) is the interface face, via `next/font/google` (downloaded at build, self-hosted, `--font-ui`). Chosen 2026-09-29 over Inter and Satoshi after running both live. **Every face-specific value is a `--face-*` property in `globals.css`**, reached through `figure`, `eyebrow` and `tracking-display` / `tracking-title` / `tracking-wordmark` — never an arbitrary `tracking-[…]`. **Satoshi is kept for a revert**: its file stays in `src/app/fonts/`, and its values and loader are in `docs/design-system.md` → "The interface face".
 - **IBM Plex Mono** for ticker symbols and timestamps only — uppercase, `+0.04em` tracking.
 - **All money and percentages use `font-variant-numeric: tabular-nums` in the interface face, never mono.** Mono numerals everywhere is the tell that a finance app was themed rather than designed. Tabular figures also stop digits jittering as prices tick.
-- Scale: `64 / 40 / 28 / 20 / 17 / 15 / 13` → `figure / display / title / heading / body / caption / micro`.
+- Scale: `56 / 36 / 28 / 20 / 16 / 14 / 12` → `figure / display / title / heading / body / caption / micro`, and on a phone the top four step down to `44 / 28 / 22 / 18`. The phone steps live in one `@media (width < 48rem)` block after `@theme`; the Figma file has the same two sets as the Desktop and Mobile modes of "ember / Type". Decision 293.
 - **A new size goes in two places**: `@theme` in `globals.css` *and* the `font-size` group in `lib/utils.ts`. tailwind-merge assumes an unrecognised `text-*` is a colour and will silently delete it when a colour follows — ADR 0016. A test reads the CSS and fails if the lists drift.
 - **There is no width axis any more.** Neither Satoshi nor Geist has one, so hero figures get their density from weight and the `--face-figure-*` tracking, and a column heading that won't fit steps *down a size* and hyphenates. Never truncate to `Conse…`, never invent an abbreviation. ADR 0023.
 
@@ -406,6 +406,8 @@ The brand is **`#2563EB`**, chosen by the user. It is exactly Tailwind's `blue-6
 - Ramp is **60 / 52 / 44 / 36** (`xl` / `lg` / `default` / `sm`) for text buttons, fully rounded at every size; icon buttons stay square at 56 / 48 / 40 / 32. A placeholder for a button reserves the same height (decision 277). `tap-target` puts a 44px floor under the hit region on coarse pointers — vertical only, ADR 0021.
 - Inputs and selects are **filled wells** (`surface-2`), not bordered boxes. On a white page a 1px outline is the weakest possible signal that something is editable.
 - **Icons come from `components/common/icon.tsx` and nowhere else.** One house weight; never set `strokeWidth` at a call site. Active navigation is `weight="fill"`, not the same outline in a different colour.
+- **Navigation is a caret, never an arrow** (decision 295). Back is `CaretLeft`, forward and "go there" are `CaretRight`, including a link's trailing glyph (no `→` in copy). `ArrowUpRight` stays for links that leave ember; `→` stays between two dates, where it means a range.
+- **The phone tab bar is pills, not circles** (decision 294): 70 × 52 from 400px, 64 from 375px, 56 below. Change the item size and `--nav-height` moves with it.
 
 ### Charts
 - **No candlesticks. No red/green chart fills. Ever.** Single-hairline area lines with a 6% tint. Red-green flicker is the strongest casino signal in a trading UI and the brief explicitly rules that feeling out. Direction belongs in badges and chips where it reads calmly.
@@ -484,7 +486,12 @@ The brand is **`#2563EB`**, chosen by the user. It is exactly Tailwind's `blue-6
   with agreement, so a duplicate does not cancel out — it doubles one opinion's
   weight and manufactures unanimity. `ts-momentum` and `dual-momentum` measured
   **1.00** for the engine's whole life before phase 24. `collinearity.test.ts`
-  fails at 0.98 and holds an exact list of the pairs above 0.85.
+  fails at 0.98, and every pair above 0.85 must be in `OVERLAP_GROUPS`, which the
+  ensemble discounts to its effective number of voices (decision 304).
+- **A rule waiting for its event returns `quiet`, and a rule that cannot assess
+  an instrument returns null.** Neither may cost the call anything; only a
+  listing too young for the rule's `minBars` does. A new event rule that returns
+  a plain score of 0 instead dilutes every blend toward hold.
 - **A peer is cut by UTC day, never by array index.** Yahoo returns 1,214 bars for
   one international listing and 1,280 for another, so the same index is a different
   calendar day. Nothing fails when this is wrong; the cross-sectional rules just
@@ -591,11 +598,11 @@ The brand is **`#2563EB`**, chosen by the user. It is exactly Tailwind's `blue-6
   while the paragraphs were still there made the pane denser rather than calmer.
   Cut the copy first, then give it 40px.
 - **Settings is a sidebar on desktop and a drill-in list on a phone** (decision
-  284). Each pane opens with `SettingsPaneHeader` (its name, 20px, and one line);
-  each group is `SettingGroup` — a 17px heading, rows in one bordered container,
-  an optional footnote; a row's label is 15px medium. Sizes step *down* from pane
-  to group to row; a 15px group label over 17px rows is what "a hierarchy
-  problem" looked like. No group is named after its pane.
+  284). Each pane opens with `SettingsPaneHeader` (its name at `heading`, and one
+  line); each group is `SettingGroup`: a `body` heading, rows in one bordered
+  container, an optional footnote; a row's label is `caption` medium. Sizes step
+  *down* from pane to group to row; a group label smaller than its rows is what
+  "a hierarchy problem" looked like. No group is named after its pane.
 - **A settings group is the one place a bordered container is the default.**
   It is the inset grouped list every settings reference draws; the card rule
   above is about content screens. Never a bare `SettingRow` outside a group.
@@ -665,6 +672,8 @@ The user is explicitly particular about this. These are requirements, not aspira
 - Restrained analyst, not a bot. `Moderate · 68`, never `🔥 HIGH`.
 - Buttons name their outcome and keep the name through the flow (`Execute` → toast `Executed`).
 - Sentence case. Active voice. No emoji in product UI.
+- **Join clauses with a full stop, a comma or a colon, not a dash.** A dash between two clauses was the most common tell that copy was generated rather than written. Keep `—` for an empty value in a table.
+- **One action, one name, everywhere.** Loading the sample book was "Explore with sample data" in two places and "Use sample data" in a third. It is "Use sample data".
 - **No counts or horizons as literals in copy.** "Ten strategies", "a 72-hour
   window" and "the next three days" all went stale. Read the number from the
   engine (`describeHorizon`, `HORIZON_HOURS`) or describe the kind.
@@ -734,7 +743,7 @@ See `docs/decisions/` for full ADRs. Summary:
 | 049 | Direction colours are calibrated against **their own tints**, not white | `text-moss` lives on `bg-moss-tint`, never on white. Measured against white every tinted chip and the nav pill sat just under AA — 4.33 for ember, 4.46 for moss |
 | 050 | Placeholders reserve a **line box**, not a rectangle ([ADR 0019](docs/decisions/0019-skeletons-are-sized-by-type-metrics.md)) | `h-4` where `text-body` lands is 7px a row, and the asset page measured 0.635 CLS against a stated rule of zero. A transparent glyph in the real type class can't drift |
 | 051 | The public argument pages are **exempt from the first-run gate** | Lighthouse found the redirect made every route uncrawlable. Methodology and track record hold nothing personal, they are the pages you would send someone, and setup is a bad welcome |
-| 052 | ⌘K is **desktop-only and mounted only there** | A key combination is not an affordance on a touch screen, and the bottom nav already puts every destination one thumb away |
+| 052 | ⌘K is **desktop-only and mounted only there** — *phones search from the header since 296* | A key combination is not an affordance on a touch screen, and the bottom nav already puts every destination one thumb away |
 | 053 | A navigation out of onboarding is **claimed by a ref before it starts** ([ADR 0020](docs/decisions/0020-the-onboarding-gate-is-verified-not-assumed.md)) | `completeOnboarding()` flips a subscribed selector in the same commit, so the self-heal effect re-ran and its `router.replace("/")` overtook the `/portfolio` the button asked for. A ref, not state, because it must be true before the render that schedules the effect |
 | 054 | The gate cookie write is **read back**, and "cookies blocked" is a screen | `document.cookie =` fails silently under restricted storage. The app redirected into `proxy.ts`, got bounced, self-healed, and bounced again — a loop that survives reload and in which every button looks dead. A `?onboarded=1` escape hatch was rejected: it survives one navigation and then lies |
 | 055 | Sticky chrome is **opaque, never `backdrop-blur`** | `backdrop-filter` forces a compositing layer, and composited `position: sticky` is a long-standing iOS Safari hit-test hazard — the layer paints where it scrolled to while its tappable region stays put. It was the only structural pattern shared by the onboarding footer and the page header, which is what predicted "and some other buttons" |
@@ -977,6 +986,19 @@ See `docs/decisions/` for full ADRs. Summary:
 | 290 | **The edge refresh reads the session; it doesn't ask who it belongs to** | Reported as clicks not responding. Signed in, every navigation — and every client-side route fetch — waited on `getUser()` in `proxy.ts`, a Supabase round trip (757ms measured in development) to answer a question the proxy never uses: it exists to rotate an expiring token. `getSession()` goes to the network only when the token is near expiry. Who a request belongs to is still decided by `getClaims()` (the plan) and by RLS. Separately, `next dev` compiles each route on first visit and never prefetches, so it will always feel slower than a production build |
 | 291 | **The Admin tab uses Settings' hierarchy** | Decision 284 never reached it: four of its six groups were unboxed, its labels were shadcn's off-scale 14px, and a form, a preview and a list ran together under one heading. Now every group is a bordered box like the rest of Settings, each form and its list are separate groups (New broadcast / Published, New code / Codes, Suspend an account / Suspended, Activity), fields are 15px row labels (`components/admin/fields.tsx`), and a form's action sits on a hairline row at the bottom of its box. Found on the way: the admin's own list of notices dropped `placement`, so a pinned broadcast never showed as pinned and Unpin could not be reached. The Plan pane is 840px, the modal's width, because the comparison is two columns; every other pane keeps the 672px measure |
 | 292 | **Every email is one layout, written for email clients** | The auth emails were Supabase's defaults and the digest was a bare `div`. `scripts/email/layout.mjs` renders both: tables and inline styles (Outlook renders with Word), no images (the mark is a coloured cell, so it draws with images blocked, and nothing is fetched when a mail is opened), a system font stack, a padded-cell button, a preheader, the link written out under the button, and dark mode where the client supports it. `npm run emails` writes the four Supabase templates to `supabase/templates/` to paste into the dashboard. The digest's `List-Unsubscribe-Post` header had pointed at a page, which cannot answer the POST a mail client sends; `/api/unsubscribe` answers it with the same definer function (0004) |
+| 293 | **The type scale steps down, and further on a phone** | At the user's direction: the app read as cluttered and the top of the scale was the biggest cause. 64/40/28/20/17/15/13 became 56/36/28/20/16/14/12, and below `md` the figure, display, title and heading steps are 44/28/22/18. Body at 16px still clears iOS's zoom-on-focus threshold. The phone steps are custom properties overridden in one media block, so every `text-*` class and every skeleton sized by one moves together. Supersedes the v2 step-up, where every size moved up to "make it feel larger" |
+| 294 | **The phone tab bar's active state is a pill** | At the user's direction: at 64 × 56 with `rounded-full` the active fill read as a circle. Items are 70 × 52 from 400px (a 372px capsule on a 402pt phone), 64 from 375px and 56 below; `--nav-height` is 78px |
+| 295 | **Carets, not arrows, for navigation** | At the user's direction. Every `ArrowLeft`/`ArrowRight` is `CaretLeft`/`CaretRight`, and the "View →" text arrows on notices and the pinned card are a caret icon. `ArrowUpRight` stays, because it says the link leaves ember |
+| 296 | **Phones can search** | ⌘K was desktop only (decision 052), which left phones with no way to find an instrument by name. Each tab's header has a search button that opens the same menu full screen; cmdk loads on the first press (`command-menu-loader.tsx`), so a phone that never searches never downloads it. The menu's "Log a trade" and "Import a CSV" now open the form they name (`/portfolio?start=log|import`) rather than just Portfolio |
+| 297 | **A 404 page, and the paths people guess** | `/track-record` showed Next's default 404 in another face with no way out. `app/not-found.tsx` is an empty state in the app frame with Home and today's calls; `/track-record` and `/methodology` redirect to their pages under Signals |
+| 298 | **Free's daily calls are buys first** | One of the three was "Sell ORCL" with the note that you don't hold ORCL, so a third of the taste was a Dismiss button. The picks can't know who holds what (they are the same for every free reader), so `unlockedCalls` ranks buys and accumulates ahead of sells and only uses a sell when there aren't enough buys. Holders already get every warning free |
+| 299 | **The chart-history lock is enforced on the server and on the asset page** | The asset chart offered 3M, 1Y and All to free accounts while Portfolio locked them. `/api/series` now refuses a range `rangeAllowed` says no to (403), and the asset chart locks those ranges the way the value chart does. Until the plan is known the asset chart asks for 1M |
+| 300 | **One promoted broadcast at a time** | A bar and a card could both be live, which pushed Home ~250pt down. `pinnedFrom` holds the card back while an undismissed bar exists; the server resolves it the same way, so it costs no layout shift |
+| 301 | **Onboarding's last step offers actions, not choices, and says what Free includes** | "Explore with sample data" looked like one of three options and left setup when tapped. The three are a list of actions with carets, each opening what it names. One line under them gives Free's limits from `PLAN_RULES`. The step buttons are the default size, not `xl` |
+| 302 | **Smaller fixes from the design-file walk-through** | The hit rate is ink, not the loss colour. A suggested size after "≈" is rounded (`formatApproxQuantity`: 0.3145 BTC). The Portfolio chart's range control has its own row on a phone and the label says "past month", not "1m". The risk table headings carry a soft hyphen instead of relying on the browser's dictionary. The asset page's fundamentals, on-chain and past-calls notes read `provider.synthetic`. Holding periods are "trading days", never "1 bars". The rail's Pro card hides on the Plan tab. A locked call's badge says "Pro call". The FAB measures its overlap on load and on every layout change. In dark mode a hairline marks the onboarding and Pro art panels' edge |
+| 303 | **Three rules from an evidence review: MAX, high volume, asset growth** | At the user's direction, after a search for stronger published evidence. Each comes from a theme the engine had nothing in, uses data ember already has, and is replicated outside the US: **MAX** (Bali, Cakici & Whitelaw 2011; lottery demand, equities only because the sign flips in crypto, cap 0.4), **the high-volume return premium** (Gervais, Kaniel & Mingelgrin 2001; Kaniel, Ozoguz & Starks 2012 in 41 countries; abstains on an ordinary week and never reads today's still-filling bar, cap 0.35) and **asset growth** (Cooper, Gulen & Schill 2008; Watanabe et al. 2013 in 40 markets; US only, a new `investment` family, cap 0.5). Measured overlap with the rest of the engine: 0.32, −0.31 and 0.10, all far under 0.85. As predicted, nineteen rules lowered confidence across the board (mean 25.4 → 23.5) and the profiles fell to 10 / 53 / 121 of 214; the floors were re-derived to **33 / 25 / 20**, restoring 20 / 77 / 144. That is the third time, which is §9 item 7's argument. Considered and not added: risk-managed momentum and frog-in-the-pan (engine modifiers, not rules; next), gross profitability and same-month seasonality (overlap and weak replication), the earnings-announcement premium (no historical dates), post-earnings drift (gone in large caps), FX value (needs CPI) |
+| 304 | **Confidence no longer depends on how many rules there are** | At the user's direction, closing §9's item. Measured first: adding decision 303's rules cost coverage 1%, agreement 6% and the mean of the rules' own confidence 5%, so coverage was not the main lever. Three changes. **A rule that cannot assess an instrument** (`evaluate` returns null: no accounts, no peers, no on-chain data) costs nothing; before, every international listing paid for three accounts rules it can never have, and every crypto backtest bar paid for the on-chain rule it is withheld. **A rule waiting for its event is `quiet`**: Donchian inside its channel, Connors with no washout or below its 200-day, Clenow disqualified by a gap, an ordinary volume week. Shown at 0% of the blend, left out of the blend, the agreement and the coverage; they had been diluting every blend toward hold. **Correlated rules share a voice**: `OVERLAP_GROUPS` declares ts-, xs- and dual momentum at ρ 0.92, each weighted 1 / (1 + (k − 1)ρ), so the three count as about 1.06 voices; `collinearity.test.ts` fails if the declared ρ drifts from the measured one. A listing too young for a rule still costs coverage. Tests pin the property: a null, a quiet rule and a duplicate change nothing. The scale moved once more, so the floors are **32 / 24 / 17** (21 / 75 / 136 of 214). Not changed, and why: what remains is composition, not count. Confidence averages how sure the rules are and how far they agree, so a new rule weaker or more independent than the rest lowers it, and on generated prices, where there is nothing to find, independent rules disagreeing is the honest result. Normalising each rule's confidence to its own cap would remove the first; it is noted, not done |
+| 305 | **Two momentum checks: continuity and momentum's own risk** | At the user's direction, from the evidence review. Both adjust *confidence*, never direction, only ever down, equities only, and name themselves in the read's rationale when they bite (`strategies/momentum-risk.ts`, `withMomentumRisk`). **Continuity** (Da, Gurun & Warachka 2014): information discreteness over the 12-1 window, ranked against the market; the steadier half untouched, the more discrete half discounted to 0.6. On ts-, xs-, dual and residual momentum; not Clenow, whose R² already rewards steadiness. **Momentum's own risk** (Barroso & Santa-Clara 2015; Daniel & Moskowitz 2016): a winners-minus-losers decile portfolio per market, rebalanced monthly, built once per universe and read by date with no lookahead (tested); the cross-sectional rules are scaled by its usual six-month volatility over its current one, floor 0.5. Targets the series' own running mean rather than the paper's 12%, which was calibrated to a different portfolio. Not on ts-momentum, which tends to hold up in those conditions. Measured on generated prices: continuity discounts 71 of 176 equities below 0.9; the risk scale never fell below 0.94 in five years, because a random walk has no momentum crashes, so it is unobserved where it matters. The floors were **not** moved: the profiles went 21 / 75 / 136 → 19 / 71 / 135, and fewer momentum calls on jumpy names is the intended effect (decision 304's rule: re-derive for bookkeeping, not for evidence) |
 
 ---
 
@@ -1033,6 +1055,7 @@ See `docs/decisions/` for full ADRs. Summary:
 *(Maintain rigorously. Anything mocked, stubbed, or knowingly incomplete goes here the moment it's introduced.)*
 
 - **Every screen is real; nothing links to a stub.**
+- **The dev project has two test broadcasts live**, a bar ("Ember has been acquired!") and a card with placeholder text. Decision 300 stops them showing together, but they are still test rows; delete them from `notices` before anyone outside sees the app.
 - **`0009` is applied**, verified 2026-09-29 by probing as an anonymous client: `app_settings` reads `200 []` (public select, no rows yet, so every reader gets the default — local currency on), and an anonymous insert is refused `401 42501` by RLS. What is not yet observed is the admin half — a signed-in admin flipping the switch, and a signed-in non-admin being refused by `is_admin()`; both need a real session.
 - **`0010`, `0011` and `0012` are applied** (run by the user in the SQL editor, 2026-10-06). **The admin panel and a successful redemption have not been observed**: both need a signed-in admin, which the in-app browser cannot be. The panel and the field were rendered by hand to check layout and formatting; the database half is reasoned, not run.
 - **The success screen's two signed-in states — *confirming* and *hasn't come through* — need a signed-in free account and have not been observed; the gate photographs its signed-out state, and the subscriber states were checked by hand through the development preview.
@@ -1185,9 +1208,9 @@ See `docs/decisions/` for full ADRs. Summary:
   because nobody has typed a row in, which is the intended state rather than a
   missing table. The upsell components and the gate are exercised only by the free
   path.
-- **The engine is sixteen rules across eight families.** Thirteen apply to
-  equities (eleven internationally, since Piotroski and the Magic Formula have no
-  accounts to read), nine to crypto, five to FX. Every one carries a
+- **The engine is nineteen rules across eleven families.** Sixteen apply to
+  equities (thirteen internationally, since Piotroski, the Magic Formula and asset
+  growth have no accounts to read), nine to crypto, five to FX. Every one carries a
   peer-reviewed or published source, and the methodology page is derived from the
   registry rather than transcribed (ADR 0012), so it cannot drift from that list.
 - **Three of those sixteen are near-collinear, and it is measured rather than
@@ -1197,9 +1220,8 @@ See `docs/decisions/` for full ADRs. Summary:
   rules agree, part of the agreement those three supply is arithmetic rather than
   evidence — sixteen rules is not sixteen opinions. `collinearity.test.ts` prints
   the whole matrix, fails outright at 0.98, and holds the three pairs above 0.85
-  as an exact named list so a fourth cannot join quietly. **The fix is
-  correlation-aware weighting**, which moves every number in the app and is on the
-  §9 list rather than folded into a phase about adding rules. A worse version of
+  as an exact named list so a fourth cannot join quietly. **Since decision 304
+  the ensemble discounts them** to about one voice between them. A worse version of
   this defect was live for the engine's whole life: `dual-momentum`'s score was
   character-identical to `ts-momentum`'s and the two measured **1.00** (ADR 0035).
 - **Confidence is not comparable across ensemble sizes, and that is a real design
@@ -1210,10 +1232,12 @@ See `docs/decisions/` for full ADRs. Summary:
   maximum 54 — and on the previous floors the Conservative profile surfaced **4 of
   214**, which is not a cautious setting but a broken one. The floors were
   re-derived from the new distribution (37 / 28 / 23, restoring 20 / 77 / 143 of
-  214 against 20 / 78 / 136 before). **This is the second time a fixed floor has
+  214 against 20 / 78 / 136 before), and again for decision 303 (33 / 25 / 20). **This is the second time a fixed floor has
   quietly become the only filter** — ADR 0013 was the first — so every future phase
   that adds or removes a rule has to re-measure it until confidence stops
-  depending on rule count. That is an ensemble change, and it is in §9.
+  depending on rule count. Decision 303 was the third time; decision 304 removed
+  the count dependence (abstentions, event rules and the momentum clones), so a
+  floor now moves only when the evidence's character does. That is an ensemble change, and it is in §9.
 - **Peers were being compared across different dates until phase 24.**
   `buildContext` cut every peer at the *subject's* array index, with a comment
   asserting that was sound because instruments in one market share a trading-day
@@ -1355,8 +1379,8 @@ See `docs/decisions/` for full ADRs. Summary:
   field appears on it. Prose alone would erode the first time someone reached
   for "just a relevance nudge". ADR 0027 amends ADR 0005 explicitly rather than
   quietly.
-- **The screenshot set is current** — 62 captures, regenerated 2026-08-18 over
-  15 routes × 2 viewports × 2 themes, plus the command menu on desktop, which
+- **The screenshot set is current** — 74 captures, regenerated 2026-10-09 over
+  18 routes × 2 viewports × 2 themes, plus the command menu on desktop, which
   is the one piece of the app a route list can never reach (⌘K is mounted on
   desktop only, decision 052). `capture.mjs` empties the directory first, so a
   renamed route can no longer leave a two-redesigns-old PNG sitting beside a
@@ -1517,7 +1541,7 @@ See `docs/decisions/` for full ADRs. Summary:
 - **Advice is cached 60s in module scope** (`lib/api/server.ts`), or **5s while the universe is still filling** — holding a partial result for the full minute would discard exactly the fetches the load deadline was betting on. Per server instance, evaporates on redeploy.
 - **There is still no shared cache, and on serverless the disk tier is inert.** `.cache/market/` survives a restart locally, which is what makes cold survivable against these quotas, but a fresh container has no `.cache/`. Phase 22 planned a Supabase `series_cache` tier and it was **deliberately deferred to phase 26**: a store with nothing scheduled to fill it is half a feature, and the cron that would fill it lands there. The load deadline is what makes that deferral safe — a cold container is now 8 seconds and honest about it rather than a minute of nothing.
 - **Cost basis is average-cost, not FIFO.** The two only diverge on a partial sell of a position built in tranches. The lot detail is all in the transaction log, so FIFO is a settings toggle and a recomputation, never a migration.
-- **`/api/track-record` still costs about 19 seconds cold, and phase 24 bought the
+- **`/api/track-record` costs about 11 seconds cold for the first profile and 5 for the next** (measured 2026-10-09; it was ~19s for two), **and phase 24 bought the
   six new rules for nothing.** It was 400ms at thirteen instruments, 2–5s at 110,
   and 18.5s at 214. Adding six rules took the walk-forward to **50.7s**; three fixes
   found by profiling took it back to **24.9s** at the engine level, and the route
@@ -1550,17 +1574,17 @@ See `docs/decisions/` for full ADRs. Summary:
   trade on a container. Superseded by precomputing at build time rather than fixed.
 - **Per-strategy hit rates credit every driver of a call.** A call driven by four rules counts for all four, so the counts sum to more than the total. It measures which rules were present when things went well, not which one was responsible — the page says so.
 - **`measure.mjs` reports 176 equities**, which is 72 US plus 92 international plus 12 NGX. Only 164 of them have a fetchable history; the twelve Lagos rows are collecting.
-- **Payload sizes, measured, and the next lever is now the obvious one.**
-  `/api/advice` is **236 KB** for a ranked page of 20 (78 of 214 actionable on
-  Balanced); `/api/findings` is **157 KB** for a page of 12. Both are bounded by a page limit rather than by the size of the
-  universe, which was the point. **Both grew by roughly a third in phase 24 and the
-  cause is entirely the citations**: an assessment now carries up to sixteen
-  contributions instead of ten, each with its own full `Citation` object, and the
-  same sixteen citations are re-serialised on all 20 assessments. Deduplicating
-  them into a per-response map would cut both by close to half — it was worth doing
-  deliberately before and it is close to overdue now. It means renegotiating
-  decision 028 (citations travel on `Contribution` so components never have to look
-  one up), which is why it is a decision rather than a tidy-up.
+- **Payload sizes, measured 2026-10-09, now on a free reader.** `measure.mjs`
+  requests signed out, so since decision 288 it measures the free plan:
+  `/api/advice` is **56 KB** with 3 calls in full and 71 of 214 actionable on
+  Balanced, and `/api/findings` is **90 KB** for 6 findings on 12 positions. The
+  earlier 236 KB and 157 KB were a page of 20 and 12 in full and are not comparable.
+  A Pro page is still dominated by **citations**: each assessment carries up to
+  nineteen contributions, each with its full `Citation` object, re-serialised on
+  every assessment. Deduplicating them into a per-response map would cut a Pro
+  response by close to half; it means renegotiating decision 028 (citations travel
+  on `Contribution` so components never have to look one up), which is why it is a
+  decision rather than a tidy-up.
 - **The window's decay term is dormant for every call the engine actually makes.**
   `computeWindow` multiplies liquidity, an event mask and signal decay — and the
   third of those is doing almost nothing. Measured: the blended half-life lands
@@ -1593,34 +1617,50 @@ See `docs/decisions/` for full ADRs. Summary:
 - **Company fundamentals are filed when live.** Finnhub's `/stock/financials-reported` is the parsed 10-K, which is the SEC EDGAR data ADR 0006 planned for without ember having to read XBRL — so this gap is closed rather than deferred. On the generated path they are still invented, and the methodology page reads which is running rather than asserting it.
 - **On-chain metrics are derived from the generated price path**, not from a chain. Realised cap is approximated by a 200-bar EMA of market cap.
 - **`PROFILE_WEIGHTS` and `regimeWeight()` are reasoned judgement calls, not fitted parameters.** Stated openly in the source so they can be argued with; never present them as estimated.
-- **Backtest results on mock data are near chance, and that is correct.** Generated prices are a random walk with clustered volatility — there is no structure to find. Measured 2026-08-17 by `scripts/measure.mjs`, walk-forward over all 214 instruments on the sixteen-rule ensemble, **entering at the first bar after each call rather than at the close it was computed from** (decision 167):
+- **Fundamentals are not point-in-time in a backtest.** `buildContext` hands every past bar the latest filing, so Piotroski, the Magic Formula and asset growth are evaluated on accounts that were not yet filed. Same on both paths, and it flatters the backtest for those three rules; a filing-date field on `Fundamentals` is the fix.
+- **Backtest results on mock data are near chance, and that is correct.** Generated prices are a random walk with clustered volatility — there is no structure to find. Measured 2026-10-09 by `scripts/measure.mjs`, walk-forward over all 214 instruments on the nineteen-rule ensemble, **entering at the first bar after each call rather than at the close it was computed from** (decision 167):
 
   | Profile | Calls | Hit rate | Avg return | Median | Max drawdown | Stopped out |
   |---|---|---|---|---|---|---|
-  | Conservative | 479 | 41.3% | +1.2% | −1.7% | 2.4% | 49.1% |
-  | Balanced | 1574 | 42.0% | +0.3% | −1.9% | 10.8% | 46.7% |
-  | Aggressive | 2514 | 41.3% | +0.4% | −2.5% | 24.0% | 49.4% |
+  | Conservative | 581 | 43.5% | −0.4% | −1.5% | 3.9% | 46.0% |
+  | Balanced | 1557 | 42.1% | +0.5% | −1.9% | 7.4% | 45.5% |
+  | Aggressive | 2380 | 43.5% | +0.6% | −1.9% | 15.3% | 45.8% |
 
-  All three are freshly measured, and **every one of them moved for four reasons across two phases**, which is why they should not be read as the engine getting better or worse: six rules were added, `dual-momentum` was rescored (it was a duplicate of `ts-momentum` — ADR 0035), the confidence floors were re-derived, and phase 25 moved every entry a bar later and onto an open rather than a close (ADR 0036). Against phase 23 the shape of the change is consistent: slightly lower hit rates (42.6/43.8/42.8 → 41.4/41.7/41.2), **materially lower drawdowns** (3.0/12.8/25.6 → 2.7/10.2/22.8), and lower average returns. **Balanced's mean is now +0.1%, which is zero.** On a random walk that is the honest outcome and it is worth saying rather than rounding past: more rules disagreeing produces a book that trades more often for less, and there is no edge in this data for the diversification to find. The one thing that would be evidence is the drawdown falling while the median held, which is what happened.
+  **Every figure moved for several reasons at once**, so none of them is a finding
+  about one change: three rules were added (decision 303), confidence stopped
+  counting quiet and unassessable rules and started counting the three momentum
+  clones as one voice (304), the floors were re-derived twice, and the momentum
+  checks discount jumpy and crash-prone momentum (305). Against the sixteen-rule
+  figures (479 / 1574 / 2514 calls): hit rates rose slightly (41.3 / 42.0 / 41.3 →
+  43.5 / 42.1 / 43.5), and **drawdowns fell sharply for Balanced and Aggressive**
+  (10.8 → 7.4%, 24.0 → 15.3%) while Conservative's rose (2.4 → 3.9%) on a fifth more
+  calls. The likeliest reading is that the trend book no longer carries three votes
+  for one opinion, so the books are less concentrated in whatever momentum
+  happened to say; that is a hypothesis, not a measurement. **Conservative's mean
+  is now −0.4% and the other two are +0.5–0.6%**: on a random walk all three are
+  zero, and the table should be read that way.
+
+  The sixteen-rule table, for the record: 479 / 1574 / 2514 calls, hit 41.3 / 42.0 /
+  41.3%, mean +1.2 / +0.3 / +0.4%, drawdown 2.4 / 10.8 / 24.0%.
 
   Before reading any shift here as a change in the engine, note that `generateReturns` is seeded by *symbol* — the MATIC → POL rename in phase 23 (decision 125) moved the Balanced count by eight trades on its own.
 
 Otherwise **they drift by about one trade over the course of a session**: the series the backtest walks ends on today's live intraday bar, so a marginal call near the end can flip. Two runs twenty minutes apart put Conservative at 37.7% and then 37.2%, which is one trade of 247; a phase-24 pair put it at 40.5% and 42.0% on 131 calls, which is two. Anything larger than that between runs is a real change, not noise. A hit rate near 40% with a positive mean and a negative median is the trend-following payoff shape (many small losses, a few large wins, stops doing the cutting), not evidence of an edge. The first caveat on the track-record page must keep saying so. **Every figure moved when the universe went global**, and not only because there are more instruments: the international listings are a genuinely different sample — different sessions, different currencies, no fundamentals — so the hit rate rising from ~40% to ~43% is a change in *what is being measured*, not evidence that the engine improved. The Aggressive drawdown nearly doubling to 25.6% is the same story pointing the other way. Neither is a finding about the strategies. **The same caution applies to phase 24's figures** — six new rules, a rescored `dual-momentum` and three re-derived floors all landed together, so no single number in that table can be attributed to any one of them.
 
 **The v1 figures were replaced entirely**: the universe grew 8×, the mock's variance recursion changed (ADR 0026, every price is different), and the backtest moved from the combined actionability predicate to `qualifies()` (ADR 0025). Three independent reasons the old numbers describe nothing that still exists.
-- **Confidence lands in roughly 10–55 in practice**, not 0–100, because it is a product of four sub-unit terms. Measured on the sixteen-rule ensemble: mean 26, median 25, maximum 54. Labels are calibrated to that (`Low` <35, `Moderate` 35–55, `High` ≥55) and **`High` is very nearly unreachable**, which is a pre-existing wart rather than a new one. The floor a call must clear moves with the risk profile — **37 / 28 / 23**, re-derived in phase 24 from the new distribution (ADR 0013 set the original 45 / 35 / 28) — so **all three profiles now surface calls badged `Low`**, more of them the more aggressive the profile. The label describes the evidence and the floor describes what a profile asked to be shown; they are deliberately no longer the same number. On the current universe the three clear **20 / 77 / 143 of 214**, which is the settings screen's measured preview, against 20 / 78 / 136 before this phase and 10 / 34 / 64 on the 110-instrument universe.
+- **Confidence lands in roughly 10–55 in practice**, not 0–100, because it is a product of four sub-unit terms. Measured on the nineteen-rule ensemble (2026-10-09, Balanced): mean 23, median 23, maximum 61. Labels are calibrated to the older distribution (`Low` <35, `Moderate` 35–55, `High` ≥55) and **`High` is reached by at most two instruments**, which is a pre-existing wart rather than a new one. The floor a call must clear moves with the risk profile — **32 / 24 / 17** since decision 304 (ADR 0013 set the original 45 / 35 / 28; phase 24 37 / 28 / 23) — so **all three profiles now surface calls badged `Low`**, more of them the more aggressive the profile. The label describes the evidence and the floor describes what a profile asked to be shown; they are deliberately no longer the same number. On the current universe the three clear **19 / 71 / 135 of 214**, which is the settings screen's measured preview, against 20 / 77 / 143 on the sixteen-rule engine and 10 / 34 / 64 on the 110-instrument universe.
 - **Service worker registers in production builds only** (a cached shell makes hot reload lie), unless `NEXT_PUBLIC_EMBER_SW_IN_DEV=1` — and then as `/sw.js?mode=dev`, which caches nothing (decision 248). **A browser that ran the dev worker before 2026-09-29 holds a stale cache** and needs its registration and caches cleared once (DevTools → Application → Storage → Clear site data). Verify offline behaviour against `npm run build && npm run start`, not `dev`.
 - **Sidebar collapse flashes expanded on first paint** for users who collapsed it, because `localStorage` isn't readable server-side. A cookie-backed read in the server layout would fix it; deferred as low-impact.
 - **`offline.html` duplicates the palette** as literal hex, because it is served when the stylesheet can't be fetched. If the palette changes, update that file too — it's the one place the one-file colour rule can't hold.
 - **The type scale is registered twice**, in `globals.css` (`@theme`) and in `lib/utils.ts` (tailwind-merge). Adding a size to one without the other means the class is silently dropped whenever a colour sits beside it — ADR 0016, and there is a test that reads the CSS and fails if the two drift.
 - **The onboarding cookie is a mirror, not a source.** `hasOnboarded` in the store is authoritative; `ember_onboarded` exists so `proxy.ts` can decide before render. They self-heal when they disagree (ADR 0014), but anything that sets one must set the other.
 - **`/api/risk-preview` runs the ensemble three times, and got *faster* in phase 24 — 400ms → ~200ms** — despite six more rules, because the cross-sectional measures moved into a per-date snapshot the three profile runs now share. Memoised per profile for 60s over one shared universe load; a cold settings visit still pays for all three at once.
-- **Layout shift is not zero, and there are now two screens carrying it.** Measured 2026-08-17 by `scripts/perf.mjs` on a seeded ledger: **asset detail is 0.074 mobile** (2026-10-01) and **Settings — account is 0.065**; every other screen sits under 0.025 — including Home with a live pinned broadcast on it, which measures 0.000 because the banner is resolved on the server. The settings figure is the one to look at next — §8 previously claimed the phase-21 tab refactor had removed it and that claim no longer holds, with the suspect named in §9's carried-forward list. Settings was 0.077 before phase 21, when a sidebar that only existed above `lg` reflowed the pane beneath it; that cause is genuinely gone, so this is a different one. That remainder is `Your position` being inserted the moment `localStorage` becomes readable, because the server cannot know there is a book. Phase 17 moved it from four seconds in to hydration (decision 090) — which does not change the score but changes it from "the thing you were reading moved" to "the page settled" — and fixed everything around it: the hero skeleton was 68px short (ADR 0019's own pattern, missed in the one place the sweep after it didn't reach), the price row was a fragment collecting a 36px `space-y` gap where its `mt-3` asks for 12, and the trending strip wrapped to two rows where the real one wraps to three. Removing the last of it means mirroring the ledger's existence into a cookie (ADR 0014's pattern) — **and phase 28 took exactly that step for the pinned banner**, `ember_pins`, after clamping the copy got Home only from 0.253 to 0.157. The same move works here, and the precedent now exists twice. **The gate is 0.1**, Google's threshold, for the same reason — decision 092.
+- **Layout shift is not zero, and there are now two screens carrying it.** Measured 2026-10-09 by `scripts/perf.mjs` on a seeded ledger: **asset detail is 0.067 mobile** and **Settings — profile is 0.044** (0.065 when it was the Account tab); every other screen sits under 0.02 — including Home with a live pinned broadcast on it, which measures 0.000 because the banner is resolved on the server. The settings figure is the one to look at next — §8 previously claimed the phase-21 tab refactor had removed it and that claim no longer holds, with the suspect named in §9's carried-forward list. Settings was 0.077 before phase 21, when a sidebar that only existed above `lg` reflowed the pane beneath it; that cause is genuinely gone, so this is a different one. That remainder is `Your position` being inserted the moment `localStorage` becomes readable, because the server cannot know there is a book. Phase 17 moved it from four seconds in to hydration (decision 090) — which does not change the score but changes it from "the thing you were reading moved" to "the page settled" — and fixed everything around it: the hero skeleton was 68px short (ADR 0019's own pattern, missed in the one place the sweep after it didn't reach), the price row was a fragment collecting a 36px `space-y` gap where its `mt-3` asks for 12, and the trending strip wrapped to two rows where the real one wraps to three. Removing the last of it means mirroring the ledger's existence into a cookie (ADR 0014's pattern) — **and phase 28 took exactly that step for the pinned banner**, `ember_pins`, after clamping the copy got Home only from 0.253 to 0.157. The same move works here, and the precedent now exists twice. **The gate is 0.1**, Google's threshold, for the same reason — decision 092.
 - **The empty-book state has a shift of its own, and it is larger.** Lighthouse carries no `localStorage`, so its runs see a first visit: Home measures 0.069 mobile there (0.092 before decision 267 gave the empty book the balance's own boxes) against ~0.002 seeded. Same cause, opposite direction — the empty-book block is shorter than the hero-plus-chart skeleton it replaces, so everything below it moves up. Worth fixing only alongside the cookie above, because it is the same missing piece of server-side knowledge.
-- **Mobile Lighthouse performance is 79–88** (68–82 before decision 287), on the throttled profile (simulated slow 4G, 4× CPU), with LCP 4.5–6.6s and TBT 63–124ms. Desktop is 99–100, LCP under 1s, TBT 0ms. **The signals feed is the floor at 68** — it is the screen that renders the largest payload, and that payload grew a third in phase 24 as contributions went from ten to sixteen per assessment. **Asset detail's mobile figure is the least stable in the gate**: three consecutive runs on effectively the same page measured LCP at 6.6s, 8.9s and 4.7s, and the score at 77, 75 and 83. It loads the whole universe to rank peers, and 214 instruments of JSON on a throttled connection sits exactly where Lighthouse's simulated throttling is most sensitive. Treat it as "several seconds and too slow", never as a number to compare run to run. Desktop Signals holds 100 with a CLS of 0.027 from its two-column grid, well inside the 0.1 gate. **This is down from v1's 82–87 and the cause is the universe** — 110 instruments instead of 13 is more JSON to parse and more rows to lay out, and the throttled profile is where that lands. There is no image to blame; the critical path is the stylesheet and the app's own JavaScript, and there is no easy win left without splitting the bundle.
-- **Lighthouse and the seeded CLS run disagree about the signals feed** — 0.182 against 0.000, and it is not reconciled. Lighthouse's throttling and viewport aren't reproducible through a CDP emulation (an unseeded, hand-throttled Playwright run measures 0.0002), so one harness is seeing something the other isn't. Both figures are published rather than the flattering one being chosen; resolving it needs a Lighthouse trace read properly.
-- **No horizontal overflow at any width**, 320→1920 across all 16 routes — but that only became true in phase 17. At 320px an ordinary six-figure balance in the value hero pushed the document 36px wide on four screens, and had done since the v2 type scale landed. The fix is a `max-[374px]:` step down, decision 091.
-- **The accessibility pass is automated only.** 0 axe violations across 64 page audits — and since phase 15 the audit seeds a real book with two stopped-out positions, so the risk rows and the tinted severity badge are actually measured rather than never rendered. But axe cannot judge whether the keyboard path makes sense, whether focus lands somewhere useful, or whether a screen reader's rendering of a finding is comprehensible. Those were walked by hand, not tested by machine.
+- **Mobile Lighthouse performance is 81–83** (measured 2026-10-09; 68–82 before decision 287), on the throttled profile (simulated slow 4G, 4× CPU), with LCP 4.8–5.1s and TBT 11–75ms. Desktop is 98–99, LCP 0.9–1.1s, TBT 0ms. The signals feed, which was the floor at 68, now measures 81 beside Home's 81: a free reader's response is 56 KB, because locked calls carry no working. **Asset detail's mobile figure is the least stable in the gate**: three consecutive runs on effectively the same page measured LCP at 6.6s, 8.9s and 4.7s, and the score at 77, 75 and 83. It loads the whole universe to rank peers, and 214 instruments of JSON on a throttled connection sits exactly where Lighthouse's simulated throttling is most sensitive. Treat it as "several seconds and too slow", never as a number to compare run to run. Desktop Signals holds 100 with a CLS of 0.027 from its two-column grid, well inside the 0.1 gate. **This is down from v1's 82–87 and the cause is the universe** — 110 instruments instead of 13 is more JSON to parse and more rows to lay out, and the throttled profile is where that lands. There is no image to blame; the critical path is the stylesheet and the app's own JavaScript, and there is no easy win left without splitting the bundle.
+- **Lighthouse and the seeded CLS run disagreed about the signals feed** — 0.182 against 0.000. On 2026-10-09 both measured 0.000. Nothing was changed to fix it, so treat it as intermittent rather than resolved. Lighthouse's throttling and viewport aren't reproducible through a CDP emulation (an unseeded, hand-throttled Playwright run measures 0.0002), so one harness is seeing something the other isn't. Both figures are published rather than the flattering one being chosen; resolving it needs a Lighthouse trace read properly.
+- **No horizontal overflow at any width**, 320→1920 across all 18 routes (2026-10-09, after the phone search button pushed Home's header 35px wide at 320px and was hidden below 360px there) — but that only became true in phase 17. At 320px an ordinary six-figure balance in the value hero pushed the document 36px wide on four screens, and had done since the v2 type scale landed. The fix is a `max-[374px]:` step down, decision 091.
+- **The accessibility pass is automated only.** 0 axe violations across 80 page audits (2026-10-09) — and since phase 15 the audit seeds a real book with two stopped-out positions, so the risk rows and the tinted severity badge are actually measured rather than never rendered. But axe cannot judge whether the keyboard path makes sense, whether focus lands somewhere useful, or whether a screen reader's rendering of a finding is comprehensible. Those were walked by hand, not tested by machine.
 - **The profile holds five fields and refuses the rest** — no date of birth, no address, no income bracket, no phone number. ember issues nothing, holds no money and executes no trade, so it has no KYC obligation and every extra field would be pure cost. Nothing is required, there is no completeness meter, and the time zone is detected rather than asked. ADR 0032.
 - **The greeting block will not mention money, and that is enforced.** `greeting.ts` exports `MONEY_WORDS` and a test fails on any prompt template matching it. The rule was already in the file's header comment; phase 17 turned it into something a build can fail on, because the pool's natural register is exactly the line it cannot have and a comment does not survive the first person who reaches past it. Decision 086. The daypart prompt ("How are we feeling this morning?") appears on roughly one visit in fifteen — it is filtered out whenever the greeting above already used the word, which is most mornings.
 - **The trending skeleton's chip widths are approximated, not derived.** Its *heights* come from the type scale like every other skeleton, but how many topics clear the two-mention floor and how long their labels are is not knowable before the response lands. The six widths are the median case and wrap to three rows at 375px like the real strip; a quiet news day produces fewer chips and the strip collapses upward. Only a fixed-height strip could prevent that, and reserving three rows of whitespace on a slow day is a worse screen than a small settle.
@@ -1639,9 +1679,9 @@ built for: it watches 214 instruments across sixteen venues and what you own,
 comes to you with opportunities and with warnings about positions that have
 turned, and carries the news beside them without ever letting it near the engine.
 Everything ships behind one gate (`npm run verify`) that builds, serves and
-measures itself: 362 tests, 0 axe violations over 64 page audits, no horizontal
+measures itself: 425 tests, 0 axe violations over 80 page audits, no horizontal
 overflow at any width from 320 to 1920, and layout shift inside Google's 0.1 on
-every screen — worst 0.057, asset detail on mobile.
+every screen — worst 0.067, asset detail on mobile.
 
 **Phase 26 gave ember a server that works while you are away, and phase 28 gave
 it a voice — and neither has run.** Push, email digests, the NGX collector,
@@ -1705,7 +1745,7 @@ Next, in order of what unblocks the most:
    figure it returned to is still past the point where a skeleton excuses it.
    Never by sampling the universe — a page claiming "computed over everything we
    watch" has to mean it.
-7. **Make confidence independent of how many rules are in the room.** The most
+7. **Done in decision 304: confidence is independent of how many rules are in the room.** Kept below for the reasoning. The most
    consequential thing phase 24 found. `assess()` cuts confidence for
    disagreement and for abstention, and both grow with the *rule count* whether
    or not the added rules are informative — so going from ten rules to sixteen
@@ -1752,9 +1792,9 @@ Carried forward, all recorded in §8 with their reasoning:
 - Citations are re-serialised per contribution, which is most of the remaining payload — and phase 24 made it worse by taking contributions from ten to sixteen, so `/api/advice` went 172 KB → 235 KB. Halving it means renegotiating decision 028.
 - Cost basis is average-cost. FIFO is a settings toggle and a recomputation, never a migration.
 - The remaining layout shift is the hydration class (ADR 0019), on the asset page and on the empty-book Home. One cookie mirroring the ledger's existence closes both; tighten the CLS gate below 0.1 the day it exists.
-- Lighthouse and the seeded CLS harness disagree about the signals feed (0.182 vs 0.000). Unresolved; needs a trace read properly.
-- Mobile Lighthouse is 68–82, down from v1's 82–87, and the cause is the 214-instrument universe rather than any one screen. The signals feed is the floor at 68.
-- Settings — account measures 0.065 of layout shift on mobile, second only to the asset page. §8 used to claim every non-asset screen sat under 0.02 and that is no longer true. Not yet diagnosed: the suspect is the risk-comparison skeleton, whose row headers reserve invisible placeholder words rather than the real labels, so they may wrap to fewer lines than the settled table does — which would be ADR 0019's own mechanism defeated by using stand-in strings. Needs measuring in the browser, not reasoning about.
+- Lighthouse and the seeded CLS harness disagreed about the signals feed (0.182 vs 0.000); both read 0.000 on 2026-10-09 with nothing changed. Watch for it coming back.
+- Mobile Lighthouse is 81–83 (2026-10-09), against v1's 82–87; LCP on the throttled profile is still about five seconds.
+- Settings — profile (the old Account tab) measures 0.044 of layout shift on mobile, second only to the asset page. §8 used to claim every non-asset screen sat under 0.02 and that is no longer true. Not yet diagnosed: the suspect is the risk-comparison skeleton, whose row headers reserve invisible placeholder words rather than the real labels, so they may wrap to fewer lines than the settled table does — which would be ADR 0019's own mechanism defeated by using stand-in strings. Needs measuring in the browser, not reasoning about.
 - **Sync's account-switch hold (decision 233) has never met two real accounts.**
   It needs a signed-in session, which needs the project back. Check both answers
   on a real device: that *use this account's data* leaves exactly the account's
@@ -1780,6 +1820,7 @@ The user is writing a design/engineering case study to senior-design-engineer st
 - [x] Architecture diagram — `docs/case-study/architecture.svg`
 - [x] Signature component study — `docs/case-study/window-band.md`
 - [x] Logo rationale — the ember point as both brand mark and product primitive (`docs/design-system.md`, "The ember point")
-- [x] Screenshots: every screen, mobile + desktop, light + dark — 62 PNGs in `docs/case-study/screens/`, regenerated by `scripts/capture.mjs`, which empties the directory first so the set is never part-current
+- [x] Screenshots: every screen, mobile + desktop, light + dark — 74 PNGs in `docs/case-study/screens/`, regenerated by `scripts/capture.mjs`, which empties the directory first so the set is never part-current
+- [x] Design file and flows — Figma "ember — App design" (`bOiyRBaQ46QkGVeU86NrMI`): every screen on iPhone 16 Pro (iOS 27 status bar) and at 1920 × 1080, light and dark, in sections, prototyped, with a Pitfalls and bugs page. FigJam "ember — Flows & UX" (`sDRF9GhpbL4GnjZHH84OjZ`): sitemap, flows, states, persona, journey map
 - [ ] Before/after shots where a design changed and why — the nav redesign, the type-scale fix and the CLS work all have a genuine "before", but no screenshots were taken of the earlier state. The ADRs carry the reasoning; the images would have to be reconstructed from git history
-- [x] Performance and accessibility numbers — `docs/case-study/performance.md` and `accessibility.md`, both regenerated per run; summarised in `docs/case-study/README.md`. axe 0 violations over 64 page audits, Lighthouse 99–100 desktop / 68–82 mobile, CLS under 0.03 on thirteen of fifteen routes, worst 0.057
+- [x] Performance and accessibility numbers — `docs/case-study/performance.md` and `accessibility.md`, both regenerated per run; summarised in `docs/case-study/README.md`. axe 0 violations over 80 page audits, Lighthouse 98–99 desktop / 81–83 mobile, CLS under 0.02 on thirteen of fifteen measured screens, worst 0.067 (2026-10-09)

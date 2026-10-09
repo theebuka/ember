@@ -141,7 +141,7 @@ export function MethodologyScreen() {
               <ol className="space-y-3">
                 <Step
                   name="Indicators"
-                  body="Standard measures from daily prices — moving averages, RSI, ATR, Donchian channels and trend slope. Each waits until it has enough history."
+                  body="Standard measures from daily prices: moving averages, RSI, ATR, Donchian channels and trend slope. Each one waits until it has enough history."
                 />
                 <Step
                   name="Strategies"
@@ -153,7 +153,11 @@ export function MethodologyScreen() {
                 />
                 <Step
                   name="Regime filter"
-                  body="Volatility is judged against the instrument's own history — 60% is a crisis for EURUSD and a normal day for SOL. The market regime can lower confidence, never raise it."
+                  body="Volatility is judged against the instrument's own history. 60% is a crisis for EURUSD and a normal day for SOL. The market regime can lower confidence, but never raise it."
+                />
+                <Step
+                  name="Momentum checks"
+                  body="Stock momentum counts for less when the move came on a few large days rather than steadily (Da, Gurun & Warachka, 2014), and when momentum itself has been unusually volatile, which is when it has crashed (Barroso & Santa-Clara, 2015). Both can lower confidence, never raise it."
                 />
                 <Step
                   name="Sizing"
@@ -198,9 +202,14 @@ export function MethodologyScreen() {
                               </span>
                             ))}
                           </span>
-                          <span className="num ml-auto text-micro text-stone">
-                            needs {strategy.minBars} bars
-                          </span>
+                          {/* The accounts-based rules read filings, not price
+                              history, and their one-bar minimum would read as
+                              "needs 1 days". */}
+                          {strategy.minBars > 1 && (
+                            <span className="num ml-auto text-micro text-stone">
+                              needs {strategy.minBars} days of history
+                            </span>
+                          )}
                         </div>
                         <p className="mt-1.5 text-caption text-stone">
                           {strategy.citation.claim}

@@ -112,6 +112,20 @@ describe("which calls a plan sees in full", () => {
     expect([...unlockedCalls("free", ranked, actionable, isFree)!]).toEqual(["AAPL", "BTC", "NVDA"]);
   });
 
+  it("spends free's picks on buys before sells", () => {
+    const calls = [
+      { symbol: "ORCL", action: "sell" },
+      { symbol: "AAPL", action: "buy" },
+      { symbol: "BTC", action: "accumulate" },
+      { symbol: "NVDA", action: "reduce" },
+      { symbol: "ETH", action: "buy" },
+    ];
+    const all = new Set(calls.map((c) => c.symbol));
+    expect([...unlockedCalls("free", calls, all, () => true)!]).toEqual(["AAPL", "BTC", "ETH"]);
+    // With too few buys, the strongest sells fill the rest.
+    expect([...unlockedCalls("free", calls.slice(0, 3), all, () => true)!]).toEqual(["AAPL", "BTC", "ORCL"]);
+  });
+
   it("never unlocks a read that doesn't match the profile", () => {
     expect(unlockedCalls("free", ranked, new Set(), isFree)!.size).toBe(0);
   });

@@ -4,13 +4,19 @@ import { POLICY_RATES } from "@/lib/market/universe";
 import {
   crossSectionOf,
   indexAsOf,
+  momentumRiskOf,
   utcDay,
   type CrossSectionSource,
 } from "../cross-section";
 import { buildContext, type Universe } from "../context";
-import type { PeerSeries, StrategyContext } from "../types";
+import type { Fundamentals, PeerSeries, StrategyContext } from "../types";
+import { continuityFactor } from "./momentum-risk";
 import {
+  assetGrowth,
   bab,
+  highVolume,
+  maxEffect,
+  xsMomentum,
   currencyMomentum,
   industryMomentum,
   residualMomentum,
@@ -628,5 +634,253 @@ describe("currency momentum", () => {
   it("says nothing with too few pairs to rank", () => {
     const thin = rows.slice(0, 3);
     expect(currencyMomentum.evaluate(contextFor(thin, "AAABBB"))).toBeNull();
+  });
+});
+
+/* ── The evidence review's additions (decision 303) ────────────────────── */
+
+describe("the MAX effect", () => {
+  /** A quiet month, with one jump of `spike` on its tenth-from-last day. */
+  function withSpike(spike: number, seed: number): number[] {
+    const noise = normals(seed, BARS - 1).map((n) => n * 0.004);
+    noise[BARS - 11] = spike;
+    return pathOf(noise);
+  }
+
+  const rows: Row[] = [
+    { symbol: "LOTTO", closes: withSpike(0.14, 1) },
+    ...Array.from({ length: 10 }, (_, i) => ({
+      symbol: `CALM${i}`,
+      closes: withSpike(0.01 + i * 0.002, 50 + i),
+    })),
+  ];
+
+  it("sells the stock with the lottery-like day and prefers the calm ones", () => {
+    expect(maxEffect.evaluate(contextFor(rows, "LOTTO"))!.score).toBeLessThan(-0.8);
+    expect(maxEffect.evaluate(contextFor(rows, "CALM0"))!.score).toBeGreaterThan(0.5);
+  });
+
+  it("says which day, in the sentence", () => {
+    expect(maxEffect.evaluate(contextFor(rows, "LOTTO"))!.rationale).toContain("14.0%");
+  });
+
+  /** The large-cap cap: the effect is weakest in exactly the names ember lists. */
+  it("never speaks above its cap", () => {
+    for (const row of rows) {
+      expect(maxEffect.evaluate(contextFor(rows, row.symbol))!.confidence).toBeLessThanOrEqual(0.4);
+    }
+  });
+
+  /** The sign reverses in crypto (MAX momentum), so it must not apply there. */
+  it("is an equity rule only", () => {
+    expect(maxEffect.appliesTo).toEqual(["equity"]);
+  });
+});
+
+describe("the high-volume return premium", () => {
+  /** 55 completed daily bars ending yesterday, volume 1,000 except the last week. */
+  function contextWithLastWeek(volume: number, extra: Candle[] = []): StrategyContext {
+    const closes = new Array(60).fill(100);
+    const candles = barsOf(closes, END_DAY - 1).map((bar, i, all) => ({
+      ...bar,
+      v: i >= all.length - 5 ? volume : 1_000 + (i % 7) * 20,
+    }));
+    const all = [...candles, ...extra];
+    return {
+      instrument: { symbol: "VOL", name: "VOL", market: "equity", currency: "USD", precision: 2 },
+      candles: all,
+      peers: [],
+      riskFreeRate: 0.043,
+      periodsPerYear: 252,
+      now: END_DAY * DAY + 15 * 3_600_000,
+    };
+  }
+
+  it("reads a week of unusually heavy trading as a buy", () => {
+    const signal = highVolume.evaluate(contextWithLastWeek(2_400))!;
+    expect(signal.score).toBeGreaterThan(0.7);
+    expect(signal.rationale).toContain("the most in eleven weeks");
+  });
+
+  it("reads a week of unusually light trading as a sell", () => {
+    expect(highVolume.evaluate(contextWithLastWeek(400))!.score).toBeLessThan(-0.7);
+  });
+
+  /** The paper's middle portfolio is the control group, not a signal. */
+  it("is quiet about an ordinary week", () => {
+    const signal = highVolume.evaluate(contextWithLastWeek(1_050))!;
+    expect(signal.quiet).toBe(true);
+    expect(signal.score).toBe(0);
+  });
+
+  /**
+   * Today's bar is still filling on a live server. Read as a session, a
+   * morning's volume is the lightest week on record, every morning.
+   */
+  it("ignores today's unfinished bar", () => {
+    const today: Candle = { t: END_DAY * DAY, o: 100, h: 100, l: 100, c: 100, v: 5 };
+    const signal = highVolume.evaluate(contextWithLastWeek(2_400, [today]))!;
+    expect(signal.score).toBeGreaterThan(0.7);
+  });
+
+  it("treats a missing volume as no evidence rather than a quiet day", () => {
+    const ctx = contextWithLastWeek(2_400);
+    ctx.candles[20] = { ...ctx.candles[20], v: 0 };
+    expect(highVolume.evaluate(ctx)).toBeNull();
+  });
+
+  it("never speaks above its cap", () => {
+    expect(highVolume.evaluate(contextWithLastWeek(50_000))!.confidence).toBeLessThanOrEqual(0.35);
+  });
+});
+
+describe("asset growth", () => {
+  function accounts(totalAssets: number, totalAssetsPrior: number): Fundamentals {
+    return {
+      netIncome: 0, netIncomePrior: 0, operatingCashFlow: 0,
+      totalAssets, totalAssetsPrior,
+      longTermDebt: 0, longTermDebtPrior: 0,
+      currentAssets: 0, currentLiabilities: 0, currentAssetsPrior: 0, currentLiabilitiesPrior: 0,
+      sharesOutstanding: 0, sharesOutstandingPrior: 0,
+      grossProfit: 0, grossProfitPrior: 0, revenue: 0, revenuePrior: 0,
+      ebit: 0, netWorkingCapital: 0, netFixedAssets: 0, enterpriseValue: 0,
+    };
+  }
+
+  const growth: Record<string, number> = {
+    ACQUIRER: 0.6,
+    STEADY: -0.02,
+    ...Object.fromEntries(Array.from({ length: 10 }, (_, i) => [`CO${i}`, 0.02 + i * 0.02])),
+  };
+
+  function contextOf(symbol: string, withAccounts = true): StrategyContext {
+    const candles = barsOf(new Array(30).fill(100));
+    const peers: PeerSeries[] = Object.entries(growth).map(([name, g]) => ({
+      symbol: name,
+      market: "equity",
+      candles,
+      fundamentals: accounts(100 * (1 + g), 100),
+    }));
+    return {
+      instrument: { symbol, name: symbol, market: "equity", currency: "USD", precision: 2 },
+      candles,
+      peers,
+      fundamentals: withAccounts ? peers.find((p) => p.symbol === symbol)!.fundamentals : undefined,
+      riskFreeRate: 0.043,
+      periodsPerYear: 252,
+      now: END_DAY * DAY,
+    };
+  }
+
+  it("sells the fastest grower and prefers the slowest", () => {
+    expect(assetGrowth.evaluate(contextOf("ACQUIRER"))!.score).toBeLessThan(-0.8);
+    expect(assetGrowth.evaluate(contextOf("STEADY"))!.score).toBeGreaterThan(0.8);
+  });
+
+  it("states the growth it ranked", () => {
+    expect(assetGrowth.evaluate(contextOf("ACQUIRER"))!.rationale).toContain("grew 60.0%");
+    expect(assetGrowth.evaluate(contextOf("STEADY"))!.rationale).toContain("shrank 2.0%");
+  });
+
+  /** No filed accounts, as for every international listing: no view. */
+  it("abstains without accounts", () => {
+    expect(assetGrowth.evaluate(contextOf("CO3", false))).toBeNull();
+  });
+
+  it("never speaks above its cap", () => {
+    for (const symbol of Object.keys(growth)) {
+      expect(assetGrowth.evaluate(contextOf(symbol))!.confidence).toBeLessThanOrEqual(0.5);
+    }
+  });
+});
+
+/* ── Momentum refinements (decision 305) ───────────────────────────────── */
+
+describe("momentum built on a few days counts for less", () => {
+  /** The same 12-1 gain, made either steadily or in a handful of jumps. */
+  function path(kind: "steady" | "jumpy", gain: number, seed: number): number[] {
+    const noise = normals(seed, BARS - 1).map((n) => n * 0.002);
+    const window = Array.from({ length: 231 }, (_, i) => BARS - 1 - 21 - 231 + i);
+    if (kind === "steady") {
+      const daily = (1 + gain) ** (1 / 231) - 1;
+      for (const i of window) noise[i] = daily + Math.abs(noise[i]) * 0.2;
+    } else {
+      for (const i of window) noise[i] = -Math.abs(noise[i]) * 0.3;
+      const flat = window.reduce((acc, i) => acc * (1 + noise[i]), 1);
+      const jump = ((1 + gain) / flat) ** (1 / 4) - 1;
+      for (const k of [20, 80, 140, 200]) noise[window[k]] = jump;
+    }
+    return pathOf(noise);
+  }
+
+  const rows: Row[] = [
+    { symbol: "STEADY", closes: path("steady", 0.4, 3) },
+    { symbol: "JUMPY", closes: path("jumpy", 0.4, 4) },
+    ...Array.from({ length: 10 }, (_, i) => ({
+      symbol: `P${i}`,
+      closes: path(i % 2 ? "steady" : "jumpy", -0.1 + i * 0.03, 30 + i),
+    })),
+  ];
+
+  it("leaves steady momentum alone and discounts the jumpy kind", () => {
+    expect(continuityFactor(contextFor(rows, "STEADY"))).toBe(1);
+    expect(continuityFactor(contextFor(rows, "JUMPY"))).toBeLessThan(0.9);
+    expect(continuityFactor(contextFor(rows, "JUMPY"))).toBeGreaterThanOrEqual(0.6);
+  });
+
+  it("changes how sure the rule is, never which way it points", () => {
+    const steady = xsMomentum.evaluate(contextFor(rows, "STEADY"))!;
+    const jumpy = xsMomentum.evaluate(contextFor(rows, "JUMPY"))!;
+    expect(Math.sign(jumpy.score)).toBe(Math.sign(steady.score));
+    expect(jumpy.confidence).toBeLessThan(steady.confidence);
+    expect(jumpy.rationale).toContain("a few large days");
+    expect(steady.rationale).not.toContain("a few large days");
+  });
+});
+
+describe("momentum is trusted less when momentum itself is volatile", () => {
+  const DAYS = 700;
+  /**
+   * Ten names that keep winning and ten that keep losing, so the decile
+   * portfolio is stable. From `shockFrom` on, a large common swing hits the two
+   * groups in opposite directions, which is a volatile winners-minus-losers.
+   */
+  function market(shockFrom: number | null): CrossSectionSource {
+    const shocks = normals(99, DAYS).map((n) => n * 0.03);
+    const rows: Row[] = [];
+    for (let k = 0; k < 20; k++) {
+      const winner = k < 10;
+      const noise = normals(200 + k, DAYS - 1).map((n) => n * 0.004);
+      const returns = noise.map((n, i) => {
+        const drift = winner ? 0.0012 : -0.0008;
+        const shock = shockFrom !== null && i >= shockFrom ? (winner ? 1 : -1) * shocks[i] : 0;
+        return drift + n + shock;
+      });
+      rows.push({ symbol: `${winner ? "W" : "L"}${k}`, closes: pathOf(returns) });
+    }
+    return sourceOf(rows);
+  }
+
+  it("scales down when the winners-minus-losers portfolio turns volatile", () => {
+    const scale = momentumRiskOf(market(DAYS - 130), "equity", END_DAY);
+    expect(scale).not.toBeNull();
+    expect(scale!).toBeLessThan(0.7);
+    expect(scale!).toBeGreaterThanOrEqual(0.5);
+  });
+
+  it("leaves a calm market alone", () => {
+    expect(momentumRiskOf(market(null), "equity", END_DAY)).toBe(1);
+  });
+
+  /** A backtest on the day before the shock must not know it is coming. */
+  it("never reads past the day it is asked about", () => {
+    const before = END_DAY - 140;
+    expect(momentumRiskOf(market(DAYS - 130), "equity", before)).toBe(
+      momentumRiskOf(market(null), "equity", before),
+    );
+  });
+
+  it("is an equity measure only", () => {
+    expect(momentumRiskOf(market(DAYS - 130), "crypto", END_DAY)).toBeNull();
   });
 });

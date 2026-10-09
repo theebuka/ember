@@ -5,7 +5,7 @@ import { clamp, latest } from "./indicators/stats";
 import { atr } from "./indicators/volatility";
 import { detectRegime, regimeWeight, type Regime } from "./regime";
 import { sizePosition, type PositionSize } from "./sizing";
-import { strategiesFor } from "./strategies";
+import { OVERLAP_GROUPS, strategiesFor } from "./strategies";
 import { annualisedVol } from "./strategies/shared";
 import type {
   Citation,
@@ -105,6 +105,11 @@ export const PROFILE_WEIGHTS: Record<
     // correct one: a conservative investor asking for less risk per unit of
     // return is asking for precisely the thing this family measures.
     defensive: 1.35,
+    // Slow and fundamentally anchored, so weighted like value.
+    investment: 1.2,
+    // Steering away from lottery-like names is a cautious investor's instinct
+    // anyway; a mild preference, not a strong one.
+    lottery: 1.1,
   },
   balanced: {},
   aggressive: {
@@ -118,6 +123,8 @@ export const PROFILE_WEIGHTS: Record<
     // Not zero. An aggressive profile takes more risk on purpose; it does not
     // get to pretend the low-beta evidence is absent.
     defensive: 0.6,
+    investment: 0.85,
+    lottery: 0.9,
   },
 };
 
@@ -196,18 +203,43 @@ export function assess({
   const profile = RISK_PROFILES[riskProfile];
   const profileWeights = PROFILE_WEIGHTS[riskProfile];
 
-  const scored: {
+  type Entry = {
     signal: StrategySignal;
     family: StrategyFamily;
     name: string;
     citation: Citation;
+    /** Confidence × regime × profile × independence. */
     weight: number;
-  }[] = [];
+    /** This rule's share of one independent voice. See `OVERLAP_GROUPS`. */
+    independence: number;
+  };
+
+  /**
+   * Three kinds of silence, and only one of them costs the call.
+   *
+   * - **Too young.** The listing has fewer bars than the rule needs. The rule
+   *   would speak about this instrument with more history, so its absence is
+   *   thin evidence, and it counts against coverage.
+   * - **Cannot assess.** `evaluate` returned null: no filed accounts, no peers,
+   *   no on-chain data. That is permanent for this instrument and says nothing
+   *   about the call, so it is left out entirely. Before, every international
+   *   listing paid for the three accounts-based rules it can never have.
+   * - **Quiet.** The rule looked and its event has not happened. Shown, and left
+   *   out of the blend, the agreement and the coverage.
+   *
+   * Leaving the last two out is what makes confidence independent of how many
+   * rules are in the engine: a rule that cannot or does not speak about this
+   * instrument changes nothing about it.
+   */
+  const active: Entry[] = [];
+  const quiet: Entry[] = [];
+  const tooYoung: StrategyId[] = [];
   let silent = 0;
 
   for (const strategy of applicable) {
     if (candles.length < strategy.minBars) {
       silent++;
+      tooYoung.push(strategy.id);
       continue;
     }
 
@@ -217,32 +249,49 @@ export function assess({
       continue;
     }
 
-    const weight =
-      signal.confidence *
-      regimeWeight(strategy.family, regime) *
-      (profileWeights[strategy.family] ?? 1);
-
-    scored.push({
-      signal,
+    const entry: Entry = {
+      signal: signal.quiet ? { ...signal, score: 0 } : signal,
       family: strategy.family,
       name: strategy.name,
       citation: strategy.citation,
-      weight,
-    });
+      weight:
+        signal.confidence *
+        regimeWeight(strategy.family, regime) *
+        (profileWeights[strategy.family] ?? 1),
+      independence: 1,
+    };
+    (signal.quiet ? quiet : active).push(entry);
   }
 
-  if (scored.length === 0) return null;
+  if (active.length === 0) return null;
 
-  const totalWeight = scored.reduce((acc, s) => acc + s.weight, 0);
+  // Correlated rules share their voice. Counted over the members that spoke or
+  // would have with more history, so a group missing a member is not discounted
+  // as if it were whole.
+  const independence = new Map<StrategyId, number>();
+  for (const group of OVERLAP_GROUPS) {
+    const present = group.members.filter(
+      (id) => tooYoung.includes(id) || active.some((e) => e.signal.strategyId === id),
+    );
+    const share = 1 / (1 + (present.length - 1) * group.correlation);
+    for (const id of present) independence.set(id, share);
+  }
+  const independenceOf = (id: StrategyId) => independence.get(id) ?? 1;
+  for (const entry of active) {
+    entry.independence = independenceOf(entry.signal.strategyId);
+    entry.weight *= entry.independence;
+  }
+
+  const totalWeight = active.reduce((acc, s) => acc + s.weight, 0);
   if (totalWeight === 0) return null;
 
-  const blended = scored.reduce((acc, s) => acc + s.signal.score * s.weight, 0) / totalWeight;
+  const blended = active.reduce((acc, s) => acc + s.signal.score * s.weight, 0) / totalWeight;
 
   // Weighted dispersion of views. High dispersion means the strategies are
   // genuinely split, and the output should say so rather than presenting the
   // midpoint as a confident answer.
   const variance =
-    scored.reduce((acc, s) => acc + s.weight * (s.signal.score - blended) ** 2, 0) /
+    active.reduce((acc, s) => acc + s.weight * (s.signal.score - blended) ** 2, 0) /
     totalWeight;
   const dispersion = Math.sqrt(variance);
   const agreementFactor = clamp(1 - dispersion, 0.25, 1);
@@ -250,22 +299,28 @@ export function assess({
   /**
    * Confidence is measured over the strategies that actually have a view.
    *
-   * A strategy reporting "inside its range, nothing to trade" carries a low
-   * confidence by design, and averaging that into a call the others are
-   * making would penalise the call for the abstention — with eight strategies
-   * on an equity, a handful of abstentions used to drag every reading toward
-   * the floor. Abstaining still costs coverage below, which is the right
-   * place for it to count.
+   * A strategy reading the instrument as unremarkable carries a low confidence
+   * by design, and averaging that into a call the others are making would
+   * penalise the call for the abstention. A neutral read still costs coverage
+   * below, which is the right place for it to count.
    */
-  const voting = scored.filter((s) => Math.abs(s.signal.score) >= 0.1);
+  const voting = active.filter((s) => Math.abs(s.signal.score) >= 0.1);
   const votingWeight = voting.reduce((acc, s) => acc + s.weight, 0);
 
   const meanConfidence =
     votingWeight > 0
       ? voting.reduce((acc, s) => acc + s.weight * s.signal.confidence, 0) / votingWeight
-      : scored.reduce((acc, s) => acc + s.weight * s.signal.confidence, 0) / totalWeight;
+      : active.reduce((acc, s) => acc + s.weight * s.signal.confidence, 0) / totalWeight;
 
-  const coverage = (voting.length || scored.length) / applicable.length;
+  /**
+   * The share of the voices able to speak that took a side, counted in
+   * independent voices rather than in rules.
+   */
+  const voicesIn = (entries: readonly Entry[]) =>
+    entries.reduce((acc, s) => acc + s.independence, 0);
+  const possible =
+    voicesIn(active) + tooYoung.reduce((acc, id) => acc + independenceOf(id), 0);
+  const coverage = possible > 0 ? (voicesIn(voting) || voicesIn(active)) / possible : 0;
   const coverageFactor = 0.6 + 0.4 * coverage;
 
   /**
@@ -279,8 +334,10 @@ export function assess({
    *
    * Clamped at 1 so it can only ever veto. A favourable regime is not
    * evidence, and shouldn't manufacture confidence a strategy didn't claim.
+   * Independence is applied to both sides, so it cancels here: sharing a voice
+   * is not a regime effect.
    */
-  const rawConfidence = scored.reduce((acc, s) => acc + s.signal.confidence, 0);
+  const rawConfidence = active.reduce((acc, s) => acc + s.signal.confidence * s.independence, 0);
   const regimeSupport =
     rawConfidence === 0 ? 1 : clamp(totalWeight / rawConfidence, 0.4, 1);
 
@@ -290,7 +347,7 @@ export function assess({
 
   const action = actionFor(blended);
 
-  const contributions: Contribution[] = scored
+  const contributions: Contribution[] = [...active, ...quiet.map((q) => ({ ...q, weight: 0 }))]
     .map(({ signal, family, name, citation, weight }) => ({
       strategyId: signal.strategyId,
       name,
@@ -315,7 +372,7 @@ export function assess({
   // average across everything including the ones sitting it out. A two-day
   // mean-reversion edge and a six-month trend signal must not produce the
   // same window.
-  const drivers = scored.filter((s) => Math.sign(s.signal.score) === Math.sign(blended));
+  const drivers = active.filter((s) => Math.sign(s.signal.score) === Math.sign(blended));
   const driverWeight = drivers.reduce((acc, s) => acc + s.weight * Math.abs(s.signal.score), 0);
   const halfLifeDays =
     driverWeight > 0

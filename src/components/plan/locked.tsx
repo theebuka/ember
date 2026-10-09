@@ -23,7 +23,12 @@ export function featureFor(call: Pick<LockedCall, "reason">): Feature {
   return call.reason === "markets" ? "all-markets" : "all-calls";
 }
 
-/** The badge: a lock and "Pro", the size of an `ActionBadge`, and a button. */
+/**
+ * The badge: a lock and "Pro call", the size of an `ActionBadge`, and a button.
+ *
+ * "Pro call" on a call rather than "Pro": beside AAPL, a bare "Pro" read as
+ * "AAPL needs Pro", when AAPL is a free market and only today's call is locked.
+ */
 export function LockedBadge({
   feature = "all-calls",
   size = "default",
@@ -34,12 +39,13 @@ export function LockedBadge({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const isCall = feature === "all-calls" || feature === "all-markets";
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Locked call. See plans"
+        aria-label={isCall ? "Locked call. See plans" : "Part of Pro. See plans"}
         className={cn(
           "tap-target inline-flex shrink-0 items-center gap-1 rounded-md bg-brand-tint font-semibold text-brand-text",
           "transition-colors hover:bg-brand-tint/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
@@ -48,7 +54,7 @@ export function LockedBadge({
         )}
       >
         <LockSimple weight="fill" className={size === "sm" ? "size-3" : "size-3.5"} />
-        Pro
+        {isCall ? "Pro call" : "Pro"}
       </button>
       <PlanInterstitial feature={feature} open={open} onOpenChange={setOpen} />
     </>

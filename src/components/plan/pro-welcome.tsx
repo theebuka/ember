@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowRight,
+  CaretRight,
   BellRinging,
   Check,
   CircleNotch,
@@ -111,7 +111,7 @@ export function ProWelcome() {
   return (
     <main id="main" className="flex min-h-dvh flex-col bg-ground lg:h-dvh lg:flex-row lg:overflow-hidden">
       {/* Onboarding's frame: a third of a phone, about half a desktop. */}
-      <aside className="relative h-[34dvh] min-h-[260px] max-h-[320px] shrink-0 overflow-hidden lg:h-auto lg:max-h-none lg:w-[46%] lg:max-w-[760px]">
+      <aside className="relative h-[34dvh] min-h-[260px] max-h-[320px] shrink-0 overflow-hidden lg:h-auto lg:max-h-none lg:w-[46%] lg:max-w-[760px] dark:border-line dark:max-lg:border-b dark:lg:border-r">
         <ProArt confirmed={state === "done"} />
       </aside>
 
@@ -172,7 +172,7 @@ export function ProWelcome() {
                         <span className="block text-body font-medium text-ink">{item.title}</span>
                         <span className="block text-caption text-stone">{item.body}</span>
                       </span>
-                      <ArrowRight className="size-4 shrink-0 text-stone transition-transform group-hover:translate-x-0.5 group-hover:text-ink" />
+                      <CaretRight className="size-4 shrink-0 text-stone transition-transform group-hover:translate-x-0.5 group-hover:text-ink" />
                     </Link>
                   </li>
                 ))}

@@ -1,4 +1,5 @@
 import type { Strategy } from "../types";
+import { withMomentumRisk } from "./momentum-risk";
 import { clamp } from "../indicators/stats";
 import {
   crossSectionalScore,
@@ -24,7 +25,7 @@ const SKIP = 21; // ~1 month
  * reverse, so including the most recent month systematically dilutes the
  * effect — dropping it is part of the published rule.
  */
-export const xsMomentum: Strategy = {
+export const xsMomentum: Strategy = withMomentumRisk({
   id: "xs-momentum",
   name: "Cross-sectional momentum",
   family: "momentum",
@@ -74,4 +75,4 @@ export const xsMomentum: Strategy = {
       halfLifeDays: 60,
     };
   },
-};
+}, { continuity: true, crash: true });

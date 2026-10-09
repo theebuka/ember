@@ -33,6 +33,16 @@ const RANGES: { value: Range; label: string }[] = [
   { value: "ALL", label: "All" },
 ];
 
+/** The label under the change, in words rather than the control's shorthand. */
+const PERIOD: Record<Range, string> = {
+  "1D": "today",
+  "1W": "past week",
+  "1M": "past month",
+  "3M": "past 3 months",
+  "1Y": "past year",
+  ALL: "since your first trade",
+};
+
 const CHART_HEIGHT = 132;
 
 export function ValueChart({
@@ -85,20 +95,14 @@ export function ValueChart({
 
   return (
     <div className={cn("flex flex-col", className)}>
-      <div className="mb-3 flex items-start justify-between gap-3">
-        {/* The label sits *under* the chip rather than beside it. Five range
-            buttons and a figure already fill a 335px row, and inline it
-            truncated mid-word to "unreal…", which reads as a bug rather than
-            as an ellipsis. Stacked it has the chip's whole column and never
-            wraps — and it echoes the hero's figure-and-caption above it. */}
+      {/* Below md the range control takes its own row. Beside it, the label
+          had ~90px and broke as "unrealize / d" (a word fragment, §5). */}
+      <div className="mb-3 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0">
           <ChangeText value={change} className="text-caption font-medium">
             {formatMoney(change, base, { signed: true })}
           </ChangeText>
-          <p className="mt-1 text-micro text-stone">
-            unrealized, over{" "}
-            {RANGES.find((r) => r.value === range)?.label.toLowerCase()}
-          </p>
+          <p className="mt-1 text-micro text-stone">Unrealized, {PERIOD[range]}</p>
         </div>
 
         <Segmented
@@ -107,7 +111,7 @@ export function ValueChart({
           options={options}
           size="sm"
           aria-label="Chart range"
-          className="shrink-0"
+          className="self-start md:shrink-0"
         />
         <PlanInterstitial feature="chart-history" open={upsell} onOpenChange={setUpsell} />
       </div>

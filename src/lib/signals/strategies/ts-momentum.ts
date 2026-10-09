@@ -1,4 +1,5 @@
 import type { Strategy } from "../types";
+import { withMomentumRisk } from "./momentum-risk";
 import { clamp } from "../indicators/stats";
 import { annualisedVol, pct, returnOver, squash } from "./shared";
 
@@ -18,7 +19,7 @@ const LOOKBACK = 252; // ~12 months of trading days
  * gain from something that swings 15% a year is a much stronger statement
  * than the same gain from something that swings 80%.
  */
-export const tsMomentum: Strategy = {
+export const tsMomentum: Strategy = withMomentumRisk({
   id: "ts-momentum",
   name: "Time-series momentum",
   family: "trend",
@@ -58,4 +59,4 @@ export const tsMomentum: Strategy = {
       halfLifeDays: 45,
     };
   },
-};
+}, { continuity: true });

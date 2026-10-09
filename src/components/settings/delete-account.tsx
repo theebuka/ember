@@ -135,7 +135,7 @@ export function DeleteAccount() {
         <div className="mt-4 border-t border-down/20 pt-4">
           <p className="text-caption font-medium text-ink">What gets deleted</p>
           <ul className="mt-2 space-y-1 text-caption text-stone">
-            <li>· Your profile — name, country, time zone</li>
+            <li>· Your profile: name, country and time zone</li>
             <li>· Every transaction synced to the server</li>
             <li>· Your risk profile, base currency and alert preferences</li>
             <li>· Your watchlist</li>

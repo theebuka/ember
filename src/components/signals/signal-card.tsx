@@ -101,7 +101,7 @@ export function SignalCard({
             title={
               actionable
                 ? undefined
-                : "Below your risk profile — not a recommendation."
+                : "Below your risk profile, so it isn't a recommendation."
             }
           />
         }
@@ -167,7 +167,7 @@ export function SignalCard({
             </span>
           </>
         ) : (
-          <span className="text-caption text-stone">Hold — no position to size</span>
+          <span className="text-caption text-stone">Hold. Nothing to size.</span>
         )}
         <Confidence value={assessment.confidence} label={assessment.confidenceLabel} />
       </div>

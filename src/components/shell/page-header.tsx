@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "@/components/common/icon";
+import { CaretLeft } from "@/components/common/icon";
 import { Logo } from "@/components/shell/logo";
 import { Button } from "@/components/ui/button";
 import { useScrolled } from "@/hooks/use-scroll-direction";
@@ -78,10 +78,10 @@ export function PageHeader({
           >
             {typeof back === "string" ? (
               <Link href={back}>
-                <ArrowLeft />
+                <CaretLeft />
               </Link>
             ) : (
-              <ArrowLeft />
+              <CaretLeft />
             )}
           </Button>
         )}

@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { mockProvider } from "@/lib/market/providers/mock";
 import { buildContext, loadUniverse, type Universe } from "./context";
-import { STRATEGIES } from "./strategies";
+import { OVERLAP_GROUPS, STRATEGIES } from "./strategies";
 import type { StrategyId } from "./types";
 
 /**
@@ -50,17 +50,10 @@ const DUPLICATE = 0.98;
  * ranks it against peers, `dual-momentum` gates on the first and scores on the
  * second. Three readings, one number, 0.88–0.94.
  *
- * **This inflates the trend book's real weight in the blend.** Sixteen rules
- * with three of them near-identical is not sixteen opinions, and since `assess()`
- * raises confidence when rules agree, the agreement those three supply is partly
- * arithmetic rather than evidence. It is the most likely explanation for the
- * payoff shape the track record reports.
- *
- * Fixing it properly means weighting by *effective independent voices* rather
- * than by count — a change to the ensemble that moves every number in the app,
- * and so a decision to take deliberately rather than fold into a phase about
- * adding rules. Recorded in §8 with that reasoning; this list is the guard that
- * keeps it from getting worse in the meantime.
+ * Since decision 304 the ensemble knows: `OVERLAP_GROUPS` declares the group and
+ * its correlation, and `assess` weights the three as about one voice. This list
+ * is derived from it, so a pair above the floor that is not declared fails here
+ * rather than quietly manufacturing agreement.
  *
  * The first hypothesis for it was wrong and worth recording: that generated
  * prices have no market drift, so "beat cash" and "beat your peers" collapse into
@@ -68,11 +61,11 @@ const DUPLICATE = 0.98;
  * twelve months with a 36.6% cross-sectional spread — there is plenty of drift
  * and plenty of dispersion. The overlap is in the rules, not in the data.
  */
-const KNOWN_OVERLAP: readonly [StrategyId, StrategyId][] = [
-  ["ts-momentum", "xs-momentum"],
-  ["ts-momentum", "dual-momentum"],
-  ["xs-momentum", "dual-momentum"],
-];
+const KNOWN_OVERLAP: readonly [StrategyId, StrategyId][] = OVERLAP_GROUPS.flatMap((group) =>
+  group.members.flatMap((a, i) =>
+    group.members.slice(i + 1).map((b): [StrategyId, StrategyId] => [a, b]),
+  ),
+);
 /** Above this a pair has to be on the list above. */
 const OVERLAP_FLOOR = 0.85;
 
@@ -85,6 +78,12 @@ const ADDED: StrategyId[] = [
   "bab",
   "currency-momentum",
 ];
+
+/**
+ * The three added after the evidence review (decision 303), each from a theme the
+ * engine had nothing in: lottery demand, attention and investment.
+ */
+const ADDED_LATER: StrategyId[] = ["max-effect", "high-volume", "asset-growth"];
 
 /** A correlation over fewer pairs than this is not worth reporting. */
 const MIN_OVERLAP = 20;
@@ -206,15 +205,34 @@ describe("the strategies are not each other", () => {
   });
 
   /**
+   * The ensemble discounts a group by its declared correlation (decision 304),
+   * so the declared number has to be the measured one. A group whose members
+   * drift apart would otherwise go on being discounted as if they were one.
+   */
+  it("each overlap group's declared correlation is the measured one", () => {
+    const measured = new Map(pairs().map((p) => [[p.a, p.b].sort().join("/"), p.r]));
+    for (const group of OVERLAP_GROUPS) {
+      const rs: number[] = [];
+      group.members.forEach((a, i) =>
+        group.members.slice(i + 1).forEach((b) => rs.push(measured.get([a, b].sort().join("/"))!)),
+      );
+      const mean = rs.reduce((x, y) => x + y, 0) / rs.length;
+      console.log(`\n${group.members.join(" · ")}: declared ${group.correlation}, measured ${mean.toFixed(3)}\n`);
+      expect(Math.abs(mean - group.correlation)).toBeLessThan(0.05);
+    }
+  });
+
+  /**
    * What this phase actually claims about its own work.
    *
    * Six rules were added to an engine the plan described as trend-heavy. Each one
    * has to be doing something the previous ten were not, and "we cited a
    * different paper" is not evidence of that.
    */
-  it("each rule added in phase 24 is distinct from every rule before it", () => {
-    const added = new Set<StrategyId>(ADDED);
-    const worst = new Map<StrategyId, { against: StrategyId; r: number }>();
+  /** Each addition's strongest correlation with any rule outside its own batch. */
+  function worstOverlap(batch: readonly StrategyId[]) {
+    const added = new Set<StrategyId>(batch);
+    const worst = new Map<StrategyId, { against: StrategyId; r: number; n: number }>();
 
     for (const pair of pairs()) {
       const [addition, existing] = added.has(pair.a) && !added.has(pair.b)
@@ -225,15 +243,36 @@ describe("the strategies are not each other", () => {
       if (!addition || !existing) continue;
       const current = worst.get(addition);
       if (!current || Math.abs(pair.r) > Math.abs(current.r)) {
-        worst.set(addition, { against: existing, r: pair.r });
+        worst.set(addition, { against: existing, r: pair.r, n: pair.n });
       }
     }
+    return worst;
+  }
 
+  it("each rule added in phase 24 is distinct from every rule before it", () => {
+    const worst = worstOverlap(ADDED);
     const report = [...worst.entries()]
       .map(([id, w]) => `  ${id}: strongest overlap ${w.r.toFixed(2)} against ${w.against}`)
       .join("\n");
     console.log(`\nPhase 24 additions against the existing engine:\n${report}\n`);
 
+    for (const [id, w] of worst) {
+      expect(Math.abs(w.r), `${id} is close to ${w.against}`).toBeLessThan(OVERLAP_FLOOR);
+    }
+  });
+
+  /**
+   * The evidence review's additions, against all nineteen others. Every one has
+   * to have spoken often enough to be measured, or "distinct" means "silent".
+   */
+  it("each rule added after the evidence review is distinct from every other rule", () => {
+    const worst = worstOverlap(ADDED_LATER);
+    const report = [...worst.entries()]
+      .map(([id, w]) => `  ${id}: strongest overlap ${w.r.toFixed(2)} against ${w.against} (n=${w.n})`)
+      .join("\n");
+    console.log(`\nEvidence-review additions against the rest of the engine:\n${report}\n`);
+
+    for (const id of ADDED_LATER) expect(worst.has(id), `${id} was never measured`).toBe(true);
     for (const [id, w] of worst) {
       expect(Math.abs(w.r), `${id} is close to ${w.against}`).toBeLessThan(OVERLAP_FLOOR);
     }

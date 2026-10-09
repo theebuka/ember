@@ -54,6 +54,7 @@ export {
   ArrowUUpLeft,
   ArrowsDownUp,
   CaretDown,
+  CaretLeft,
   CaretRight,
   CaretUp,
 

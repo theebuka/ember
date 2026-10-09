@@ -61,6 +61,7 @@ export const connorsRsi2: Strategy = {
       return {
         strategyId: "connors-rsi2",
         score: 0,
+        quiet: true,
         confidence: 0.3,
         rationale: `RSI(2) at ${value.toFixed(0)}, but price sits ${pct(distanceFromTrend)} against its 200-day average. Oversold in a downtrend is not a discount.`,
         horizonDays: 5,
@@ -98,6 +99,7 @@ export const connorsRsi2: Strategy = {
     return {
       strategyId: "connors-rsi2",
       score: 0,
+      quiet: true,
       confidence: 0.2,
       rationale: `RSI(2) at ${value.toFixed(0)} — neither stretched nor washed out. No short-term edge either way.`,
       horizonDays: 5,

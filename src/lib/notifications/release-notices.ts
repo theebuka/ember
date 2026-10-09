@@ -27,7 +27,7 @@ export const RELEASE_NOTICES: Broadcast[] = [
   {
     id: "release:accounts",
     title: "Accounts, and what they store",
-    body: "Sign in to keep your trades, watchlist, settings and profile across devices. ember stores those and your email — never your positions or P&L. Signing in is optional.",
+    body: "Sign in to keep your trades, watchlist, settings and profile across devices. ember stores those and your email, but never your positions or P&L. Signing in is optional.",
     publishedAt: "2026-08-14T09:00:00.000Z",
     href: "/settings",
     action: "Account settings",

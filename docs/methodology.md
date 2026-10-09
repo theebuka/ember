@@ -175,6 +175,39 @@ decades and says nothing whatsoever about this week; a risk premium must not be
 able to produce the same conviction as a breakout that resolves in ten days, or
 the execution window this product is built around stops meaning anything.
 
+### Lottery demand and attention
+
+**The MAX effect** — Bali, Cakici & Whitelaw (2011), *Journal of Financial
+Economics* 99(2). Sort stocks on their largest single-day return over the past
+month: the highest tenth underperformed the lowest by more than 1% a month, after
+controls for size, value, momentum, short-term reversal, liquidity and skewness.
+The reading is that some investors pay up for a small chance of a large payoff,
+and a stock that has just shown it can jump looks like one. It also accounts for
+the idiosyncratic-volatility puzzle, which is why ember carries this rather than a
+separate volatility rule.
+
+Equities only. In crypto the sign reverses, and coins with the biggest up-days
+have kept rising (Li, Urquhart, Wang & Zhang, "MAX momentum"). Its confidence is
+capped at 0.4, because the effect is strongest where retail investors trade and
+weakest in large, institutionally held names, which is most of this universe, and
+replications outside the US are mixed. It reads the same month as short-term
+reversal; measured on the generated universe the two correlate at 0.32.
+
+**The high-volume return premium** — Gervais, Kaniel & Mingelgrin (2001),
+*Journal of Finance* 56(3), with international evidence in Kaniel, Ozoguz &
+Starks (2012), *Journal of Financial Economics* 103(2). A stock that trades
+unusually heavily over a week tends to rise over the following month or two, and
+one that trades unusually lightly tends to fall, whichever way its price moved.
+The explanation is visibility: a burst of trading puts a stock in front of
+investors who were not looking at it. The premium appears in 41 countries.
+
+"Unusual" is against the stock's own history: the last week is high volume when
+it is the heaviest of the last eleven, low when it is the lightest, which is the
+paper's top and bottom tenth of a fifty-day interval. Every other week, the rule
+says nothing, because the paper's middle portfolio is the control group. A bar
+from the evaluation day is never read, because on a live server it is still
+filling. Equities only, capped at 0.35.
+
 ### Mean reversion
 
 **Connors RSI(2)** — Connors & Alvarez, *Short Term Trading Strategies That
@@ -195,7 +228,7 @@ sort on the past month's return and the losers outperform over the next one. The
 mechanism is not a forecast about fundamentals — short-horizon moves overshoot on
 liquidity demand and the overshoot unwinds.
 
-Its job is to disagree. Eight of ember's sixteen rules are trend or momentum, and
+Its job is to disagree. Eight of ember's nineteen rules are trend or momentum, and
 a rule that says *sell the thing that just ran* is the genuine diversifier; the
 cases where it fights cross-sectional momentum are the cases a reader most needs
 to see as a split rather than as a confident midpoint. It is not the same signal
@@ -222,6 +255,17 @@ deteriorating ones. Treated as a slow confirmation, not a trigger.
 Rank on earnings yield and on return on capital, then add the ranks. Cheap
 alone is a value trap; profitable alone is usually expensive. Relative by
 construction — it returns no view without peers to rank against.
+
+**Asset growth** — Cooper, Gulen & Schill (2008), *Journal of Finance* 63(4),
+with international evidence in Watanabe, Xu, Yao & Yu (2013), *Journal of
+Financial Economics* 108(2). Rank on the year-over-year change in total assets:
+the slowest growers beat the fastest, in large companies as well as small, and
+across 40 markets. A company invests heavily when its cost of capital is low,
+which is also when its expected return is low. Its own family, investment,
+because it measures what a firm does with capital rather than what the business
+earns or what the shares cost. US listings only, for the same reason as the two
+rules above, and capped at 0.5 like betting against beta: a premium spread over a
+year says nothing about this week.
 
 ### Carry and valuation
 
@@ -294,6 +338,9 @@ Tuesday in SOL.
 | Carry | — | ×0.7 | ×0.3 |
 | Value, quality | — | — | ×1.1 |
 | Defensive (low risk) | — | ×1.2 | ×1.2 |
+| Investment | — | — | ×1.1 |
+| Lottery demand | ×1.1 in a calm uptrend | — | — |
+| Attention | — | — | — |
 
 **These are individual branch effects, and they compound.** A market that is
 both stressed *and* ranging damps trend twice — ×0.7 × ×0.8 = ×0.56 — and mean
@@ -312,11 +359,45 @@ regime is not evidence.
 
 ---
 
+## Momentum checks
+
+Two published refinements adjust how much a stock momentum read is trusted.
+Neither changes its direction, and both only ever lower confidence. Each says so
+in the read's own sentence when it applies.
+
+**Continuity** — Da, Gurun & Warachka (2014), "Frog in the Pan: Continuous
+Information and Momentum", *Review of Financial Studies* 27(7). Momentum built
+from many small moves persists; momentum built from a few large days does not.
+Measured as information discreteness over the 12-1 window, sign(return) ×
+(share of down days − share of up days), ranked against the market. The steadier
+half is untouched; the more discrete half is discounted, down to 0.6. Applied to
+time-series, cross-sectional, dual and residual momentum. Not to Clenow, whose R²
+already rewards a steady trend.
+
+**Momentum's own risk** — Barroso & Santa-Clara (2015), "Momentum Has Its
+Moments", *Journal of Financial Economics* 116(1); Daniel & Moskowitz (2016),
+"Momentum Crashes", *Journal of Financial Economics* 122(2). Momentum's crashes
+arrive when its own recent volatility is high. ember builds the market's
+winners-minus-losers portfolio (top and bottom tenth on 12-1 momentum, rebalanced
+monthly), measures its six-month volatility, and scales the cross-sectional
+momentum rules by its usual level over its current one, down to half. The paper
+targets a fixed 12%; ember targets the series' own running average, because an
+equal-weight decile portfolio over this universe has a different natural
+volatility. Not applied to time-series momentum, which has tended to hold up in
+the same conditions. Cederburg et al. (2020) found volatility scaling adds
+nothing out of sample for most strategies, and momentum is one of the few where it
+holds.
+
+Both are equities only. On generated prices the second barely moves (never below
+0.94 over five years), because a random walk's momentum portfolio has no crashes
+to anticipate.
+
 ## Combining views
 
-- Each strategy's weight is its own confidence × regime multiplier × risk-profile multiplier.
+- Each strategy's weight is its own confidence × regime multiplier × risk-profile multiplier × independence.
+- **Correlated rules share a voice.** Time-series, cross-sectional and dual momentum are three readings of the trailing twelve-month return and correlate at about 0.92, so together they count as about one voice (k / (1 + (k − 1)ρ), the usual effective-sample-size correction). Their agreement with each other is no longer counted as agreement.
 - **Disagreement lowers confidence.** Weighted dispersion across strategies feeds directly into the final number, so a split verdict reads as one.
-- **Abstentions don't dilute.** A strategy reporting "nothing to trade here" is excluded from the confidence average but counts against coverage.
+- **Only thin history costs coverage.** A rule that cannot assess an instrument at all (no filed accounts, no peers) and a rule waiting for its event (no breakout, an ordinary week of volume) are shown but left out of the blend, the agreement and the coverage. A rule the listing is too young for still counts against it, because with more history it would speak. This is what keeps confidence from falling every time a rule is added.
 - **Silence is reported.** "Four of seven had no view" is information the user gets.
 
 Risk profile shifts family weights, so Conservative and Aggressive produce
@@ -329,9 +410,9 @@ it:
 
 | Profile | Conviction (score, 0–1) | Evidence (confidence, 0–100) |
 |---|---|---|
-| Conservative | 0.35 | 37 |
-| Balanced | 0.22 | 28 |
-| Aggressive | 0.15 | 23 |
+| Conservative | 0.35 | 32 |
+| Balanced | 0.22 | 24 |
+| Aggressive | 0.15 | 17 |
 
 *(The live methodology page reads these out of `RISK_PROFILES` for whichever
 profile you're on and is authoritative, per ADR 0012. The table above is a

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Check, Clock, Undo2, X } from "@/components/common/icon";
+import { CaretRight, Check, Clock, Undo2, X } from "@/components/common/icon";
 import { ActionBadge } from "@/components/signals/action-badge";
 import { CallHeader, useCallDetails } from "@/components/signals/call-parts";
 import { WindowBand } from "@/components/signals/window-band";
@@ -13,7 +13,7 @@ import {
   describeHorizon,
   formatMoney,
   formatPercent,
-  formatQuantity,
+  formatApproxQuantity,
   formatQuotePrice,
   formatWindowTime,
 } from "@/lib/market/format";
@@ -117,7 +117,7 @@ export function FindingRow({
                   : /* The sentence v1 could not say. `isActionable` required an
                        open window before a call could surface at all, so a find
                        whose moment was two days out was simply thrown away. */
-                    `Found — the window opens ${now === null ? "soon" : formatWindowTime(finding.opensAt)}.`}
+                    `The window opens ${now === null ? "soon" : formatWindowTime(finding.opensAt)}.`}
             </span>
           </p>
         </div>
@@ -131,7 +131,7 @@ export function FindingRow({
               {risk.action.label}
             </span>
             <span className="num text-caption text-stone">
-              ≈ {formatQuantity(risk.action.quantity, instrument.market)}{" "}
+              ≈ {formatApproxQuantity(risk.action.quantity, instrument.market)}{" "}
               {finding.symbol}
             </span>
           </>
@@ -206,7 +206,7 @@ export function FindingRow({
           <Button variant="outline" size="sm" asChild>
             <Link href={href}>
               Full read
-              <ArrowRight />
+              <CaretRight />
             </Link>
           </Button>
         </>,

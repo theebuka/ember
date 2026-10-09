@@ -11,6 +11,7 @@ import { SectionHeader } from "@/components/common/section-header";
 import { Segmented } from "@/components/common/segmented";
 import { DataSourceChip } from "@/components/market/data-source-chip";
 import { NotificationsButton } from "@/components/notifications/notifications-button";
+import { SearchButton } from "@/components/shell/search-button";
 import { TradeModal, TransactionForm } from "@/components/portfolio/trade-modal";
 import { PageHeader } from "@/components/shell/page-header";
 import { useHydrated } from "@/hooks/use-hydrated";
@@ -262,6 +263,7 @@ export function SignalsScreen() {
         actions={
           <>
             <DataSourceChip />
+            <SearchButton />
             <NotificationsButton />
           </>
         }

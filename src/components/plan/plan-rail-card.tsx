@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Sparkle } from "@/components/common/icon";
 import { PlanInterstitial } from "@/components/plan/upsell";
 import { Button } from "@/components/ui/button";
@@ -42,11 +43,25 @@ import { usePlan } from "@/hooks/use-plan";
  * layout shift this app measures, in the one component that is on every screen.
  */
 export function PlanRailCard() {
+  // `useSearchParams` needs a boundary, or every prerendered route bails out.
+  return (
+    <Suspense fallback={null}>
+      <RailCard />
+    </Suspense>
+  );
+}
+
+function RailCard() {
   const hydrated = useHydrated();
   const { plan, ready } = usePlan();
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const tab = useSearchParams().get("tab");
 
   if (!hydrated || !ready || plan !== "free") return null;
+  // The Plan tab is the comparison itself; a second "See plans" beside it is
+  // the same call to action twice on one screen (§5).
+  if (pathname === "/settings" && tab === "plan") return null;
 
   return (
     <div className="px-3 pb-1">

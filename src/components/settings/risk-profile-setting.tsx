@@ -177,22 +177,19 @@ function Comparison({
                 aria-current={p.profile === selected ? "true" : undefined}
                 className={cn(
                   "px-1 pt-3 pb-2 text-center font-medium",
-                  // v1 condensed these on the `wdth` axis, which was the right
-                  // answer while the brand face had one. Satoshi doesn't, so
-                  // the fix moves to size: 12px on phones, where three column
-                  // headings and a row label share 335px and "Conservative" is
-                  // twelve characters, releasing to the full micro step as
-                  // soon as there is room.
-                  "text-[0.75rem] sm:text-micro",
-                  // Even at 12px "Conservative" is over a 70px column, so it
-                  // hyphenates. That is the honest answer: truncating to
+                  // 12px. Three headings and a row label share 335px on a
+                  // phone, and "Conservative" is twelve characters, so it may
+                  // still hyphenate. That is the honest answer: truncating to
                   // "Conse…" hides which profile the column is, and an
                   // abbreviation would be a legend to learn.
-                  "hyphens-auto break-words leading-tight",
+                  "text-micro",
+                  // The soft hyphen in HEADER_LABEL decides where: browsers
+                  // without an English dictionary broke it as "Conservativ / e".
+                  "hyphens-manual leading-tight",
                   p.profile === selected ? "text-brand-text" : "text-stone",
                 )}
               >
-                {p.label}
+                {HEADER_LABEL[p.profile] ?? p.label}
               </th>
             ))}
           </tr>
@@ -225,6 +222,12 @@ function Comparison({
     </>
   );
 }
+
+/** Column headings, with a soft hyphen where a narrow column may break them. */
+const HEADER_LABEL: Partial<Record<string, string>> = {
+  conservative: "Conserv\u00ADative",
+  aggressive: "Aggres\u00ADsive",
+};
 
 /**
  * The same table, with the figures blanked.

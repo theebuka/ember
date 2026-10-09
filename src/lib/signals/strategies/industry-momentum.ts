@@ -1,4 +1,5 @@
 import type { Strategy } from "../types";
+import { withMomentumRisk } from "./momentum-risk";
 import { clamp } from "../indicators/stats";
 import { crossSectionalScore, ordinal, pct } from "./shared";
 
@@ -26,7 +27,7 @@ const MIN_SECTORS = 5;
  * reason to prefer a name, never on its own a reason to buy one. Its confidence
  * is capped accordingly.
  */
-export const industryMomentum: Strategy = {
+export const industryMomentum: Strategy = withMomentumRisk({
   id: "industry-momentum",
   name: "Industry momentum",
   family: "momentum",
@@ -81,4 +82,4 @@ export const industryMomentum: Strategy = {
       halfLifeDays: 60,
     };
   },
-};
+}, { crash: true });

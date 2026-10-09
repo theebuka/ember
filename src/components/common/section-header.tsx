@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "@/components/common/icon";
+import { CaretRight } from "@/components/common/icon";
 import { cn } from "@/lib/utils";
 
 /**
@@ -61,7 +61,7 @@ export function SectionHeader({
             )}
           >
             {linkLabel}
-            <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
+            <CaretRight className="size-3 transition-transform group-hover:translate-x-0.5" />
           </Link>
         )}
       </div>

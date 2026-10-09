@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Sparkles, Upload, Wallet } from "@/components/common/icon";
@@ -11,6 +11,7 @@ import { Section, Rows, Row } from "@/components/common/section";
 import { Segmented } from "@/components/common/segmented";
 import { DataSourceChip } from "@/components/market/data-source-chip";
 import { NotificationsButton } from "@/components/notifications/notifications-button";
+import { SearchButton } from "@/components/shell/search-button";
 import { CsvImport } from "@/components/portfolio/csv-import";
 import {
   AllocationBar,
@@ -96,6 +97,19 @@ export function PortfolioScreen() {
   const lockedRanges = RANGE_LIST.filter((r) => !rangeAllowed(r, plan));
   const [editing, setEditing] = useState<Editing | null>(null);
   const [importing, setImporting] = useState(false);
+
+  // Onboarding's "Log a trade" and "Import a CSV" land here and open the form
+  // they named, once. The parameter is dropped so a reload doesn't reopen it.
+  const start = params.get("start");
+  const [startedFrom, setStartedFrom] = useState<string | null>(null);
+  if (hydrated && (start === "log" || start === "import") && startedFrom !== start) {
+    setStartedFrom(start);
+    if (start === "log") setEditing({ mode: "add" });
+    else setImporting(true);
+  }
+  useEffect(() => {
+    if (startedFrom) router.replace("/portfolio", { scroll: false });
+  }, [startedFrom, router]);
 
   // What the plan shows; `ledger` is every row, for writes (decision 289).
   const { transactions, all: ledger, locked: lockedHoldings } = useLedger();
@@ -254,6 +268,7 @@ export function PortfolioScreen() {
         actions={
           <>
             <DataSourceChip />
+            <SearchButton />
             <NotificationsButton />
             {/* Desktop only — on a phone this action is the FAB below, which
                 is the same control at thumb height rather than a second one
@@ -322,7 +337,7 @@ export function PortfolioScreen() {
                   </div>
                   {isSample && (
                     <p className="mt-5 text-micro text-stone">
-                      Sample data — not your holdings.{" "}
+                      This is sample data, not your holdings.{" "}
                       <button type="button" onClick={handleClearSample} className="tap-target font-medium text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
                         Clear it
                       </button>

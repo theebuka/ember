@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Check, Eye, Plus } from "@/components/common/icon";
+import { Check, Eye, LockSimple, Plus } from "@/components/common/icon";
 import { SignalCard, SignalCardSkeleton } from "@/components/signals/signal-card";
 import { LockedBadge, LockedRead } from "@/components/plan/locked";
-import { inFreeMarkets, watchlistLimit } from "@/lib/plan";
+import { inFreeMarkets, rangeAllowed, watchlistLimit } from "@/lib/plan";
 import { usePlan } from "@/hooks/use-plan";
 import { PlanInterstitial } from "@/components/plan/upsell";
 import { ErrorState } from "@/components/common/error-state";
@@ -14,6 +14,7 @@ import { SectionHeader } from "@/components/common/section-header";
 import { Segmented } from "@/components/common/segmented";
 import { ChangeChip } from "@/components/market/change-chip";
 import { DataSourceChip } from "@/components/market/data-source-chip";
+import { useSynthetic } from "@/components/market/data-source";
 import { PriceChart, PriceChartSkeleton } from "@/components/market/price-chart";
 import { TradeModal, TransactionForm } from "@/components/portfolio/trade-modal";
 import { PageHeader } from "@/components/shell/page-header";
@@ -74,7 +75,8 @@ const RANGES: { value: Range; label: string }[] = [
 
 export function AssetScreen({ symbol }: { symbol: string }) {
   const hydrated = useHydrated();
-  const [range, setRange] = useState<Range>("3M");
+  const synthetic = useSynthetic();
+  const [chosenRange, setRange] = useState<Range>("3M");
   const [logging, setLogging] = useState(false);
 
   const riskProfile = usePreferences((s) => s.riskProfile);
@@ -88,6 +90,26 @@ export function AssetScreen({ symbol }: { symbol: string }) {
   const addToWatchlist = useWatchlist((s) => s.add);
   const removeFromWatchlist = useWatchlist((s) => s.remove);
   const setWatchlist = useWatchlist((s) => s.setSymbols);
+
+  // Free charts a month, here as on Portfolio. Until the plan is known the
+  // chart asks for 1M, so a free reader is never sent a range it can't have.
+  const { plan, ready: planReady } = usePlan();
+  const range: Range = planReady && rangeAllowed(chosenRange, plan) ? chosenRange : "1M";
+  const rangeOptions = RANGES.map((r) =>
+    rangeAllowed(r.value, plan)
+      ? r
+      : {
+          ...r,
+          ariaLabel: `${r.label}, part of Pro`,
+          label: (
+            <>
+              <LockSimple weight="fill" className="size-3 text-faint" />
+              {r.label}
+            </>
+          ),
+        },
+  );
+  const [rangeUpsell, setRangeUpsell] = useState(false);
 
   const assetQuery = useAsset(symbol, riskProfile);
   const seriesQuery = useSeries([symbol], range);
@@ -103,7 +125,6 @@ export function AssetScreen({ symbol }: { symbol: string }) {
     () => (instrumentsQuery.data?.instruments ?? []).map((i) => i.symbol),
     [instrumentsQuery.data],
   );
-  const { plan, ready: planReady } = usePlan();
   const watching = useMemo(
     () => resolveWatchlist(watched, universe, plan),
     [watched, universe, plan],
@@ -314,11 +335,12 @@ export function AssetScreen({ symbol }: { symbol: string }) {
             <h3 className="eyebrow">Price</h3>
             <Segmented
               value={range}
-              onChange={setRange}
-              options={RANGES}
+              onChange={(next) => (rangeAllowed(next, plan) ? setRange(next) : setRangeUpsell(true))}
+              options={rangeOptions}
               size="sm"
               aria-label="Chart range"
             />
+            <PlanInterstitial feature="chart-history" open={rangeUpsell} onOpenChange={setRangeUpsell} />
           </div>
           {seriesQuery.isPending ? (
             <PriceChartSkeleton />
@@ -477,7 +499,7 @@ export function AssetScreen({ symbol }: { symbol: string }) {
         <section>
           <SectionHeader
             title="Past calls on this asset"
-            hint="simulated"
+            hint={synthetic ? "on generated prices" : "backtested"}
             href="/signals/track-record"
             linkLabel="Full record"
           />
@@ -506,7 +528,7 @@ export function AssetScreen({ symbol }: { symbol: string }) {
                     </p>
                     <p className="num text-micro text-stone">
                       {formatShortDate(trade.entryAt)} →{" "}
-                      {formatShortDate(trade.exitAt)} · {trade.holdBars} bars
+                      {formatShortDate(trade.exitAt)} · {trade.holdBars} {trade.holdBars === 1 ? "trading day" : "trading days"}
                       {trade.stopped && " · stopped out"}
                     </p>
                   </div>

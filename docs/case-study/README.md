@@ -28,10 +28,10 @@ renders extra attributes. Measuring any of that measures the harness.
 |---|---|
 | [`architecture.svg`](architecture.svg) | Data flow from OHLCV candles to rendered advice, and the boundary that keeps the engine out of the browser |
 | [`window-band.md`](window-band.md) | Component study of the signature element — the 72-hour execution window, from rationale to implementation |
-| [`accessibility.md`](accessibility.md) | axe-core results, 68 page audits |
+| [`accessibility.md`](accessibility.md) | axe-core results, 80 page audits |
 | [`performance.md`](performance.md) | Lighthouse scores and layout shift, both measured per run |
-| [`responsive.md`](responsive.md) | Horizontal-overflow sweep, 16 screens × 9 widths |
-| [`screens/`](screens) | Every screen, mobile and desktop, light and dark — 66 captures |
+| [`responsive.md`](responsive.md) | Horizontal-overflow sweep, 18 routes × 9 widths |
+| [`screens/`](screens) | Every screen, mobile and desktop, light and dark — 74 captures |
 | [`../decisions/`](../decisions) | 39 decision records — what was chosen, what was rejected, and why |
 | [`../methodology.md`](../methodology.md) | Every strategy and its citation |
 | [`../design-system.md`](../design-system.md) | Tokens, type scale, component rules |
@@ -50,7 +50,7 @@ archived** — the palette, the typeface, the layout, the universe and the engin
 predicate all changed, which is five independent reasons the old figures
 described nothing that still exists.
 
-**Accessibility: 0 violations** across 17 screens × 2 themes × 2 widths, at
+**Accessibility: 0 violations** across 20 screens × 2 themes × 2 widths (80 page audits, 2026-10-09), at
 WCAG 2.1 AA plus axe's best-practice rules. It started at 62 — see
 [ADR 0018](../decisions/0018-colours-are-calibrated-against-their-own-tints.md).
 Since phase 15 the audit seeds a real book with two positions driven through
@@ -62,18 +62,18 @@ app rather than the redirect to setup:
 
 | | Desktop | Mobile |
 |---|---|---|
-| Performance | 99–100 | 68–83 |
+| Performance | 98–99 | 81–83 |
 | Accessibility | 100 | 100 |
 | Best practices | 100 | 100 |
 | SEO | 100 | 100 |
-| LCP | 0.8–0.9 s | 4.5–6.6 s |
-| TBT | 0 ms | 63–124 ms |
+| LCP | 0.9–1.1 s | 4.8–5.1 s |
+| TBT | 0 ms | 11–75 ms |
 
 Mobile is the throttled profile — simulated slow 4G with a 4× CPU penalty.
 There is no image to blame: the critical path is the stylesheet and the app's
 own JavaScript, and mobile is where a 214-instrument universe costs something.
-The signals feed is the floor at 68: it renders the largest payload, and that
-payload grew a third when the ensemble went from ten rules to sixteen.
+The signals feed, the floor at 68 until recently, now measures 81: a free
+reader's response is 56 KB, because a locked call carries no working.
 
 **Layout shift**, observed with a `PerformanceObserver` on a seeded ledger,
 because the shift left in this app is markup that only exists when there *is* a
@@ -81,9 +81,9 @@ book:
 
 | | Mobile | Desktop |
 |---|---|---|
-| Twelve of fourteen measured screens | < 0.025 | < 0.025 |
+| Thirteen of fifteen measured screens | < 0.02 | < 0.02 |
 | Asset detail | 0.067 | 0.025 |
-| Settings — account | 0.065 | 0.017 |
+| Settings — profile | 0.044 | 0.004 |
 
 The asset page's share is one honest thing:
 `Your position` is inserted the moment `localStorage` becomes readable, because
@@ -100,9 +100,9 @@ defeated by using stand-in strings. It needs measuring in a browser, not
 reasoning about, which is the whole point of this document.
 
 **No horizontal overflow** at any of 320 / 375 / 414 / 640 / 768 / 1024 / 1280
-/ 1440 / 1920px, on any of the sixteen routes.
+/ 1440 / 1920px, on any of the eighteen routes.
 
-**Tests:** 356, covering the indicator maths, the exposure triggers, finding
+**Tests:** 425, covering the indicator maths, the exposure triggers, finding
 ranking, backtest invariants, portfolio arithmetic, CSV round-tripping, alert
 scheduling for both kinds of finding, the news/engine boundary, and four guards
 that fail on drift rather than on breakage — if the type scale diverges between

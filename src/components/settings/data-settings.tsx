@@ -241,7 +241,7 @@ export function DataSettings() {
               />
               <div className="min-w-0">
                 <p className="text-caption text-graphite">
-                  Export your trades first — they&apos;re the one thing you can&apos;t get back.
+                  Export your trades first. They&apos;re the one thing you can&apos;t get back.
                 </p>
                 <Button
                   variant="outline"

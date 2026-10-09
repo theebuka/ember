@@ -61,6 +61,11 @@ export interface CrossSectionRow {
   momentum12: number | null;
   /** One-month total return. Short-term reversal reads this and inverts it. */
   reversal21: number | null;
+  /**
+   * The largest single-day return in the past month (Bali, Cakici & Whitelaw's
+   * MAX). Close to close, so a gap over a weekend counts as the day it lands on.
+   */
+  maxDaily21: number | null;
   /** Close as a fraction of the highest high in the trailing year, 0…1. */
   highProximity: number | null;
   /** Frazzini–Pedersen beta against the equal-weight market, shrunk toward 1. */
@@ -81,6 +86,13 @@ export interface CrossSectionRow {
    * bars.
    */
   clenowScore: number | null;
+  /**
+   * Da, Gurun & Warachka's information discreteness over the 12-1 window:
+   * sign(return) × (share of down days − share of up days). Negative when the
+   * move was made steadily, on many small days; near zero or positive when it
+   * came on a few large ones.
+   */
+  discreteness: number | null;
 }
 
 export interface SectorRow {
@@ -104,11 +116,19 @@ export interface CrossSection {
     momentum12_1: number[];
     momentum12: number[];
     reversal21: number[];
+    maxDaily21: number[];
     highProximity: number[];
     beta: number[];
     residualT: number[];
     clenowScore: number[];
+    discreteness: number[];
   };
+  /**
+   * How far to scale cross-sectional momentum down because momentum itself has
+   * been volatile, 0.5…1, or null without enough history. Equities only. See
+   * `momentumRiskOf`.
+   */
+  momentumScale: number | null;
 }
 
 /** What the snapshot needs from a universe. Narrow, so `context.ts` can import it without a cycle. */
@@ -149,6 +169,8 @@ const BETA_SHRINK = 0.6;
 interface UniverseCache {
   /** market → UTC day → equal-weight simple return of that market on that day. */
   factor: Map<MarketKind, Map<number, number>>;
+  /** market → the winners-minus-losers series and its volatility. */
+  wml: Map<MarketKind, WmlSeries | null>;
   /** symbol → the market's return on each of that symbol's own bars. */
   aligned: Map<string, number[]>;
   sections: Map<string, CrossSection>;
@@ -168,7 +190,7 @@ const CACHE = new WeakMap<object, UniverseCache>();
 function cacheFor(source: CrossSectionSource): UniverseCache {
   let entry = CACHE.get(source);
   if (!entry) {
-    entry = { factor: new Map(), aligned: new Map(), sections: new Map() };
+    entry = { factor: new Map(), aligned: new Map(), wml: new Map(), sections: new Map() };
     CACHE.set(source, entry);
   }
   return entry;
@@ -233,6 +255,196 @@ function alignedFactor(
 
   cache.aligned.set(symbol, out);
   return out;
+}
+
+/* ── Momentum's own risk ────────────────────────────────────────────────── */
+
+/**
+ * Barroso & Santa-Clara's window for momentum's realised volatility: six months
+ * of daily returns.
+ */
+const WML_VOL_WINDOW = 126;
+/** Deciles, as in the paper. Below this many ranked names a decile is one stock. */
+const WML_MIN_RANKED = 20;
+/** The scale never goes below half: a damper, not a switch. */
+const WML_MIN_SCALE = 0.5;
+
+interface WmlSeries {
+  /** UTC days with a winners-minus-losers return, ascending. */
+  days: number[];
+  /** Annualised realised volatility over the trailing window, per day; NaN before it fills. */
+  vol: number[];
+  /** The mean of every `vol` up to and including that day; NaN before the first. */
+  typical: number[];
+}
+
+/**
+ * A winners-minus-losers portfolio for one market, as a daily series.
+ *
+ * Rebalanced on the first trading day of each UTC month: the top tenth on 12-1
+ * momentum long, the bottom tenth short, equal weight. Membership is decided
+ * from closes up to that day, and each day's return is read from that day's
+ * bars, so the series never knows anything a reader on that day would not.
+ * Computed once per universe per market and read by date.
+ */
+function wmlFor(source: CrossSectionSource, market: MarketKind): WmlSeries | null {
+  const cache = cacheFor(source);
+  if (cache.wml.has(market)) return cache.wml.get(market)!;
+
+  const members = source.instruments
+    .filter((i) => i.market === market)
+    .map((i) => source.candles.get(i.symbol))
+    .filter((c): c is Candle[] => !!c && c.length > MOMENTUM_LOOKBACK + MOMENTUM_SKIP + 1);
+
+  const dayset = new Set<number>();
+  for (const candles of members) for (const bar of candles) dayset.add(utcDay(bar.t));
+  const grid = [...dayset].sort((a, b) => a - b);
+
+  /** Each member's return on each day it traded. */
+  const returns = members.map((candles) => {
+    const byDay = new Map<number, number>();
+    for (let i = 1; i < candles.length; i++) {
+      const prev = candles[i - 1].c;
+      if (prev > 0 && candles[i].c > 0) byDay.set(utcDay(candles[i].t), candles[i].c / prev - 1);
+    }
+    return byDay;
+  });
+
+  const monthOf = (day: number) => {
+    const date = new Date(day * DAY_MS);
+    return date.getUTCFullYear() * 12 + date.getUTCMonth();
+  };
+
+  const days: number[] = [];
+  const wml: number[] = [];
+  let winners: number[] = [];
+  let losers: number[] = [];
+  let month = -1;
+
+  for (const day of grid) {
+    if (monthOf(day) !== month) {
+      month = monthOf(day);
+      const ranked: { index: number; momentum: number }[] = [];
+      members.forEach((candles, index) => {
+        const end = indexAsOf(candles, day);
+        const momentum = end < 0 ? null : totalReturn(candles, end, MOMENTUM_LOOKBACK, MOMENTUM_SKIP);
+        if (momentum !== null && Number.isFinite(momentum)) ranked.push({ index, momentum });
+      });
+      if (ranked.length >= WML_MIN_RANKED) {
+        ranked.sort((a, b) => b.momentum - a.momentum);
+        const tenth = Math.floor(ranked.length / 10);
+        winners = ranked.slice(0, tenth).map((r) => r.index);
+        losers = ranked.slice(-tenth).map((r) => r.index);
+      } else {
+        winners = [];
+        losers = [];
+      }
+    }
+    if (winners.length === 0) continue;
+
+    const mean = (group: number[]) => {
+      let sum = 0;
+      let count = 0;
+      for (const index of group) {
+        const r = returns[index].get(day);
+        if (r !== undefined) {
+          sum += r;
+          count++;
+        }
+      }
+      return count > 0 ? sum / count : null;
+    };
+    const long = mean(winners);
+    const short = mean(losers);
+    if (long === null || short === null) continue;
+    days.push(day);
+    wml.push(long - short);
+  }
+
+  if (days.length <= WML_VOL_WINDOW) {
+    cache.wml.set(market, null);
+    return null;
+  }
+
+  // Rolling volatility, then its running mean as the "usual" level. The running
+  // mean only ever reads the past, which is the property that keeps a backtest
+  // from scaling 2019 by how volatile 2022 turned out to be.
+  const vol = new Array<number>(days.length).fill(Number.NaN);
+  const typical = new Array<number>(days.length).fill(Number.NaN);
+  let sum = 0;
+  let sumSq = 0;
+  let volTotal = 0;
+  let volCount = 0;
+  for (let i = 0; i < days.length; i++) {
+    sum += wml[i];
+    sumSq += wml[i] ** 2;
+    if (i >= WML_VOL_WINDOW) {
+      sum -= wml[i - WML_VOL_WINDOW];
+      sumSq -= wml[i - WML_VOL_WINDOW] ** 2;
+    }
+    if (i >= WML_VOL_WINDOW - 1) {
+      const n = WML_VOL_WINDOW;
+      const variance = Math.max(0, (sumSq - (sum * sum) / n) / (n - 1));
+      vol[i] = Math.sqrt(variance * 252);
+      volTotal += vol[i];
+      volCount++;
+      typical[i] = volTotal / volCount;
+    }
+  }
+
+  const series = { days, vol, typical };
+  cache.wml.set(market, series);
+  return series;
+}
+
+/**
+ * How much to trust cross-sectional momentum today, from how volatile momentum
+ * itself has been.
+ *
+ * Barroso & Santa-Clara found momentum's risk is highly variable and
+ * predictable, and that its crashes arrive when its own recent volatility is
+ * high; scaling exposure by that volatility nearly doubled the strategy's Sharpe
+ * ratio and removed most of the crashes. Daniel & Moskowitz trace the crashes to
+ * rebounds after a fall, which is exactly when the losers' leg is most volatile.
+ *
+ * The paper scales to a fixed 12% target. ember scales to the series' own usual
+ * level (the running mean of its six-month volatility), because an equal-weight
+ * decile portfolio over 176 names has a different natural volatility from the
+ * paper's, and a fixed number chosen for theirs would be a number chosen for
+ * nothing here. **It only ever scales down**, like the regime filter: calm
+ * momentum is not evidence that the call is better, only that it is not in the
+ * conditions where momentum has failed worst. Cederburg et al. (2020) found
+ * volatility scaling adds nothing out of sample for most strategies; momentum is
+ * one of the few where it holds, which is why it is applied here and nowhere else.
+ */
+export function momentumRiskOf(
+  source: CrossSectionSource,
+  market: MarketKind,
+  asOfDay: number,
+): number | null {
+  if (market !== "equity") return null;
+  const series = wmlFor(source, market);
+  if (!series) return null;
+
+  // The last day on or before `asOfDay`.
+  let lo = 0;
+  let hi = series.days.length - 1;
+  let at = -1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (series.days[mid] <= asOfDay) {
+      at = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  if (at < 0) return null;
+
+  const vol = series.vol[at];
+  const typical = series.typical[at];
+  if (!Number.isFinite(vol) || !Number.isFinite(typical) || vol <= 0) return null;
+  return Math.min(1, Math.max(WML_MIN_SCALE, typical / vol));
 }
 
 /* ── Measures ──────────────────────────────────────────────────────────── */
@@ -432,6 +644,14 @@ function rowFor(
   const momentum12 = totalReturn(candles, end, YEAR);
   const reversal21 = totalReturn(candles, end, REVERSAL);
 
+  let maxDaily21: number | null = null;
+  for (let i = end - REVERSAL + 1; i <= end; i++) {
+    const prev = candles[i - 1].c;
+    if (prev <= 0) continue;
+    const r = candles[i].c / prev - 1;
+    if (maxDaily21 === null || r > maxDaily21) maxDaily21 = r;
+  }
+
   let highProximity: number | null = null;
   if (end >= YEAR) {
     let high = 0;
@@ -449,6 +669,20 @@ function rowFor(
       periodsPerYearFor(instrument.market),
     );
     clenowScore = rank[rank.length - 1]?.score ?? null;
+  }
+
+  // Information discreteness over the same 12-1 window the momentum rules read.
+  let discreteness: number | null = null;
+  if (momentum12_1 !== null && end - MOMENTUM_SKIP - MOMENTUM_LOOKBACK >= 1) {
+    let up = 0;
+    let down = 0;
+    const to = end - MOMENTUM_SKIP;
+    for (let i = to - MOMENTUM_LOOKBACK + 1; i <= to; i++) {
+      const move = candles[i].c - candles[i - 1].c;
+      if (move > 0) up++;
+      else if (move < 0) down++;
+    }
+    discreteness = Math.sign(momentum12_1) * ((down - up) / MOMENTUM_LOOKBACK);
   }
 
   let beta: number | null = null;
@@ -481,11 +715,13 @@ function rowFor(
     momentum12_1,
     momentum12,
     reversal21,
+    maxDaily21,
     highProximity,
     beta,
     betaCorrelation,
     residualT,
     clenowScore,
+    discreteness,
   };
 }
 
@@ -548,11 +784,14 @@ export function crossSectionOf(
       momentum12_1: column((r) => r.momentum12_1),
       momentum12: column((r) => r.momentum12),
       reversal21: column((r) => r.reversal21),
+      maxDaily21: column((r) => r.maxDaily21),
       highProximity: column((r) => r.highProximity),
       beta: column((r) => r.beta),
       residualT: column((r) => r.residualT),
       clenowScore: column((r) => r.clenowScore),
+      discreteness: column((r) => r.discreteness),
     },
+    momentumScale: momentumRiskOf(source, market, asOfDay),
   };
 
   cache.sections.set(key, section);

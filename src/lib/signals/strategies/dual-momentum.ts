@@ -1,4 +1,5 @@
 import type { Strategy } from "../types";
+import { withMomentumRisk } from "./momentum-risk";
 import { clamp } from "../indicators/stats";
 import { annualisedVol, pct, peerConfidence, returnOver, squash } from "./shared";
 
@@ -52,7 +53,7 @@ const LOOKBACK = 252;
  * move continuously (`decisiveness`), so a marginal crossing carries the lowest
  * weight this rule can have rather than shouting.
  */
-export const dualMomentum: Strategy = {
+export const dualMomentum: Strategy = withMomentumRisk({
   id: "dual-momentum",
   name: "Dual momentum",
   family: "trend",
@@ -120,4 +121,4 @@ export const dualMomentum: Strategy = {
       halfLifeDays: 21,
     };
   },
-};
+}, { continuity: true, crash: true });

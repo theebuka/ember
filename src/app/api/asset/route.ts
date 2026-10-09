@@ -108,7 +108,11 @@ export async function GET(request: NextRequest) {
     const f = fundamentals;
     groups.push({
       title: "Fundamentals",
-      note: "The figures behind the Piotroski F-Score and the Magic Formula. Generated in this build, not filed — SEC EDGAR replaces them when live data goes on.",
+      // Read from the provider, like the Live chip (decision 236). This line
+      // said "generated" on live builds, beside a header saying Live.
+      note: provider.synthetic
+        ? "The figures behind the Piotroski F-Score and the Magic Formula. These are generated, not filed."
+        : "The figures behind the Piotroski F-Score and the Magic Formula, from the company's latest annual filing.",
       metrics: [
         { key: "revenue", label: "Revenue", value: f.revenue, format: "compactMoney" },
         {
@@ -176,7 +180,9 @@ export async function GET(request: NextRequest) {
   if (onchain) {
     groups.push({
       title: "On-chain",
-      note: "The terms behind the MVRV Z-score. Derived from the generated price path in this build, not read from a chain.",
+      note: provider.synthetic
+        ? "The terms behind the MVRV Z-score. These are generated, not read from a chain."
+        : "The terms behind the MVRV Z-score. Market cap and supply are live; realised cap is estimated from the price history.",
       metrics: [
         {
           key: "market-cap",
@@ -218,7 +224,7 @@ export async function GET(request: NextRequest) {
     const quoteRate = POLICY_RATES[legs.quote];
     groups.push({
       title: "Carry",
-      note: "The interest-rate differential the FX carry strategy reads. Synthetic here, but in a plausible relative ordering.",
+      note: "The rate gap the carry strategy reads. Policy rates are entered by hand, since no free source publishes them.",
       metrics: [
         {
           key: "base-rate",

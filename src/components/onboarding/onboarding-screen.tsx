@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, Cookie, RotateCw, Sparkles, Upload, Wallet } from "@/components/common/icon";
+import { CaretLeft, CaretRight, Cookie, RotateCw, Sparkles, Upload, Wallet } from "@/components/common/icon";
+import { PLAN_RULES } from "@/lib/plan";
 import { StepArt } from "@/components/onboarding/onboarding-art";
 import { Splash } from "@/components/onboarding/splash";
 import { RiskProfileSetting } from "@/components/settings/risk-profile-setting";
@@ -212,6 +213,9 @@ export function OnboardingScreen() {
           "relative shrink-0 overflow-hidden",
           "h-[30dvh] min-h-[180px] max-h-[300px]",
           "lg:h-auto lg:max-h-none lg:w-[46%] lg:max-w-[760px]",
+          // The panel is near-black in both themes, and dark ground is too, so
+          // in dark a hairline marks where the panel ends (pitfall 16).
+          "dark:border-line dark:max-lg:border-b dark:lg:border-r",
         )}
       >
         <StepArt step={step} riskProfile={riskProfile} markets={markets} />
@@ -325,31 +329,40 @@ export function OnboardingScreen() {
                 })}
               </ul>
 
-              <p className="mt-7 text-caption text-stone">
-                Add what you own so ember can value it.
+              {/* Three actions, not three choices (pitfall 9). Each one leaves
+                  setup and opens what it names; Open ember is the way out
+                  without any of them. */}
+              <h2 className="mt-8 text-body font-medium text-ink">Add what you own</h2>
+              <p className="mt-1 text-caption text-stone">
+                So ember can value it and warn you when a position turns.
               </p>
 
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                <StartOption
+              <ul className="mt-3 divide-y divide-line overflow-hidden rounded-xl border border-line">
+                <StartAction
                   icon={Wallet}
                   title="Log a trade"
-                  detail="About twenty seconds"
-                  onClick={() => finish({ to: "/portfolio" })}
+                  detail="Takes about 20 seconds"
+                  onClick={() => finish({ to: "/portfolio?start=log" })}
                 />
-                <StartOption
+                <StartAction
                   icon={Upload}
                   title="Import a CSV"
-                  detail="From your broker"
-                  onClick={() => finish({ to: "/portfolio" })}
+                  detail="From your broker's export"
+                  onClick={() => finish({ to: "/portfolio?start=import" })}
                 />
-                <StartOption
+                <StartAction
                   icon={Sparkles}
-                  title="Explore with sample data"
-                  detail="Clearly labelled, removable in one tap"
+                  title="Use sample data"
+                  detail="Labelled as a sample. Clear it in one tap."
                   onClick={() => finish({ withSample: true, to: "/portfolio" })}
-                  className="sm:col-span-2"
                 />
-              </div>
+              </ul>
+
+              {/* Free's limits, said once before they bite (pitfall 15). */}
+              <p className="mt-3 text-micro text-stone">
+                Free tracks {PLAN_RULES.free.holdings} holdings and watches{" "}
+                {PLAN_RULES.free.watchlist} instruments. Pro has no limits.
+              </p>
             </section>
           )}
         </main>
@@ -366,23 +379,20 @@ export function OnboardingScreen() {
             {step > 0 && (
               <Button
                 variant="ghost"
-                size="xl"
                 onClick={() => setStep((s) => s - 1)}
                 className="text-stone"
               >
-                <ArrowLeft />
+                <CaretLeft />
                 Back
               </Button>
             )}
 
             <Button
-              size="xl"
-              variant={last ? "outline" : "default"}
               className="ml-auto"
               onClick={last ? () => finish() : () => setStep((s) => s + 1)}
             >
               {last ? "Open ember" : step === 0 ? "Get started" : "Continue"}
-              <ArrowRight />
+              <CaretRight />
             </Button>
           </div>
 
@@ -460,7 +470,7 @@ function CookiesBlocked({ onRetry }: { onRetry: () => void }) {
           Opened ember inside another app? Try Safari or Chrome. Otherwise, allow cookies for this site and try again.
         </p>
 
-        <Button size="xl" className="mt-6 w-full" onClick={onRetry}>
+        <Button size="lg" className="mt-6 w-full" onClick={onRetry}>
           <RotateCw />
           Try again
         </Button>
@@ -526,8 +536,7 @@ function WhatEmberDoes() {
         Know what to do, and when.
       </h1>
       <p className="mt-3 text-body text-stone text-pretty">
-        Stocks, forex and crypto — what&apos;s worth doing, and the window to do
-        it in.
+        Stocks, forex and crypto: what&apos;s worth doing, and when to do it.
       </p>
 
       <ul className="mt-6 space-y-2.5">
@@ -551,37 +560,37 @@ function WhatEmberDoes() {
   );
 }
 
-function StartOption({
+function StartAction({
   icon: Icon,
   title,
   detail,
   onClick,
-  className,
 }: {
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  icon: React.ComponentType<{ className?: string }>;
   title: string;
   detail: string;
   onClick: () => void;
-  className?: string;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "flex items-start gap-3 rounded-xl border border-line bg-surface p-3.5 text-left",
-        "transition-colors outline-none hover:border-line-strong hover:bg-surface-2/60",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-        className,
-      )}
-    >
-      <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-surface-2 text-stone">
-        <Icon className="size-3.5" />
-      </span>
-      <span className="min-w-0">
-        <span className="block text-caption font-medium text-ink">{title}</span>
-        <span className="mt-0.5 block text-micro text-stone">{detail}</span>
-      </span>
-    </button>
+    <li>
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(
+          "flex w-full items-center gap-3 px-4 py-3 text-left",
+          "transition-colors outline-none hover:bg-surface-2",
+          "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+        )}
+      >
+        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-surface-2 text-stone">
+          <Icon className="size-4" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-caption font-medium text-ink">{title}</span>
+          <span className="mt-0.5 block text-micro text-stone">{detail}</span>
+        </span>
+        <CaretRight className="size-4 shrink-0 text-stone" />
+      </button>
+    </li>
   );
 }

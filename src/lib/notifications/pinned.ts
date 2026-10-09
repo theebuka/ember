@@ -91,6 +91,14 @@ export function pinnedFrom(
   placement: BroadcastPlacement,
 ): Broadcast[] {
   const closed = new Set(dismissed);
+  // One promoted broadcast on screen at a time. A live bar holds back the
+  // card until it is dismissed: with both, Home opened ~250pt further down.
+  if (
+    placement === "card" &&
+    notices.some((notice) => notice.placement === "bar" && !closed.has(notice.id))
+  ) {
+    return [];
+  }
   return notices
     .filter((notice) => notice.placement === placement && !closed.has(notice.id))
     .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));

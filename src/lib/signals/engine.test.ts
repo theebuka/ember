@@ -212,26 +212,31 @@ function fakeStrategy({
   confidence = 0.8,
   family = "trend",
   silent = false,
+  quiet = false,
+  minBars = 1,
 }: {
   id: string;
   score: number;
   confidence?: number;
   family?: StrategyFamily;
   silent?: boolean;
+  quiet?: boolean;
+  minBars?: number;
 }): Strategy {
   return {
     id: id as Strategy["id"],
     name: id,
     family,
     appliesTo: ["equity", "crypto", "fx"] as MarketKind[],
-    minBars: 1,
+    minBars,
     citation: { authors: "test", year: 2026, title: "test", where: "test", claim: "test" },
     evaluate: () =>
       silent
         ? null
         : {
             strategyId: id as Strategy["id"],
-            score,
+            score: quiet ? 0 : score,
+            quiet,
             confidence,
             rationale: `${id} says ${score}`,
             horizonDays: 30,
@@ -433,6 +438,65 @@ describe("ensemble", () => {
     // does the reverse. If the profile only changed size it would be a label.
     expect(bold.score).toBeGreaterThan(cautious.score);
     expect(bold.sizing!.weight).toBeGreaterThan(cautious.sizing!.weight);
+  });
+});
+
+/**
+ * Confidence must not depend on how many rules are in the engine (decision 304).
+ *
+ * Three phases each added rules and each time every confidence fell, until the
+ * profiles' floors had to be lowered by hand. These pin the property instead: a
+ * rule that cannot or does not speak about an instrument changes nothing about
+ * it, and correlated rules count as the voices they are.
+ */
+describe("confidence does not depend on the number of rules", () => {
+  const base = () => [
+    fakeStrategy({ id: "a", score: 0.7 }),
+    fakeStrategy({ id: "b", score: 0.5, confidence: 0.6 }),
+    fakeStrategy({ id: "c", score: -0.3, confidence: 0.5 }),
+  ];
+  const run = (strategies: Strategy[]) =>
+    assess({ context: buildContext(universe, "AAPL")!, riskProfile: "balanced", strategies })!;
+
+  it("a rule that cannot assess the instrument changes nothing", () => {
+    const without = run(base());
+    const withNull = run([...base(), fakeStrategy({ id: "d", score: 0, silent: true })]);
+    expect(withNull.confidence).toBe(without.confidence);
+    expect(withNull.score).toBe(without.score);
+  });
+
+  it("a quiet rule changes nothing, and is still shown", () => {
+    const without = run(base());
+    const withQuiet = run([...base(), fakeStrategy({ id: "d", score: 0.9, quiet: true })]);
+    expect(withQuiet.confidence).toBe(without.confidence);
+    expect(withQuiet.score).toBe(without.score);
+
+    const shown = withQuiet.contributions.find((c) => c.name === "d")!;
+    expect(shown.weight).toBe(0);
+    expect(shown.score).toBe(0);
+    expect(shown.stance).toBe("neutral");
+  });
+
+  /** Thin history is thin evidence: a rule that would speak with more bars still costs. */
+  it("a rule the listing is too young for still costs coverage", () => {
+    const without = run(base());
+    const young = run([...base(), fakeStrategy({ id: "d", score: 0.6, minBars: 1_000_000 })]);
+    expect(young.confidence).toBeLessThan(without.confidence);
+  });
+
+  /**
+   * Three readings of one number are one voice. Against an equal and opposite
+   * independent rule, the declared group must not win three votes to one.
+   */
+  it("a correlated group counts as the voices it is", () => {
+    const result = run([
+      fakeStrategy({ id: "ts-momentum", score: 0.6 }),
+      fakeStrategy({ id: "xs-momentum", score: 0.6 }),
+      fakeStrategy({ id: "dual-momentum", score: 0.6 }),
+      fakeStrategy({ id: "a", score: -0.6 }),
+    ]);
+    expect(Math.abs(result.score)).toBeLessThan(0.05);
+    expect(result.action).toBe("hold");
   });
 });
 

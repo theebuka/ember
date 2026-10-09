@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BellRinging, Megaphone, Warning } from "@/components/common/icon";
+import { BellRinging, CaretRight, Megaphone, Warning } from "@/components/common/icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatRelative } from "@/lib/market/format";
 import type { Notice } from "@/lib/notifications/inbox";
@@ -63,8 +63,9 @@ export function NoticeRow({ notice, now }: { notice: Notice; now: number | null 
         <p className="mt-1 text-caption text-stone text-pretty">{notice.body}</p>
 
         {notice.href && (
-          <span className="mt-2 inline-block text-caption font-medium text-brand-text">
-            {notice.action ?? "View"} →
+          <span className="mt-2 inline-flex items-center gap-0.5 text-caption font-medium text-brand-text">
+            {notice.action ?? "View"}
+            <CaretRight className="size-3.5" />
           </span>
         )}
       </div>

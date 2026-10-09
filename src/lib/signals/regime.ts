@@ -148,6 +148,7 @@ export function regimeWeight(family: StrategyFamily, regime: Regime): number {
 
     case "value":
     case "quality":
+    case "investment":
       // Slow, fundamentally anchored, and relatively indifferent to the
       // tape — which makes them worth slightly more when everything
       // price-based is unreliable.
@@ -175,6 +176,16 @@ export function regimeWeight(family: StrategyFamily, regime: Regime): number {
       if (trend === "downtrend") weight *= 1.2;
       if (trend === "uptrend" && vol === "calm") weight *= 0.75;
       break;
+
+    case "lottery":
+      // Lottery demand runs hottest when sentiment does, and the MAX effect has
+      // been measured strongest in those periods (Fong & Toh 2014). A calm
+      // melt-up is where it says most.
+      if (trend === "uptrend" && vol === "calm") weight *= 1.1;
+      break;
+
+    // `attention` has no documented dependence on the regime, so it keeps its
+    // weight everywhere.
   }
 
   return clamp(weight, 0.2, 1.3);

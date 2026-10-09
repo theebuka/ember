@@ -119,19 +119,20 @@ export function CommandMenu() {
     [router],
   );
 
-  if (!isDesktop) return null;
-
   return (
     <CommandDialog
       open={open}
       onOpenChange={setCommandMenuOpen}
       title="Search ember"
-      description="Jump to a screen or an instrument, or change the theme."
+      description="Find an instrument or a screen, or change the theme."
+      // On a phone it is a full screen with a close button, not a floating box.
+      className="max-md:inset-0 max-md:top-0 max-md:h-dvh max-md:max-w-none max-md:translate-x-0 max-md:rounded-none! max-md:border-0 max-md:pt-[var(--safe-top)]"
+      showCloseButton={!isDesktop}
     >
-      <CommandInput placeholder="Go to a screen, or type a ticker…" />
-      <CommandList>
+      <CommandInput autoFocus placeholder={isDesktop ? "Search instruments and screens…" : "Search instruments and screens"} />
+      <CommandList className="max-md:max-h-none max-md:flex-1">
         <CommandEmpty>
-          No matches.
+          Nothing matches that. Try a ticker like AAPL, or a company name.
         </CommandEmpty>
 
         <CommandGroup heading="Go to">
@@ -181,12 +182,12 @@ export function CommandMenu() {
         <CommandSeparator />
 
         <CommandGroup heading="Actions">
-          <CommandItem value="log trade transaction" onSelect={() => go("/portfolio")}>
+          <CommandItem value="log trade transaction" onSelect={() => go("/portfolio?start=log")}>
             <Plus />
             Log a trade
             <CommandShortcut>Portfolio</CommandShortcut>
           </CommandItem>
-          <CommandItem value="import csv" onSelect={() => go("/portfolio")}>
+          <CommandItem value="import csv" onSelect={() => go("/portfolio?start=import")}>
             <Sparkles />
             Import a CSV
             <CommandShortcut>Portfolio</CommandShortcut>
@@ -226,7 +227,7 @@ export function CommandMenu() {
 
       <div
         aria-hidden
-        className="flex items-center gap-4 border-t border-line px-4 py-2.5 text-micro text-stone"
+        className="flex items-center gap-4 border-t border-line px-4 py-2.5 text-micro text-stone max-md:hidden"
       >
         <Hint keys={["↑", "↓"]}>to move</Hint>
         <Hint keys={["↵"]}>to open</Hint>

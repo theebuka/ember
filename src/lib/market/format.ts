@@ -134,6 +134,20 @@ export function formatQuantity(value: number, market: MarketKind): string {
   }).format(value);
 }
 
+/**
+ * A suggested size, printed after "≈". It is an estimate, so it is rounded to
+ * what a person would type: 0.3145 BTC, not 0.3144784.
+ */
+export function formatApproxQuantity(value: number, market: MarketKind): string {
+  const options: Intl.NumberFormatOptions =
+    market === "crypto"
+      ? Math.abs(value) < 1
+        ? { maximumSignificantDigits: 4 }
+        : { maximumFractionDigits: 4 }
+      : { maximumFractionDigits: market === "fx" ? 0 : 2 };
+  return new Intl.NumberFormat(LOCALE, options).format(value);
+}
+
 /* ── Percentages ───────────────────────────────────────────────────────── */
 
 /** Takes a proportion (0.0124), renders a percentage (1.24%). */

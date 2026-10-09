@@ -1,4 +1,5 @@
 import type { Strategy } from "../types";
+import { withMomentumRisk } from "./momentum-risk";
 import { clamp } from "../indicators/stats";
 import { crossSectionalScore, ordinal, peerConfidence, rankOf } from "./shared";
 
@@ -25,7 +26,7 @@ const MIN_MEMBERS = 8;
  * The construction, the two departures ember's data forces, and why the measure
  * is a t-statistic rather than a return are all in `residualMomentumOf`.
  */
-export const residualMomentum: Strategy = {
+export const residualMomentum: Strategy = withMomentumRisk({
   id: "residual-momentum",
   name: "Residual momentum",
   family: "momentum",
@@ -79,4 +80,4 @@ export const residualMomentum: Strategy = {
       halfLifeDays: 55,
     };
   },
-};
+}, { continuity: true, crash: true });

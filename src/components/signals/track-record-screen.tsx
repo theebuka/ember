@@ -133,7 +133,6 @@ export function TrackRecordScreen() {
                 <Stat
                   label="Hit rate"
                   value={formatPercent(result.hitRate, { decimals: 1 })}
-                  tone={result.hitRate - 0.5}
                 />
                 <Stat
                   label="Average return"
@@ -168,7 +167,7 @@ export function TrackRecordScreen() {
                 />
                 <Stat
                   label="Average hold"
-                  value={`${Math.round(result.averageHoldBars)} bars`}
+                  value={`${Math.round(result.averageHoldBars)} ${Math.round(result.averageHoldBars) === 1 ? "trading day" : "trading days"}`}
                 />
               </dl>
 
@@ -363,7 +362,7 @@ function TradesTable({ trades }: { trades: readonly BacktestTrade[] }) {
             </div>
             <p className="num mt-0.5 text-micro text-stone">
               {formatShortDate(trade.entryAt)} → {formatShortDate(trade.exitAt)} ·{" "}
-              {trade.holdBars} bars · {formatPercent(trade.weight, { decimals: 1 })}{" "}
+              {trade.holdBars} {trade.holdBars === 1 ? "trading day" : "trading days"} · {formatPercent(trade.weight, { decimals: 1 })}{" "}
               size
               {trade.stopped && " · stopped out"}
             </p>

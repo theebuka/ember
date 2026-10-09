@@ -95,33 +95,43 @@ export function Fab({
 }
 
 /**
- * Whether the element `id` is inside the bottom band of the viewport — the nav,
- * the FAB and a margin, ~160px. An observer with that band as its root, rather
- * than a scroll listener reading layout on every frame.
+ * Whether the element `id` sits in the band the FAB occupies.
+ *
+ * Measured on mount, on scroll, on resize and whenever the page's layout
+ * changes. It used to be an IntersectionObserver bound to the element found at
+ * mount, and Portfolio replaces its segment control once data lands, so the
+ * observer watched a node that was gone: the FAB sat over "Activity" until the
+ * first scroll.
  */
 function useCovers(id: string | undefined): boolean {
   const [covers, setCovers] = useState(false);
 
   useEffect(() => {
-    const target = id ? document.getElementById(id) : null;
-    if (!target) return;
-
-    let observer: IntersectionObserver | null = null;
-    const observe = () => {
-      observer?.disconnect();
-      const band = 160;
-      observer = new IntersectionObserver(
-        ([entry]) => setCovers(entry.isIntersecting),
-        { rootMargin: `-${Math.max(window.innerHeight - band, 0)}px 0px 0px 0px` },
-      );
-      observer.observe(target);
+    if (!id) return;
+    // From the bottom of the viewport: the nav, the gap and the FAB itself.
+    const band = 160;
+    let frame = 0;
+    const measure = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const target = document.getElementById(id);
+        if (!target) return setCovers(false);
+        const rect = target.getBoundingClientRect();
+        const top = window.innerHeight - band;
+        setCovers(rect.bottom > top && rect.top < window.innerHeight);
+      });
     };
 
-    observe();
-    window.addEventListener("resize", observe);
+    measure();
+    const resize = new ResizeObserver(measure);
+    resize.observe(document.body);
+    window.addEventListener("scroll", measure, { passive: true });
+    window.addEventListener("resize", measure);
     return () => {
-      observer?.disconnect();
-      window.removeEventListener("resize", observe);
+      cancelAnimationFrame(frame);
+      resize.disconnect();
+      window.removeEventListener("scroll", measure);
+      window.removeEventListener("resize", measure);
     };
   }, [id]);
 

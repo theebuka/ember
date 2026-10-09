@@ -59,7 +59,7 @@ export function SettingRow({
           <Label
             {...(htmlFor ? { htmlFor } : {})}
             className={cn(
-              // 15px medium, under a 17px group heading and a 20px pane title.
+              // 14px medium, under a 16px group heading and a 20px pane title.
               // It was 17px under a 15px group label, so every block on the
               // screen read upside down (decision 284).
               "block text-caption font-medium text-ink",

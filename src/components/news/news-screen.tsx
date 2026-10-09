@@ -10,6 +10,7 @@ import { Section } from "@/components/common/section";
 import { Segmented } from "@/components/common/segmented";
 import { DataSourceChip } from "@/components/market/data-source-chip";
 import { NotificationsButton } from "@/components/notifications/notifications-button";
+import { SearchButton } from "@/components/shell/search-button";
 import { PageHeader } from "@/components/shell/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -217,6 +218,7 @@ export function NewsScreen() {
         actions={
           <>
             <DataSourceChip />
+            <SearchButton />
             <NotificationsButton />
           </>
         }

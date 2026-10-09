@@ -2,7 +2,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, CheckCircle, Envelope, Warning } from "@/components/common/icon";
+import { CaretLeft, CheckCircle, Envelope, Warning } from "@/components/common/icon";
 import { PageBody } from "@/components/common/page-body";
 import { PageHeader } from "@/components/shell/page-header";
 import { Button } from "@/components/ui/button";
@@ -129,7 +129,7 @@ export function AuthScreen() {
               className="mt-5 -ml-3 text-stone"
               onClick={() => setState({ step: "email" })}
             >
-              <ArrowLeft />
+              <CaretLeft />
               Use a different address
             </Button>
           </div>
@@ -185,7 +185,7 @@ export function AuthScreen() {
                 in settings. "We take privacy seriously" is what an app says
                 when it would rather not enumerate. */}
             <p className="mt-5 text-micro text-stone">
-              No password needed — ember emails you a link.
+              No password needed. ember emails you a link.
             </p>
           </form>
         )}
