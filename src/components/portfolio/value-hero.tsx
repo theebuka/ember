@@ -53,10 +53,10 @@ export function ValueHero({
       <p
         className={cn(
           "figure mt-1.5 flex items-baseline text-ink",
-          // 32px on a phone (`text-balance`), 56px from md up.
+          // 32px on a phone (`text-hero`), 56px from md up.
           oversized
-            ? "text-balance"
-            : "text-balance max-[374px]:text-display md:text-figure",
+            ? "text-hero"
+            : "text-hero max-[374px]:text-display md:text-figure",
         )}
       >
         <span>
@@ -188,9 +188,9 @@ export function ValueHeroSkeleton({ className }: { className?: string }) {
       {/* The narrow-screen step-down has to be here too, or the skeleton is a
           64px line where the hero draws a 40px one and the shift it was
           written to prevent comes back below 375px. */}
-      <div className="figure mt-1.5 flex items-center text-balance max-[374px]:text-display md:text-figure">
+      <div className="figure mt-1.5 flex items-center text-hero max-[374px]:text-display md:text-figure">
         <Skeleton className="flex w-[7ch] items-center rounded-lg">
-          <span className="text-balance text-transparent max-[374px]:text-display md:text-figure">
+          <span className="text-hero text-transparent max-[374px]:text-display md:text-figure">
             0
           </span>
         </Skeleton>

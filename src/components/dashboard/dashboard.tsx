@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { CaretRight, Sparkles, Wallet } from "@/components/common/icon";
 import { ErrorState } from "@/components/common/error-state";
@@ -77,6 +77,7 @@ export function Dashboard({
   pinned?: Broadcast[];
 }) {
   const hydrated = useHydrated();
+  const [inboxSettled, setInboxSettled] = useState(false);
 
   // What the plan shows; `ledger` is every row, for writes (decision 289).
   const { transactions, all: ledger } = useLedger();
@@ -225,19 +226,25 @@ export function Dashboard({
 
         <PageColumns
           footer={
-            // 8px on the grid's 32px gap keeps the page's 40px block rhythm.
-            <div className="space-y-8 pt-2">
-              <p className="text-micro text-stone">
-                ember gives information, not financial advice.{" "}
-                <Link
-                  href="/signals/methodology"
-                  className="underline underline-offset-2 hover:text-stone"
-                >
-                  How the signals are built
-                </Link>
-                .
-              </p>
-            </div>
+            // Drawn once the findings have replaced their skeleton. Under the
+            // two skeleton rows it sat inside a desktop viewport, and the real
+            // list then threw it a screen down: 0.29 of layout shift, hidden
+            // for as long as a 40px announcement bar kept it below the fold.
+            !inboxSettled ? null : (
+              // 8px on the grid's 32px gap keeps the page's 40px block rhythm.
+              <div className="space-y-8 pt-2">
+                <p className="text-micro text-stone">
+                  ember gives information, not financial advice.{" "}
+                  <Link
+                    href="/signals/methodology"
+                    className="underline underline-offset-2 hover:text-stone"
+                  >
+                    How the signals are built
+                  </Link>
+                  .
+                </p>
+              </div>
+            )
           }
           aside={
             <div className="space-y-10">
@@ -290,7 +297,7 @@ export function Dashboard({
                 handled state and its own execute flow — this screen composes
                 it rather than orchestrating it, because the same list is what
                 a notification deep-links into. */}
-            <FindingsInbox />
+            <FindingsInbox onSettled={setInboxSettled} />
           </div>
         </PageColumns>
       </PageBody>
@@ -324,7 +331,7 @@ function Balance({ summary }: { summary: PortfolioSummary }) {
           />
         </Link>
       </h2>
-      <p className="figure mt-1 flex items-baseline text-balance text-ink max-[374px]:text-title">
+      <p className="figure mt-1 flex items-baseline text-hero text-ink max-[374px]:text-title">
         <span>
           {sign}
           {symbol}
@@ -353,7 +360,7 @@ function BalanceSkeleton() {
   return (
     <div aria-hidden>
       <h2 className="eyebrow">Portfolio value</h2>
-      <div className="figure mt-1 flex items-center text-balance max-[374px]:text-title">
+      <div className="figure mt-1 flex items-center text-hero max-[374px]:text-title">
         <Skeleton className="flex w-[7ch] items-center rounded-lg">
           <span className="text-transparent">0</span>
         </Skeleton>
@@ -382,7 +389,7 @@ function EmptyBook({ onLoadSample }: { onLoadSample: () => void }) {
   return (
     <div>
       <h2 className="eyebrow">Portfolio value</h2>
-      <div className="figure mt-1 flex items-center text-balance max-[374px]:text-title">
+      <div className="figure mt-1 flex items-center text-hero max-[374px]:text-title">
         <span className="flex items-center gap-2 font-sans text-body font-normal tracking-normal text-stone">
           <Wallet className="size-4 shrink-0" />
           Nothing tracked yet.

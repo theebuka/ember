@@ -31,7 +31,7 @@ renders extra attributes. Measuring any of that measures the harness.
 | [`accessibility.md`](accessibility.md) | axe-core results, 80 page audits |
 | [`performance.md`](performance.md) | Lighthouse scores and layout shift, both measured per run |
 | [`responsive.md`](responsive.md) | Horizontal-overflow sweep, 18 routes × 9 widths |
-| [`screens/`](screens) | Every screen, mobile and desktop, light and dark — 74 captures |
+| Figma, "ember — App design" | Every screen, phone and desktop, light and dark. The gate's screenshots were retired for it |
 | [`../decisions/`](../decisions) | 39 decision records — what was chosen, what was rejected, and why |
 | [`../methodology.md`](../methodology.md) | Every strategy and its citation |
 | [`../design-system.md`](../design-system.md) | Tokens, type scale, component rules |
@@ -50,7 +50,7 @@ archived** — the palette, the typeface, the layout, the universe and the engin
 predicate all changed, which is five independent reasons the old figures
 described nothing that still exists.
 
-**Accessibility: 0 violations** across 20 screens × 2 themes × 2 widths (80 page audits, 2026-10-09), at
+**Accessibility: 0 violations** across 20 screens × 2 themes × 2 widths (80 page audits, 2026-10-10), at
 WCAG 2.1 AA plus axe's best-practice rules. It started at 62 — see
 [ADR 0018](../decisions/0018-colours-are-calibrated-against-their-own-tints.md).
 Since phase 15 the audit seeds a real book with two positions driven through
@@ -62,18 +62,18 @@ app rather than the redirect to setup:
 
 | | Desktop | Mobile |
 |---|---|---|
-| Performance | 99 | 82–84 |
+| Performance | 99 | 82–85 |
 | Accessibility | 100 | 100 |
 | Best practices | 100 | 100 |
 | SEO | 100 | 100 |
-| LCP | 0.9–1.1 s | 4.8–5.1 s |
-| TBT | 0 ms | 11–75 ms |
+| LCP | 0.9–1.0 s | 4.5–5.1 s |
+| TBT | 0 ms | 9–69 ms |
 
 Mobile is the throttled profile — simulated slow 4G with a 4× CPU penalty.
 There is no image to blame: the critical path is the stylesheet and the app's
 own JavaScript, and mobile is where a 214-instrument universe costs something.
-The signals feed, the floor at 68 until recently, now measures 81: a free
-reader's response is 58 KB, because a locked call carries no working.
+The signals feed, the floor at 68 until recently, now measures 82: a free
+reader's response is 62 KB, because a locked call carries no working.
 
 **Layout shift**, observed with a `PerformanceObserver` on a seeded ledger,
 because the shift left in this app is markup that only exists when there *is* a
@@ -82,8 +82,8 @@ book:
 | | Mobile | Desktop |
 |---|---|---|
 | Thirteen of fifteen measured screens | < 0.02 | < 0.02 |
-| Asset detail | 0.067 | 0.025 |
-| Settings — profile | 0.044 | 0.004 |
+| Asset detail | 0.083 | 0.029 |
+| Settings — profile | 0.032 | 0.004 |
 
 The asset page's share is one honest thing:
 `Your position` is inserted the moment `localStorage` becomes readable, because

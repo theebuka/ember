@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Compass } from "@/components/common/icon";
 import { ErrorState } from "@/components/common/error-state";
@@ -54,7 +54,12 @@ interface Executing {
   quantity: number | null;
 }
 
-export function FindingsInbox() {
+export function FindingsInbox({
+  onSettled,
+}: {
+  /** Told once the list has replaced its skeleton, so the page can end itself. */
+  onSettled?: (settled: boolean) => void;
+} = {}) {
   const hydrated = useHydrated();
   const now = useNow(60_000);
   const [executing, setExecuting] = useState<Executing | null>(null);
@@ -236,6 +241,7 @@ export function FindingsInbox() {
   /* ── Render ────────────────────────────────────────────────────────────── */
 
   const loading = !hydrated || findingsQuery.isPending || instrumentsQuery.isPending;
+  useEffect(() => onSettled?.(!loading), [loading, onSettled]);
   const error = findingsQuery.error;
 
   const open = findings.filter((f) => handlingOf(f) === null);
@@ -253,13 +259,10 @@ export function FindingsInbox() {
            a 375px screen; anything longer wraps the row. The fuller accounting
            — how many were found against how many are drawn — goes under the
            list, which is where a reader asks the question. */
-        hint={
-          loading
-            ? undefined
-            : shownRisks > 0
-              ? `${shownRisks} on what you hold`
-              : undefined
-        }
+        /* The line is always there, blank when it has nothing to say. Absent
+           while loading, it arrived with the findings and pushed the list it
+           sits above down 18px (ADR 0019: reserve the line box). */
+        hint={!loading && shownRisks > 0 ? `${shownRisks} on what you hold` : "\u00A0"}
         href="/signals"
         linkLabel="All signals"
       >

@@ -112,7 +112,7 @@ npm run dev:https    # dev over TLS on localhost. Not enough for a phone: the
                      #   (`cloudflared tunnel --url http://localhost:3000`)
 
 # The gate. Builds, starts a production server, measures against it, stops it.
-npm run verify                    # audit · capture · perf · measure
+npm run verify                    # audit · responsive · perf · measure
 npm run verify -- --only=audit    # one step
 npm run verify -- --skip-build    # reuse the build on disk
 ```
@@ -131,7 +131,7 @@ The four steps:
 | | |
 |---|---|
 | `audit.mjs` | axe-core · 20 screens × 2 themes × 2 widths, on a seeded book |
-| `capture.mjs` | 74 screenshots + a 320→1920 overflow sweep over 18 routes |
+| `responsive.mjs` | a 320→1920 overflow sweep over 18 routes. No screenshots: the Figma file is the visual record (decision 312) |
 | `perf.mjs` | Lighthouse scores, and layout shift observed on a seeded ledger |
 | `measure.mjs` | track record, payload sizes, cold/warm route timings |
 
@@ -151,7 +151,7 @@ scripts/
 ├─ verify.mjs ★              the gate — builds, serves, runs the four below,
 │                            stops the server. Owns the process on purpose
 ├─ audit.mjs                 axe-core over every screen — a gate, not a report
-├─ capture.mjs               screenshots + the responsive overflow sweep
+├─ responsive.mjs            the 320→1920 overflow sweep (was capture.mjs)
 ├─ perf.mjs ★                Lighthouse + layout shift, both measured per run
 ├─ measure.mjs               track record, payload sizes, route timings — the
 │                            source of every number quoted in §8
@@ -167,7 +167,7 @@ docs/
 ├─ methodology.md            every strategy + its citation
 ├─ design-system.md          tokens, type specs, component rules
 └─ case-study/               README, architecture.svg, window-band.md,
-                             accessibility.md, responsive.md, screens/
+                             accessibility.md, responsive.md, performance.md
 src/
 ├─ proxy.ts                  first-run gate — one cookie read at the edge
 ├─ app/
@@ -399,7 +399,7 @@ The brand is **`#2563EB`**, chosen by the user. It is exactly Tailwind's `blue-6
 - **Geist** (variable) is the interface face, via `next/font/google` (downloaded at build, self-hosted, `--font-ui`). Chosen 2026-09-29 over Inter and Satoshi after running both live. **Every face-specific value is a `--face-*` property in `globals.css`**, reached through `figure`, `eyebrow` and `tracking-display` / `tracking-title` / `tracking-wordmark` — never an arbitrary `tracking-[…]`. **Satoshi is kept for a revert**: its file stays in `src/app/fonts/`, and its values and loader are in `docs/design-system.md` → "The interface face".
 - **IBM Plex Mono** for ticker symbols and timestamps only — uppercase, `+0.04em` tracking.
 - **All money and percentages use `font-variant-numeric: tabular-nums` in the interface face, never mono.** Mono numerals everywhere is the tell that a finance app was themed rather than designed. Tabular figures also stop digits jittering as prices tick.
-- Scale: `56 / 36 / 28 / 20 / 16 / 14 / 12` → `figure / display / title / heading / body / caption / micro`, and on a phone the top four step down to `44 / 28 / 22 / 18`. One more size, `balance`, is the Home and Portfolio balance on a phone: 36px from `md` up, 32px below (Portfolio's hero is `figure` from `md` up). The phone steps live in one `@media (width < 48rem)` block after `@theme`; the Figma file has the same two sets as the Desktop and Mobile modes of "ember / Type". Decision 293.
+- Scale: `56 / 36 / 28 / 20 / 16 / 14 / 12` → `figure / display / title / heading / body / caption / micro`, and on a phone the top four step down to `44 / 28 / 22 / 18`. One more size, `hero`, is the Home and Portfolio balance: 36px from `md` up, 32px below (Portfolio's is `figure` from `md` up). **Never name a size after an existing Tailwind utility**: it was `balance` for a day, `text-balance` is `text-wrap: balance`, and both rules were emitted for the one class. The phone steps live in one `@media (width < 48rem)` block after `@theme`; the Figma file has the same two sets as the Desktop and Mobile modes of "ember / Type". Decision 293.
 - **The type scale is its own `@theme`, never `@theme inline`.** `inline` writes each size into its utility as a literal, so the phone block overrides a property nothing reads. That is how decision 293's phone steps never shipped (decision 311).
 - **A new size goes in two places**: `@theme` in `globals.css` *and* the `font-size` group in `lib/utils.ts`. tailwind-merge assumes an unrecognised `text-*` is a colour and will silently delete it when a colour follows — ADR 0016. A test reads the CSS and fails if the lists drift.
 - **There is no width axis any more.** Neither Satoshi nor Geist has one, so hero figures get their density from weight and the `--face-figure-*` tracking, and a column heading that won't fit steps *down a size* and hyphenates. Never truncate to `Conse…`, never invent an abbreviation. ADR 0023.
@@ -779,7 +779,6 @@ See `docs/decisions/` for full ADRs. Summary:
 | 090 | `Your position` is **reserved from the ledger, filled from the queries** | It needs quotes, rates and `instrument`, and `instrument` rides the slowest call on the page — so a 149px section appeared four seconds in and pushed everything under it down while the reader was looking at it. Whether there is a position is knowable from `localStorage` one frame after hydration. Net quantity, not "has ever traded": space held for a block that never arrives collapses upward, which is the same shift pointing the other way |
 | 091 | The value hero steps down **below 375px as well as past nine digits** | Digit count is a property of the number; room to draw it is a property of the viewport. At 320px an ordinary six-figure dollar balance pushed the document 36px wide on four screens. `max-[374px]:` takes the same step a long number takes, and the two compose — the skeleton takes it too, or the shift it prevents comes back |
 | 092 | The CLS gate is **Google's 0.1**, not a number chosen to pass | Nine screens measure under 0.02 and would clear a gate at 0.03. The asset page's remainder is the documented hydration insert, and closing it needs a cookie mirroring the ledger's existence — a decision to take deliberately, not to reach for because a figure is ugly. Tightening the gate is the right move the day that cookie exists and not before |
-| 093 | `capture.mjs` **empties the screenshot directory** before writing | Phase 13 renamed a slug and phase 14 restructured a screen; both sets of PNGs simply stayed on disk. A folder where some images are current and some are two redesigns old, with nothing to tell them apart, is worse than no folder |
 | 094 | The splash is the **route's SSR fallback**, not an overlay with a timer ([ADR 0030](docs/decisions/0030-the-launch-screen-fills-a-frame-that-was-already-blank.md)) | `/onboarding` reads `useSearchParams`, so the prerendered HTML *is* the `Suspense` fallback — an empty white rectangle held for the length of hydration, and the first thing every new user has ever seen. Putting the splash there costs zero milliseconds. A minimum display time on an app-wide splash was rejected outright: this codebase publishes its own LCP |
 | 095 | The launch ground is **`ink`, not the brand blue** | `#0B0C0F` is what the app icon is already drawn on, so the OS launch frame, the home-screen icon and the in-app splash are one object seen three times. Hard-coded rather than tokenised for the same reason `offline.html` duplicates the palette — it has to be right before the theme is known, and it is the same in both |
 | 096 | Onboarding is an **art panel plus a column**, not a column | It shipped as one 512px stack of prose — step one alone ran a headline, a lede, three claims with full paragraphs and a disclosure block, over a thousand pixels tall on a phone and identical at 3440px. Every reference in the category opens on a picture and about forty words. The claims are one line each now; each is restated with citations on the methodology page, which is where someone who wants the detail is going anyway |
@@ -987,7 +986,9 @@ See `docs/decisions/` for full ADRs. Summary:
 | 308 | **A lock on what you own says warnings are free, and Home's locks are one line** | The asset page told somebody holding forty AAPL "ember has a call on AAPL. Buy or sell… are part of Pro": a lock pointed at a position, which §5 rules out. Held, it reads "ember's read on AAPL is part of Pro" and says warnings about a position are always free. Home listed up to fifteen locked rows, each a button, and ended the page on an upsell; `LockedCalls rows={false}` is one line and See plans. Every lock badge names its instrument for a screen reader |
 | 309 | **A finding row says each thing once** | An opportunity's headline was "Buy LINK" under a Buy badge beside LINK; it is the read's summary now, as on Signals (`finding.headline` stays the notification title). The "Open now, until…" line repeated the band's caption and shows only when the window hasn't opened. A thesis-decay warning's visible detail carried the rule's working (R², an annualised slope); it moved behind Details with the sizing note. Risk detail caps at 48ch. Signals' sizes use `formatApproxQuantity`. "Of the book" is "of your portfolio" everywhere. Onboarding's risk step is one line ("29 of 202 instruments make the cut today") with the table behind Compare profiles (`RiskProfileSetting compact`), and the table's "Typical size" row, where Aggressive sized smaller than Conservative and read as a bug, is "Median call, size today" |
 | 310 | **Smaller fixes from the same critique** | `Skeleton` is `aria-hidden` by default: the transparent glyphs that size a skeleton were read aloud ("l v l v", "Label hint"). The greeting is no longer a live region, which announced a pleasantry on every visit. A backtest trade whose horizon runs past the last bar is `open` and reads "Still open", not "Exited Oct 9" with a result. Past-call dates carry the year. The Portfolio chart's change is "From the market, past month", because it leaves out money added and was red under a line that rose. The band's duration and time zone wrap as one unit. The FAB re-measures on DOM changes. Onboarding's market names sit outside the ring rather than on it. Em dashes left user copy (rule rationales, risk headlines, window notes). Free's column says "the track record except its last 4 weeks" |
-| 311 | **Mobile fixes, and the phone type scale finally applies** | At the user's direction. **The type scale was in `@theme inline`**, which compiles `.text-heading { font-size: 1.25rem }` with the value baked in, so the phone block in `globals.css` overrode variables nothing read and every phone got the desktop scale: 28px titles, 36px balance. Found because the greeting measured 20px under a class asking for 18. The scale is its own `@theme` now (`var(--text-*)`), so 44/28/22/18 apply below `md` as decision 293 intended. The balance on Home and Portfolio is the exception, at the user's direction: a `balance` size, 32px on a phone (`figure`'s 44 was too loud and `display`'s 28 too quiet), 36px from `md` up. The rest: a settings row's button or switch is on its right at every width (`responsive` no longer stacks); the pane's one-line description is desktop only; Name lost "Optional."; `Segmented` positions its pill by top and height too, so a wrapped group no longer draws one pill across two lines, and the code periods are 1W/1M/3M/6M/1Y like the chart's; What's included is 14px. Money uses the currency's narrow symbol (₦, not NGN) except where it collides (`CA$`, `NT$`, `CN¥`), and the Portfolio stats drop minor units on a phone instead of truncating. The chart's change and range share one row on a phone. Home's balance links through its label's caret, not a Portfolio button; the greeting is one 18px line on a phone. The Portfolio segments are as wide as their content, and switching holds the views' height for one scroll, because a shorter Watching clamped the scroll and the page jumped. Phone fields are 14px with `maximumScale: 1` so iOS doesn't zoom on focus (pinch still works). `main`'s bottom padding above the nav is 8px, not 24 |
+| 311 | **Mobile fixes, and the phone type scale finally applies** | At the user's direction. **The type scale was in `@theme inline`**, which compiles `.text-heading { font-size: 1.25rem }` with the value baked in, so the phone block in `globals.css` overrode variables nothing read and every phone got the desktop scale: 28px titles, 36px balance. Found because the greeting measured 20px under a class asking for 18. The scale is its own `@theme` now (`var(--text-*)`), so 44/28/22/18 apply below `md` as decision 293 intended. The balance on Home and Portfolio is the exception, at the user's direction: a `hero` size (the `Balance` style in Figma), 32px on a phone (`figure`'s 44 was too loud and `display`'s 28 too quiet), 36px from `md` up. The rest: a settings row's button or switch is on its right at every width (`responsive` no longer stacks); the pane's one-line description is desktop only; Name lost "Optional."; `Segmented` positions its pill by top and height too, so a wrapped group no longer draws one pill across two lines, and the code periods are 1W/1M/3M/6M/1Y like the chart's; What's included is 14px. Money uses the currency's narrow symbol (₦, not NGN) except where it collides (`CA$`, `NT$`, `CN¥`), and the Portfolio stats drop minor units on a phone instead of truncating. The chart's change and range share one row on a phone. Home's balance links through its label's caret, not a Portfolio button; the greeting is one 18px line on a phone. The Portfolio segments are as wide as their content, and switching holds the views' height for one scroll, because a shorter Watching clamped the scroll and the page jumped. Phone fields are 14px. iOS zooms into a field under 16px, so `IosZoomScript` appends a `maximum-scale=1` viewport tag on iOS only (pinch still works there); in the root `viewport` export it failed all 80 audits on axe's `meta-viewport`, rightly, because Android honours the cap and would lose pinch-zoom. `main`'s bottom padding above the nav is 8px, not 24 |
+| 312 | **The gate stops taking screenshots** | At the user's direction: the Figma file is the visual record, and 74 PNGs regenerated on every run were a minute of gate time for a folder nobody opened. `capture.mjs` is `responsive.mjs` and keeps the one check that was in it, the 320→1920 overflow sweep; `docs/case-study/screens/` is deleted. The cost is that the visual record is now kept by hand |
+| 313 | **Home's disclaimer is drawn after the findings, and the inbox's hint line is always reserved** | Found by the gate: Home measured **0.327** of layout shift on desktop, against 0.000 the day before, with nothing on Home changed. The disclaimer sat under two skeleton rows at y=865 of a 900px viewport, and the real list threw it a screen down. It had always done that; a test bar broadcast had been reserving 40px, which kept the disclaimer just below the fold where a shift is not counted, and the broadcast was moved to the inbox. `FindingsInbox` reports `onSettled` and Home draws the footer then; the "N on what you hold" line keeps its box when it has nothing to say, because it arrived with the findings and pushed the list down 18px. 0.008 after. The lesson is §8's, again: a figure that depends on a row in `notices` is not a figure about the code |
 
 ---
 
@@ -1131,7 +1132,7 @@ See `docs/decisions/` for full ADRs. Summary:
 - **`npm run verify` now reads the live `notices` table, and that makes it less
   reproducible than decision 126 intended.** The provider is pinned to generated
   data so prices cannot move the numbers; Supabase is not pinned, so a row
-  somebody adds to `notices` changes Home's screenshots and its layout shift, and
+  somebody adds to `notices` changes Home's layout shift, and
   a pinned broadcast can fail the build. That is how the 0.253 above was caught,
   which is an argument for leaving it — but it means two runs on different days
   are not necessarily comparable. Isolating it is a decision to take deliberately,
@@ -1163,13 +1164,13 @@ See `docs/decisions/` for full ADRs. Summary:
   lookup wherever the bell renders, degrading to "not suspended" when the table
   does not exist. It buys the ability to say *why* sync stopped instead of letting
   it look broken, which is worth one row — but it is a cost and it is real.
-- **`/admin` is audited and captured but not measured for layout shift.**
+- **`/admin` is audited and swept but not measured for layout shift.**
   `perf.mjs` walks a shorter list of fourteen routes and phase 28 did not extend
   it, because the screen the gate can reach is four lines of static text with
   nothing to shift. The composer — a form, a live preview and two lists that
   arrive from three separate queries — is the part that would need measuring, and
   it is exactly the part no machine here can open.
-- **A new screen must be added to `audit.mjs` and `capture.mjs` in the same commit,
+- **A new screen must be added to `audit.mjs` and `responsive.mjs` in the same commit,
   and phase 27 is why.** `/unsubscribe` shipped in phase 26 outside both lists and
   was consequently unchecked; the first audit that included it reported twelve
   violations, then four, before passing. Both were real — a duplicated `main`
@@ -1178,8 +1179,7 @@ See `docs/decisions/` for full ADRs. Summary:
 - **The upsell interstitial has no accessibility check.** `audit.mjs` audits page
   loads, and that modal only opens on a deliberate press — so like the command menu
   before it, it is a piece of the app a route list can never reach.
-  `capture.mjs` was extended once to drive the command menu; the same treatment
-  would cover this. Until then the chip, the card and the sponsor row *are* audited,
+  Driving the press from `audit.mjs` would cover this. Until then the chip, the card and the sponsor row *are* audited,
   because they render inline, and only the modal is unseen.
 - **The client bundle carries no third-party origin, measured.** Every remote host
   in `.next/static` is `supabase.com` plus the project URL, and four documentation
@@ -1360,12 +1360,9 @@ See `docs/decisions/` for full ADRs. Summary:
   field appears on it. Prose alone would erode the first time someone reached
   for "just a relevance nudge". ADR 0027 amends ADR 0005 explicitly rather than
   quietly.
-- **The screenshot set is current** — 74 captures, regenerated 2026-10-09 over
-  18 routes × 2 viewports × 2 themes, plus the command menu on desktop, which
-  is the one piece of the app a route list can never reach (it opens only on a
-  press). `capture.mjs` empties the directory first, so a
-  renamed route can no longer leave a two-redesigns-old PNG sitting beside a
-  current one.
+- **There is no screenshot set.** The gate took 74 PNGs until 2026-10-10; the
+  Figma file ("ember — App design") is the visual record now, kept by hand, so
+  it can drift from the code in a way a regenerated folder could not.
 - **A Supabase project now exists, and half the unverified list is closed.** `.env.local` carries real credentials and `0001_init.sql` has been applied — verified directly against the REST API: all five tables answer, an anonymous read of `profiles`, `transactions`, `preferences` and `watchlist` returns `[]` rather than rows, and an anonymous write is refused with a 401. **RLS is doing its job.** `notices` is readable, as its policy intends.
 - **Migrations 0001–0006 are all applied.** Probed against the live REST API on
   2026-08-17 rather than taken from this file: `push_subscriptions` returns 200
@@ -1434,6 +1431,11 @@ See `docs/decisions/` for full ADRs. Summary:
   matrix doubles the file count for a case that is a phone *launched* sideways.
   And `apple-touch-startup-image` only takes effect in a standalone installed
   PWA on real hardware, which no part of the gate can drive. ADR 0030.
+- **The iOS focus-zoom cap is unverified on hardware.** `IosZoomScript` adds a
+  second viewport tag on iOS so 14px fields don't zoom the page on focus. It is
+  reasoned from WebKit's documented behaviour (a later viewport tag wins; the
+  cap is ignored for pinch) and has never been seen on a real iPhone. If a field
+  still zooms there, the fallback is 16px inputs on phones.
 - **The iOS hit-test fix is unverified by machine.** Removing `backdrop-blur`
   from sticky chrome (decision 055) addresses a WebKit compositing bug that
   cannot be reproduced in Chromium, so it was reasoned about and applied but
@@ -1557,8 +1559,8 @@ See `docs/decisions/` for full ADRs. Summary:
 - **`measure.mjs` reports 176 equities**, which is 72 US plus 92 international plus 12 NGX. Only 164 of them have a fetchable history; the twelve Lagos rows are collecting.
 - **Payload sizes, measured 2026-10-09, now on a free reader.** `measure.mjs`
   requests signed out, so since decision 288 it measures the free plan:
-  `/api/advice` is **58 KB** with 3 calls in full and 72 of 214 actionable on
-  Balanced, and `/api/findings` is **90 KB** for 6 findings on 12 positions. The
+  `/api/advice` is **62 KB** with 3 calls in full and 73 of 214 actionable on
+  Balanced, and `/api/findings` is **96 KB** for 6 findings on 12 positions (2026-10-10). The
   earlier 236 KB and 157 KB were a page of 20 and 12 in full and are not comparable.
   A Pro page is still dominated by **citations**: each assessment carries up to
   nineteen contributions, each with its full `Citation` object, re-serialised on
@@ -1598,13 +1600,13 @@ See `docs/decisions/` for full ADRs. Summary:
 - **On-chain metrics are derived from the generated price path**, not from a chain. Realised cap is approximated by a 200-bar EMA of market cap.
 - **`PROFILE_WEIGHTS` and `regimeWeight()` are reasoned judgement calls, not fitted parameters.** Stated openly in the source so they can be argued with; never present them as estimated.
 - **Fundamentals are not point-in-time in a backtest.** `buildContext` hands every past bar the latest filing, so Piotroski, the Magic Formula and asset growth are evaluated on accounts that were not yet filed. Same on both paths, and it flatters the backtest for those three rules; a filing-date field on `Fundamentals` is the fix.
-- **Backtest results on mock data are near chance, and that is correct.** Generated prices are a random walk with clustered volatility — there is no structure to find. Measured 2026-10-09 by `scripts/measure.mjs`, walk-forward over all 214 instruments on the nineteen-rule ensemble, **entering at the first bar after each call rather than at the close it was computed from** (decision 167):
+- **Backtest results on mock data are near chance, and that is correct.** Generated prices are a random walk with clustered volatility — there is no structure to find. Measured 2026-10-10 by `scripts/measure.mjs`, walk-forward over all 214 instruments on the nineteen-rule ensemble, **entering at the first bar after each call rather than at the close it was computed from** (decision 167):
 
   | Profile | Calls | Hit rate | Avg return | Median | Max drawdown | Stopped out |
   |---|---|---|---|---|---|---|
-  | Conservative | 581 | 43.5% | −0.5% | −1.6% | 3.9% | 46.0% |
-  | Balanced | 1559 | 42.0% | +0.5% | −1.9% | 7.4% | 45.5% |
-  | Aggressive | 2384 | 43.4% | +0.6% | −1.9% | 15.3% | 45.8% |
+  | Conservative | 591 | 43.1% | −0.4% | −1.6% | 3.5% | 46.4% |
+  | Balanced | 1564 | 41.8% | +0.4% | −2.0% | 7.5% | 45.7% |
+  | Aggressive | 2381 | 43.3% | +0.6% | −1.9% | 15.2% | 45.9% |
 
   **Every figure moved for several reasons at once**, so none of them is a finding
   about one change: three rules were added (decision 303), confidence stopped
@@ -1635,12 +1637,12 @@ Otherwise **they drift by about one trade over the course of a session**: the se
 - **The type scale is registered twice**, in `globals.css` (`@theme`) and in `lib/utils.ts` (tailwind-merge). Adding a size to one without the other means the class is silently dropped whenever a colour sits beside it — ADR 0016, and there is a test that reads the CSS and fails if the two drift.
 - **The onboarding cookie is a mirror, not a source.** `hasOnboarded` in the store is authoritative; `ember_onboarded` exists so `proxy.ts` can decide before render. They self-heal when they disagree (ADR 0014), but anything that sets one must set the other.
 - **`/api/risk-preview` runs the ensemble three times, and got *faster* in phase 24 — 400ms → ~200ms** — despite six more rules, because the cross-sectional measures moved into a per-date snapshot the three profile runs now share. Memoised per profile for 60s over one shared universe load; a cold settings visit still pays for all three at once.
-- **Layout shift is not zero, and there are now two screens carrying it.** Measured 2026-10-09 by `scripts/perf.mjs` on a seeded ledger: **asset detail is 0.067 mobile** and **Settings — profile is 0.044** (0.065 when it was the Account tab); every other screen sits under 0.02 — including Home with a live pinned broadcast on it, which measures 0.000 because the banner is resolved on the server. The settings figure is the one to look at next — §8 previously claimed the phase-21 tab refactor had removed it and that claim no longer holds, with the suspect named in §9's carried-forward list. Settings was 0.077 before phase 21, when a sidebar that only existed above `lg` reflowed the pane beneath it; that cause is genuinely gone, so this is a different one. That remainder is `Your position` being inserted the moment `localStorage` becomes readable, because the server cannot know there is a book. Phase 17 moved it from four seconds in to hydration (decision 090) — which does not change the score but changes it from "the thing you were reading moved" to "the page settled" — and fixed everything around it: the hero skeleton was 68px short (ADR 0019's own pattern, missed in the one place the sweep after it didn't reach), the price row was a fragment collecting a 36px `space-y` gap where its `mt-3` asks for 12, and the trending strip wrapped to two rows where the real one wraps to three. Removing the last of it means mirroring the ledger's existence into a cookie (ADR 0014's pattern) — **and phase 28 took exactly that step for the pinned banner**, `ember_pins`, after clamping the copy got Home only from 0.253 to 0.157. The same move works here, and the precedent now exists twice. **The gate is 0.1**, Google's threshold, for the same reason — decision 092.
+- **Layout shift is not zero, and there are now two screens carrying it.** Measured 2026-10-10 by `scripts/perf.mjs` on a seeded ledger: **asset detail is 0.083 mobile** (0.067 the day before; the phone type scale now applies, so its hero and skeleton changed size) and **Settings — profile is 0.032** (0.065 when it was the Account tab); every other screen sits under 0.02 — including Home with a live pinned broadcast on it, which measures 0.000 because the banner is resolved on the server. The settings figure is the one to look at next — §8 previously claimed the phase-21 tab refactor had removed it and that claim no longer holds, with the suspect named in §9's carried-forward list. Settings was 0.077 before phase 21, when a sidebar that only existed above `lg` reflowed the pane beneath it; that cause is genuinely gone, so this is a different one. That remainder is `Your position` being inserted the moment `localStorage` becomes readable, because the server cannot know there is a book. Phase 17 moved it from four seconds in to hydration (decision 090) — which does not change the score but changes it from "the thing you were reading moved" to "the page settled" — and fixed everything around it: the hero skeleton was 68px short (ADR 0019's own pattern, missed in the one place the sweep after it didn't reach), the price row was a fragment collecting a 36px `space-y` gap where its `mt-3` asks for 12, and the trending strip wrapped to two rows where the real one wraps to three. Removing the last of it means mirroring the ledger's existence into a cookie (ADR 0014's pattern) — **and phase 28 took exactly that step for the pinned banner**, `ember_pins`, after clamping the copy got Home only from 0.253 to 0.157. The same move works here, and the precedent now exists twice. **The gate is 0.1**, Google's threshold, for the same reason — decision 092.
 - **The empty-book state has a shift of its own, and it is larger.** Lighthouse carries no `localStorage`, so its runs see a first visit: Home measures 0.069 mobile there (0.092 before decision 267 gave the empty book the balance's own boxes) against ~0.002 seeded. Same cause, opposite direction — the empty-book block is shorter than the hero-plus-chart skeleton it replaces, so everything below it moves up. Worth fixing only alongside the cookie above, because it is the same missing piece of server-side knowledge.
-- **Mobile Lighthouse performance is 82–84** (measured 2026-10-09, after decisions 306–310; 68–82 before decision 287), on the throttled profile (simulated slow 4G, 4× CPU), with LCP 4.6–5.0s and TBT 10–45ms. Desktop is 99, LCP 1.0s, TBT 0ms. The signals feed, which was the floor at 68, now measures 83 beside Home's 82: a free reader's response is 58 KB, because locked calls carry no working. **Asset detail's mobile figure is the least stable in the gate**: three consecutive runs on effectively the same page measured LCP at 6.6s, 8.9s and 4.7s, and the score at 77, 75 and 83. It loads the whole universe to rank peers, and 214 instruments of JSON on a throttled connection sits exactly where Lighthouse's simulated throttling is most sensitive. Treat it as "several seconds and too slow", never as a number to compare run to run. Desktop Signals holds 100 with a CLS of 0.027 from its two-column grid, well inside the 0.1 gate. **This is down from v1's 82–87 and the cause is the universe** — 110 instruments instead of 13 is more JSON to parse and more rows to lay out, and the throttled profile is where that lands. There is no image to blame; the critical path is the stylesheet and the app's own JavaScript, and there is no easy win left without splitting the bundle.
+- **Mobile Lighthouse performance is 82–85** (measured 2026-10-10, after decisions 311–313; 68–82 before decision 287), on the throttled profile (simulated slow 4G, 4× CPU), with LCP 4.5–5.1s and TBT 9–69ms. Desktop is 99, LCP 1.0s, TBT 0ms. The signals feed, which was the floor at 68, now measures 83 beside Home's 82: a free reader's response is 58 KB, because locked calls carry no working. **Asset detail's mobile figure is the least stable in the gate**: three consecutive runs on effectively the same page measured LCP at 6.6s, 8.9s and 4.7s, and the score at 77, 75 and 83. It loads the whole universe to rank peers, and 214 instruments of JSON on a throttled connection sits exactly where Lighthouse's simulated throttling is most sensitive. Treat it as "several seconds and too slow", never as a number to compare run to run. Desktop Signals holds 100 with a CLS of 0.027 from its two-column grid, well inside the 0.1 gate. **This is down from v1's 82–87 and the cause is the universe** — 110 instruments instead of 13 is more JSON to parse and more rows to lay out, and the throttled profile is where that lands. There is no image to blame; the critical path is the stylesheet and the app's own JavaScript, and there is no easy win left without splitting the bundle.
 - **Lighthouse and the seeded CLS run disagreed about the signals feed** — 0.182 against 0.000. On 2026-10-09 both measured 0.000. Nothing was changed to fix it, so treat it as intermittent rather than resolved. Lighthouse's throttling and viewport aren't reproducible through a CDP emulation (an unseeded, hand-throttled Playwright run measures 0.0002), so one harness is seeing something the other isn't. Both figures are published rather than the flattering one being chosen; resolving it needs a Lighthouse trace read properly.
-- **No horizontal overflow at any width**, 320→1920 across all 18 routes (2026-10-09, after the phone search button pushed Home's header 35px wide at 320px and was hidden below 360px there) — but that only became true in phase 17. At 320px an ordinary six-figure balance in the value hero pushed the document 36px wide on four screens, and had done since the v2 type scale landed. The fix is a `max-[374px]:` step down, decision 091.
-- **The accessibility pass is automated only.** 0 axe violations across 80 page audits (2026-10-09) — and since phase 15 the audit seeds a real book with two stopped-out positions, so the risk rows and the tinted severity badge are actually measured rather than never rendered. But axe cannot judge whether the keyboard path makes sense, whether focus lands somewhere useful, or whether a screen reader's rendering of a finding is comprehensible. Those were walked by hand, not tested by machine.
+- **No horizontal overflow at any width**, 320→1920 across all 18 routes (2026-10-10; on 2026-10-09, after the phone search button pushed Home's header 35px wide at 320px and was hidden below 360px there) — but that only became true in phase 17. At 320px an ordinary six-figure balance in the value hero pushed the document 36px wide on four screens, and had done since the v2 type scale landed. The fix is a `max-[374px]:` step down, decision 091.
+- **The accessibility pass is automated only.** 0 axe violations across 80 page audits (2026-10-10) — and since phase 15 the audit seeds a real book with two stopped-out positions, so the risk rows and the tinted severity badge are actually measured rather than never rendered. But axe cannot judge whether the keyboard path makes sense, whether focus lands somewhere useful, or whether a screen reader's rendering of a finding is comprehensible. Those were walked by hand, not tested by machine.
 - **The profile holds five fields and refuses the rest** — no date of birth, no address, no income bracket, no phone number. ember issues nothing, holds no money and executes no trade, so it has no KYC obligation and every extra field would be pure cost. Nothing is required, there is no completeness meter, and the time zone is detected rather than asked. ADR 0032.
 - **The greeting block will not mention money, and that is enforced.** `greeting.ts` exports `MONEY_WORDS` and a test fails on any prompt template matching it. The rule was already in the file's header comment; phase 17 turned it into something a build can fail on, because the pool's natural register is exactly the line it cannot have and a comment does not survive the first person who reaches past it. Decision 086. The daypart prompt ("How are we feeling this morning?") appears on roughly one visit in fifteen — it is filtered out whenever the greeting above already used the word, which is most mornings.
 - **The trending skeleton's chip widths are approximated, not derived.** Its *heights* come from the type scale like every other skeleton, but how many topics clear the two-mention floor and how long their labels are is not knowable before the response lands. The six widths are the median case and wrap to three rows at 375px like the real strip; a quiet news day produces fewer chips and the strip collapses upward. Only a fixed-height strip could prevent that, and reserving three rows of whitespace on a slow day is a worse screen than a small settle.
@@ -1661,7 +1663,7 @@ turned, and carries the news beside them without ever letting it near the engine
 Everything ships behind one gate (`npm run verify`) that builds, serves and
 measures itself: 427 tests, 0 axe violations over 80 page audits, no horizontal
 overflow at any width from 320 to 1920, and layout shift inside Google's 0.1 on
-every screen — worst 0.067, asset detail on mobile.
+every screen — worst 0.083, asset detail on mobile.
 
 **Phase 26 gave ember a server that works while you are away, and phase 28 gave
 it a voice — and neither has run.** Push, email digests, the NGX collector,
@@ -1712,7 +1714,7 @@ Next, in order of what unblocks the most:
    and that `send-digests.mjs` drops it — RLS does not apply to the sender.
 5. **Decide whether the gate should read the live `notices` table.** Decision 126
    pins the data *provider* so §8's numbers are reproducible; Supabase is not
-   pinned, so a broadcast somebody publishes changes Home's screenshots and its
+   pinned, so a broadcast somebody publishes changes Home's
    layout shift, and a pinned one can fail the build. That is exactly how the
    0.253 was caught, which is a real argument for leaving it — but two runs on
    different days are then not comparable, which is the property decision 126
@@ -1757,8 +1759,8 @@ Carried forward, all recorded in §8 with their reasoning:
 - Cost basis is average-cost. FIFO is a settings toggle and a recomputation, never a migration.
 - The remaining layout shift is the hydration class (ADR 0019), on the asset page and on the empty-book Home. One cookie mirroring the ledger's existence closes both; tighten the CLS gate below 0.1 the day it exists.
 - Lighthouse and the seeded CLS harness disagreed about the signals feed (0.182 vs 0.000); both read 0.000 on 2026-10-09 with nothing changed. Watch for it coming back.
-- Mobile Lighthouse is 82–84 (2026-10-09), against v1's 82–87; LCP on the throttled profile is still about five seconds.
-- Settings — profile (the old Account tab) measures 0.044 of layout shift on mobile, second only to the asset page. §8 used to claim every non-asset screen sat under 0.02 and that is no longer true. Not yet diagnosed: the suspect is the risk-comparison skeleton, whose row headers reserve invisible placeholder words rather than the real labels, so they may wrap to fewer lines than the settled table does — which would be ADR 0019's own mechanism defeated by using stand-in strings. Needs measuring in the browser, not reasoning about.
+- Mobile Lighthouse is 82–85 (2026-10-10), against v1's 82–87; LCP on the throttled profile is still about five seconds.
+- Settings — profile (the old Account tab) measures 0.032 of layout shift on mobile (2026-10-10), second only to the asset page. §8 used to claim every non-asset screen sat under 0.02 and that is no longer true. Not yet diagnosed: the suspect is the risk-comparison skeleton, whose row headers reserve invisible placeholder words rather than the real labels, so they may wrap to fewer lines than the settled table does — which would be ADR 0019's own mechanism defeated by using stand-in strings. Needs measuring in the browser, not reasoning about.
 - **Sync's account-switch hold (decision 233) has never met two real accounts.**
   It needs a signed-in session, which needs the project back. Check both answers
   on a real device: that *use this account's data* leaves exactly the account's
@@ -1784,7 +1786,7 @@ The user is writing a design/engineering case study to senior-design-engineer st
 - [x] Architecture diagram — `docs/case-study/architecture.svg`
 - [x] Signature component study — `docs/case-study/window-band.md`
 - [x] Logo rationale — the ember point as both brand mark and product primitive (`docs/design-system.md`, "The ember point")
-- [x] Screenshots: every screen, mobile + desktop, light + dark — 74 PNGs in `docs/case-study/screens/`, regenerated by `scripts/capture.mjs`, which empties the directory first so the set is never part-current
-- [x] Design file and flows — Figma "ember — App design" (`bOiyRBaQ46QkGVeU86NrMI`): every screen on iPhone 16 Pro (iOS 27 status bar) and at 1920 × 1080, light and dark, in sections, prototyped, with a Pitfalls and bugs page. FigJam "ember — Flows & UX" (`sDRF9GhpbL4GnjZHH84OjZ`): sitemap, flows, states, persona, journey map
+- [x] Screenshots: superseded by the Figma file below. The 74 gate-generated PNGs and the script that took them were removed on 2026-10-10 (decision 312)
+- [x] Design file and flows — Figma "ember — App design" (`bOiyRBaQ46QkGVeU86NrMI`): every screen on iPhone 16 Pro (iOS 27 status bar) and at 1920 × 1080, light and dark, in sections, prototyped, with a Pitfalls and bugs page. FigJam "ember — Flows & UX" (`sDRF9GhpbL4GnjZHH84OjZ`): sitemap, flows, states, persona, journey map Brought up to decisions 306–313 on 2026-10-10: wording, the Home and Portfolio heroes, the phone chart header, the settings panes, onboarding's compact risk step and its market labels outside the ring, Home's one-line locked calls, and the trimmed finding row. A frame clips at its device height, so anything below the fold renders blank in a screenshot; clone it to the page to look at it
 - [ ] Before/after shots where a design changed and why — the nav redesign, the type-scale fix and the CLS work all have a genuine "before", but no screenshots were taken of the earlier state. The ADRs carry the reasoning; the images would have to be reconstructed from git history
-- [x] Performance and accessibility numbers — `docs/case-study/performance.md` and `accessibility.md`, both regenerated per run; summarised in `docs/case-study/README.md`. axe 0 violations over 80 page audits, Lighthouse 99 desktop / 82–84 mobile, CLS under 0.02 on thirteen of fifteen measured screens, worst 0.067 (2026-10-09)
+- [x] Performance and accessibility numbers — `docs/case-study/performance.md` and `accessibility.md`, both regenerated per run; summarised in `docs/case-study/README.md`. axe 0 violations over 80 page audits, Lighthouse 99 desktop / 82–85 mobile, CLS under 0.02 on thirteen of fifteen measured screens, worst 0.083 (2026-10-10)

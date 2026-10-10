@@ -19,7 +19,7 @@
  * Layout shift is exactly where that matters, because the remaining shift in
  * this app is the hydration-inserted markup that only exists when there *is* a
  * book (ADR 0019). So CLS is measured under Playwright with the ledger seeded,
- * which is the same harness `audit.mjs` and `capture.mjs` already use, and the
+ * which is the same harness `audit.mjs` and `responsive.mjs` already use, and the
  * report says plainly which number came from which.
  */
 import { mkdir, writeFile } from "node:fs/promises";

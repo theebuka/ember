@@ -6,6 +6,7 @@ import { Providers } from "@/components/providers";
 import { DataSourceProvider } from "@/components/market/data-source";
 import { servesGeneratedData } from "@/lib/market/providers";
 import { AnnouncementBarScript } from "@/components/shell/announcement-bar-script";
+import { IosZoomScript } from "@/components/shell/ios-zoom-script";
 import { AppShell } from "@/components/shell/app-shell";
 import { RegisterServiceWorker } from "@/components/shell/register-service-worker";
 
@@ -58,10 +59,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  // Stops iOS zooming into a field on focus: phone inputs are 14px, under
-  // its 16px threshold. iOS ignores this cap for pinch-zoom, so the reader
-  // can still zoom.
-  maximumScale: 1,
   // Lets the bottom nav sit against the home indicator with a safe-area pad
   // rather than being letterboxed above it.
   viewportFit: "cover",
@@ -97,6 +94,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
 
       <body className="min-h-full">
         <AnnouncementBarScript />
+        <IosZoomScript />
         <a
           href="#main"
           className="sr-only rounded-lg bg-ink px-4 py-2 text-caption font-medium text-ground focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50"

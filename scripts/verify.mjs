@@ -1,5 +1,5 @@
 /**
- * The gate — build, serve, audit, capture, measure, stop.
+ * The gate — build, serve, audit, sweep widths, measure, stop.
  *
  *   node scripts/verify.mjs              # build first, then everything
  *   node scripts/verify.mjs --skip-build # reuse the build already on disk
@@ -36,7 +36,7 @@ const only = args
 /** Order matters: the audit is the gate, so it runs before the slow ones. */
 const STEPS = [
   { name: "audit", script: "scripts/audit.mjs" },
-  { name: "capture", script: "scripts/capture.mjs" },
+  { name: "responsive", script: "scripts/responsive.mjs" },
   { name: "perf", script: "scripts/perf.mjs" },
   { name: "measure", script: "scripts/measure.mjs" },
 ];
@@ -47,8 +47,8 @@ const STEPS = [
  * `.env.local` may well say `EMBER_DATA_PROVIDER=live`, and every number this
  * script produces would then be a fact about the market rather than about
  * ember: layout shift changes with how many findings the day happens to
- * produce, the screenshot set is different every run, and a quiet news day
- * empties a screen the capture is supposed to prove exists. The mock is
+ * produce, and a quiet news day empties a screen the sweep is supposed to
+ * measure. The mock is
  * deterministic given a symbol and a date, which is the only reason the
  * figures in CLAUDE.md §8 mean anything.
  *

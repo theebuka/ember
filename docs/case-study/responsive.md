@@ -1,6 +1,6 @@
 # Responsive sweep
 
-`scripts/capture.mjs`, 2026-10-09.
+`scripts/responsive.mjs`, 2026-10-10.
 
 18 screens at 320, 375, 414, 640, 768, 1024, 1280, 1440, 1920px — 162 combinations.
 
