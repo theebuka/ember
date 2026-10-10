@@ -41,7 +41,12 @@ function expiresAt(value: string): string | null {
 }
 
 const PERIOD_OPTIONS = [
-  ...CODE_PERIODS.map((period) => ({ value: String(period.days), label: period.label })),
+  // Short, like the chart ranges, so six options fit one line on a phone.
+  ...CODE_PERIODS.map((period) => ({
+    value: String(period.days),
+    label: period.short,
+    ariaLabel: period.label,
+  })),
   { value: "custom", label: "Custom" },
 ];
 
@@ -158,7 +163,8 @@ export function CodesPanel({ user }: { user: User }) {
                 value={period}
                 onChange={setPeriod}
                 options={PERIOD_OPTIONS}
-                className="flex w-full flex-wrap"
+                size="sm"
+                className="max-w-full flex-wrap"
               />
               {period === "custom" && (
                 <div className="flex items-center gap-3 pt-1">

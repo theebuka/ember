@@ -308,36 +308,42 @@ function Balance({ summary }: { summary: PortfolioSummary }) {
   const { sign, symbol, whole, fraction } = splitMoney(summary.totalValue, summary.base);
 
   return (
-    <div className="flex items-end justify-between gap-4">
-      <div className="min-w-0">
-        <h2 className="eyebrow">Portfolio value</h2>
-        <p className="figure mt-1 flex items-baseline text-display text-ink max-[374px]:text-title">
-          <span>
-            {sign}
-            {symbol}
-            {whole}
-          </span>
-          {fraction && (
-            <span className="text-heading text-stone max-[374px]:text-body">.{fraction}</span>
-          )}
-        </p>
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-          <ChangeChip value={summary.dayChange}>
-            {formatMoney(summary.dayChange, summary.base, { signed: true })}
-          </ChangeChip>
-          {summary.dayChangePct !== null && (
-            <span className="num text-caption text-stone">
-              {formatPercent(summary.dayChangePct, { signed: true })} today
-            </span>
-          )}
-        </div>
-      </div>
-      <Button variant="ghost" size="sm" asChild className="shrink-0 text-stone">
-        <Link href="/portfolio">
-          Portfolio
-          <CaretRight />
+    <div className="min-w-0">
+      {/* The label is the way through to Portfolio, with the caret at the far
+          right. A "Portfolio" button beside the figure was a second label for
+          the same thing, and on a phone it squeezed the balance. */}
+      <h2 className="eyebrow">
+        <Link
+          href="/portfolio"
+          className="group/bal flex items-center justify-between gap-3 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          Portfolio value
+          <CaretRight
+            aria-hidden
+            className="size-4 shrink-0 text-stone transition-colors group-hover/bal:text-ink"
+          />
         </Link>
-      </Button>
+      </h2>
+      <p className="figure mt-1 flex items-baseline text-balance text-ink max-[374px]:text-title">
+        <span>
+          {sign}
+          {symbol}
+          {whole}
+        </span>
+        {fraction && (
+          <span className="text-heading text-stone max-[374px]:text-body">.{fraction}</span>
+        )}
+      </p>
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+        <ChangeChip value={summary.dayChange}>
+          {formatMoney(summary.dayChange, summary.base, { signed: true })}
+        </ChangeChip>
+        {summary.dayChangePct !== null && (
+          <span className="num text-caption text-stone">
+            {formatPercent(summary.dayChangePct, { signed: true })} today
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -347,7 +353,7 @@ function BalanceSkeleton() {
   return (
     <div aria-hidden>
       <h2 className="eyebrow">Portfolio value</h2>
-      <div className="figure mt-1 flex items-center text-display max-[374px]:text-title">
+      <div className="figure mt-1 flex items-center text-balance max-[374px]:text-title">
         <Skeleton className="flex w-[7ch] items-center rounded-lg">
           <span className="text-transparent">0</span>
         </Skeleton>
@@ -376,7 +382,7 @@ function EmptyBook({ onLoadSample }: { onLoadSample: () => void }) {
   return (
     <div>
       <h2 className="eyebrow">Portfolio value</h2>
-      <div className="figure mt-1 flex items-center text-display max-[374px]:text-title">
+      <div className="figure mt-1 flex items-center text-balance max-[374px]:text-title">
         <span className="flex items-center gap-2 font-sans text-body font-normal tracking-normal text-stone">
           <Wallet className="size-4 shrink-0" />
           Nothing tracked yet.

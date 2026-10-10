@@ -130,9 +130,9 @@ export function DataSettings() {
                 exactly what goes and exactly what doesn't. ADR 0025. */}
             <p>
               To warn you about a position, ember&rsquo;s server needs to know you hold it.
-              Whenever Home loads or alerts are on, it receives four numbers per open
-              position — symbol, quantity, average cost and opening date — and stores none
-              of them. Nothing else about your trades leaves this device.
+              Whenever Home or Signals loads, or alerts are on, it receives four numbers per
+              open position (symbol, quantity, average cost and opening date) and stores
+              none of them. Nothing else about your trades leaves this device.
             </p>
           </>
         }

@@ -90,11 +90,11 @@ export function ProSummary({
 
       <section>
         <h3 className="eyebrow">What&apos;s included</h3>
-        <ul className="mt-3 space-y-3">
+        <ul className="mt-3 space-y-2.5">
           {PRO_INCLUDES.map((item) => (
-            <li key={item.feature} className="flex gap-3">
-              <Check className="mt-0.5 size-[1.125rem] shrink-0 text-brand" />
-              <span className="text-body text-ink">{item.text}</span>
+            <li key={item.feature} className="flex gap-2.5">
+              <Check className="mt-0.5 size-4 shrink-0 text-brand" />
+              <span className="text-caption text-ink">{item.text}</span>
             </li>
           ))}
         </ul>

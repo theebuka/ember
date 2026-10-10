@@ -54,7 +54,7 @@ export function ProfileSettings() {
 
   return (
     <>
-      <SettingGroup title="Name" description="Optional.">
+      <SettingGroup title="Name">
         <SettingBlock className="grid gap-4 sm:grid-cols-2">
           <Field
             id="profile-first"

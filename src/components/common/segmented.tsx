@@ -59,8 +59,12 @@ export function Segmented<T extends string>({
         group.dataset.ready = "false";
         return;
       }
+      // Top and height too: a group that wraps puts the selection on a
+      // second line, and a pill pinned to the first stretched across both.
       pill.style.left = `${selected.offsetLeft}px`;
+      pill.style.top = `${selected.offsetTop}px`;
       pill.style.width = `${selected.offsetWidth}px`;
+      pill.style.height = `${selected.offsetHeight}px`;
       group.dataset.ready = "true";
     };
 
@@ -85,9 +89,9 @@ export function Segmented<T extends string>({
         ref={pillRef}
         aria-hidden
         className={cn(
-          "pointer-events-none absolute top-1 bottom-1 hidden rounded-full border border-line bg-surface",
+          "pointer-events-none absolute hidden rounded-full border border-line bg-surface",
           "group-data-[ready=true]/seg:block",
-          "transition-[left,width] duration-200 ease-out motion-reduce:transition-none",
+          "transition-[left,top,width] duration-200 ease-out motion-reduce:transition-none",
         )}
       />
       {options.map((option) => {

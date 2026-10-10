@@ -53,7 +53,10 @@ export function ValueHero({
       <p
         className={cn(
           "figure mt-1.5 flex items-baseline text-ink",
-          oversized ? "text-display" : "text-figure max-[374px]:text-display",
+          // 32px on a phone (`text-balance`), 56px from md up.
+          oversized
+            ? "text-balance"
+            : "text-balance max-[374px]:text-display md:text-figure",
         )}
       >
         <span>
@@ -65,7 +68,7 @@ export function ValueHero({
           <span
             className={cn(
               "text-stone",
-              oversized ? "text-heading" : "text-title max-[374px]:text-heading",
+              oversized ? "text-heading" : "text-heading md:text-title",
             )}
           >
             .{fraction}
@@ -85,10 +88,15 @@ export function ValueHero({
       </div>
 
       <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line pt-4 min-[375px]:grid-cols-3">
-        <Stat label="Invested" value={formatMoney(summary.totalCost, summary.base)} />
+        <Stat
+          label="Invested"
+          value={formatMoney(summary.totalCost, summary.base)}
+          short={formatMoney(summary.totalCost, summary.base, { decimals: 0 })}
+        />
         <Stat
           label="Unrealized"
           value={formatMoney(summary.unrealized, summary.base, { signed: true })}
+          short={formatMoney(summary.unrealized, summary.base, { signed: true, decimals: 0 })}
           hint={
             summary.unrealizedPct === null
               ? undefined
@@ -99,6 +107,7 @@ export function ValueHero({
         <Stat
           label="Realized"
           value={formatMoney(summary.realized, summary.base, { signed: true })}
+          short={formatMoney(summary.realized, summary.base, { signed: true, decimals: 0 })}
           hint="lifetime"
           tone={summary.realized}
         />
@@ -110,11 +119,18 @@ export function ValueHero({
 function Stat({
   label,
   value,
+  short,
   hint,
   tone,
 }: {
   label: string;
   value: string;
+  /**
+   * The figure without its minor units, for a phone. A naira book's
+   * "₦97,180,302.65" truncated to "₦97,180,302…" in a third of 375px; the
+   * cents are on the chart and the positions below (§5: shorter, not squeezed).
+   */
+  short?: string;
   hint?: string;
   /** Signed quantity that tints the value. Omit for neutral figures. */
   tone?: number;
@@ -132,7 +148,8 @@ function Stat({
       {/* One step down on a phone so all three fit one row from 375px — two
           columns left Realized alone on a second line beside a hole. */}
       <dd className={cn("num truncate text-body font-medium max-sm:text-caption", colour)}>
-        {value}
+        <span className={short ? "max-sm:hidden" : undefined}>{value}</span>
+        {short && <span className="sm:hidden">{short}</span>}
       </dd>
       {/* The hint gets its own line rather than trailing the figure.
           Inline, at the v2 body size, "+$20,864.31 +28.5%" overflowed a
@@ -171,9 +188,9 @@ export function ValueHeroSkeleton({ className }: { className?: string }) {
       {/* The narrow-screen step-down has to be here too, or the skeleton is a
           64px line where the hero draws a 40px one and the shift it was
           written to prevent comes back below 375px. */}
-      <div className="figure mt-1.5 flex items-center text-figure max-[374px]:text-display">
+      <div className="figure mt-1.5 flex items-center text-balance max-[374px]:text-display md:text-figure">
         <Skeleton className="flex w-[7ch] items-center rounded-lg">
-          <span className="text-figure text-transparent max-[374px]:text-display">
+          <span className="text-balance text-transparent max-[374px]:text-display md:text-figure">
             0
           </span>
         </Skeleton>

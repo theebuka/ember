@@ -58,6 +58,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Stops iOS zooming into a field on focus: phone inputs are 14px, under
+  // its 16px threshold. iOS ignores this cap for pinch-zoom, so the reader
+  // can still zoom.
+  maximumScale: 1,
   // Lets the bottom nav sit against the home indicator with a safe-area pad
   // rather than being letterboxed above it.
   viewportFit: "cover",

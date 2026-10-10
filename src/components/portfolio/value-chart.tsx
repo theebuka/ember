@@ -95,11 +95,11 @@ export function ValueChart({
 
   return (
     <div className={cn("flex flex-col", className)}>
-      {/* Below md the range control takes its own row. Beside it, the label
-          had ~90px and broke as "unrealize / d" (a word fragment, §5). */}
-      <div className="mb-3 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+      {/* One row at every width. On a phone the range buttons tighten so the
+          label keeps ~150px and wraps between words, never inside one (§5). */}
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <ChangeText value={change} className="text-caption font-medium">
+          <ChangeText value={change} className="text-caption font-medium whitespace-nowrap">
             {formatMoney(change, base, { signed: true })}
           </ChangeText>
           {/* "From the market", not "Unrealized": the figure leaves out money you
@@ -114,7 +114,7 @@ export function ValueChart({
           options={options}
           size="sm"
           aria-label="Chart range"
-          className="self-start md:shrink-0"
+          className="shrink-0 max-md:[&>button]:min-w-0 max-md:[&>button]:px-2"
         />
         <PlanInterstitial feature="chart-history" open={upsell} onOpenChange={setUpsell} />
       </div>

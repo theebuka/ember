@@ -79,7 +79,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         >
           <main
             id="main"
-            className="flex-1 pb-[calc(var(--nav-height)+var(--safe-bottom)+1.5rem)] md:pb-16"
+            className="flex-1 pb-[calc(var(--nav-height)+var(--safe-bottom)+0.5rem)] md:pb-16"
           >
             {children}
           </main>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Sparkles, Upload, Wallet } from "@/components/common/icon";
@@ -13,10 +13,7 @@ import { DataSourceChip } from "@/components/market/data-source-chip";
 import { NotificationsButton } from "@/components/notifications/notifications-button";
 import { SearchButton } from "@/components/shell/search-button";
 import { CsvImport } from "@/components/portfolio/csv-import";
-import {
-  AllocationBar,
-  PositionsListSkeleton,
-} from "@/components/portfolio/positions-list";
+import { AllocationBar, PositionsListSkeleton } from "@/components/portfolio/positions-list";
 import { PositionsTable } from "@/components/portfolio/positions-table";
 import { Fab } from "@/components/common/fab";
 import { TradeModal, TransactionForm } from "@/components/portfolio/trade-modal";
@@ -96,6 +93,45 @@ export function PortfolioScreen() {
   const range: Range = rangeAllowed(chosenRange, plan) ? chosenRange : "1M";
   const lockedRanges = RANGE_LIST.filter((r) => !rangeAllowed(r, plan));
   const [editing, setEditing] = useState<Editing | null>(null);
+  const viewsRef = useRef<HTMLDivElement>(null);
+  const [heldHeight, setHeldHeight] = useState(0);
+
+  /**
+   * Switch segment without moving the page.
+   *
+   * Watching is usually shorter than Holdings, so the document shrank under a
+   * reader scrolled down to the control and the browser clamped the scroll —
+   * the page jumped. The views keep just enough height for the current scroll
+   * position to stay valid, and no more.
+   */
+  // Let go of the held height once the page could keep its place without it.
+  useEffect(() => {
+    if (!heldHeight) return;
+    const release = () => {
+      const views = viewsRef.current;
+      const natural = views?.firstElementChild as HTMLElement | null;
+      if (!views || !natural) return;
+      const doc = document.documentElement;
+      const naturalHeight = doc.scrollHeight - views.offsetHeight + natural.offsetHeight;
+      if (window.scrollY + window.innerHeight <= naturalHeight) setHeldHeight(0);
+    };
+    window.addEventListener("scroll", release, { passive: true });
+    return () => window.removeEventListener("scroll", release);
+  }, [heldHeight]);
+
+  const switchView = (next: View) => {
+    const views = viewsRef.current;
+    if (views) {
+      const doc = document.documentElement;
+      const below = doc.scrollHeight - views.offsetHeight;
+      setHeldHeight(Math.max(0, window.scrollY + window.innerHeight - below));
+    }
+    // `replace`, not `push` — a segment is a view of one screen, and pushing
+    // would make Back walk through every tab you glanced at before it left.
+    router.replace(next === "holdings" ? "/portfolio" : `/portfolio?view=${next}`, {
+      scroll: false,
+    });
+  };
   const [importing, setImporting] = useState(false);
 
   // Onboarding's "Log a trade" and "Import a CSV" land here and open the form
@@ -133,10 +169,7 @@ export function PortfolioScreen() {
     () => instrumentsQuery.data?.instruments ?? [],
     [instrumentsQuery.data],
   );
-  const instrumentBy = useMemo(
-    () => new Map(instruments.map((i) => [i.symbol, i])),
-    [instruments],
-  );
+  const instrumentBy = useMemo(() => new Map(instruments.map((i) => [i.symbol, i])), [instruments]);
   const quotes = useMemo(() => quotesQuery.data?.quotes ?? [], [quotesQuery.data]);
   const rates = ratesQuery.data?.rates ?? USD_PER_UNIT;
 
@@ -162,9 +195,7 @@ export function PortfolioScreen() {
   const valuePoints = useMemo(() => {
     const series = historyQuery.data?.series ?? [];
     if (series.length === 0) return [];
-    const candles = new Map<string, readonly Candle[]>(
-      series.map((s) => [s.symbol, s.candles]),
-    );
+    const candles = new Map<string, readonly Candle[]>(series.map((s) => [s.symbol, s.candles]));
     return portfolioValueSeries({
       transactions: hydrated ? transactions : [],
       candles,
@@ -338,7 +369,11 @@ export function PortfolioScreen() {
                   {isSample && (
                     <p className="mt-5 text-micro text-stone">
                       This is sample data, not your holdings.{" "}
-                      <button type="button" onClick={handleClearSample} className="tap-target font-medium text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+                      <button
+                        type="button"
+                        onClick={handleClearSample}
+                        className="tap-target font-medium text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                      >
                         Clear it
                       </button>
                     </p>
@@ -351,123 +386,116 @@ export function PortfolioScreen() {
             <Segmented
               id="portfolio-views"
               value={view}
-              onChange={(next) =>
-                // `replace`, not `push` — a segment is a view of one screen,
-                // and pushing would make Back walk through every tab you
-                // glanced at before it left the page.
-                router.replace(next === "holdings" ? "/portfolio" : `/portfolio?view=${next}`, {
-                  scroll: false,
-                })
-              }
+              onChange={switchView}
               options={VIEWS.map((v) => ({ value: v.value, label: v.label }))}
               aria-label="Portfolio view"
-              className="w-full sm:w-auto"
+              className="self-start"
             />
 
-            {view === "holdings" && (
-              <Section
-                title="Positions"
-                hint={
-                  summary.positions.length > 0
-                    ? `${summary.positions.length} open`
-                    : undefined
-                }
-              >
-                {loading ? (
-                  <PositionsListSkeleton rows={5} />
-                ) : summary.positions.length === 0 ? (
-                  <p className="text-caption text-stone">
-                    Every position is closed. Your realized P&amp;L is under Activity.
-                  </p>
-                ) : (
-                  <>
-                    <AllocationBar positions={summary.positions} className="mb-5" />
-                    <PositionsTable
-                      positions={summary.positions}
-                      base={base}
-                      onSelect={(symbol) => setEditing({ mode: "add", symbol })}
-                    />
-                  </>
-                )}
-                {!loading && (
-                  <LockedHoldings
-                    symbols={lockedHoldings}
-                    instruments={instrumentBy}
-                    className="mt-8"
-                  />
-                )}
-              </Section>
-            )}
-
-            {view === "watching" && <WatchlistPanel />}
-
-            {view === "activity" && (
-              <div className="space-y-9">
-                {realized.length > 0 && (
+            {/* Holds its height across a switch (see `switchView`). */}
+            <div ref={viewsRef} style={{ minHeight: heldHeight || undefined }}>
+              <div>
+                {view === "holdings" && (
                   <Section
-                    title="Realized"
-                    
-                    action={
-                      <span className={cnTone(summary.realized)}>
-                        {formatMoney(summary.realized, base, { signed: true })}
-                      </span>
+                    title="Positions"
+                    hint={
+                      summary.positions.length > 0 ? `${summary.positions.length} open` : undefined
                     }
                   >
-                    <Rows>
-                      {realized.map((entry) => (
-                        <Row
-                          key={entry.symbol}
-                          trailing={
-                            <span className={cnTone(entry.realized)}>
-                              {formatMoney(entry.realized, base, { signed: true })}
-                            </span>
-                          }
-                        >
-                          <span className="flex items-baseline gap-2">
-                            <span className="mono-label text-caption text-ink">
-                              {entry.symbol}
-                            </span>
-                            <span className="text-micro text-stone">
-                              {entry.stillHeld ? "trimmed" : "closed out"}
-                            </span>
-                          </span>
-                        </Row>
-                      ))}
-                    </Rows>
+                    {loading ? (
+                      <PositionsListSkeleton rows={5} />
+                    ) : summary.positions.length === 0 ? (
+                      <p className="text-caption text-stone">
+                        Every position is closed. Your realized P&amp;L is under Activity.
+                      </p>
+                    ) : (
+                      <>
+                        <AllocationBar positions={summary.positions} className="mb-5" />
+                        <PositionsTable
+                          positions={summary.positions}
+                          base={base}
+                          onSelect={(symbol) => setEditing({ mode: "add", symbol })}
+                        />
+                      </>
+                    )}
+                    {!loading && (
+                      <LockedHoldings
+                        symbols={lockedHoldings}
+                        instruments={instrumentBy}
+                        className="mt-8"
+                      />
+                    )}
                   </Section>
                 )}
 
-                <Section
-                  title="Transactions"
-                  hint={`${transactions.length} logged`}
-                  action={
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setImporting(true)}
-                      className="h-7 px-2.5 text-micro"
+                {view === "watching" && <WatchlistPanel />}
+
+                {view === "activity" && (
+                  <div className="space-y-9">
+                    {realized.length > 0 && (
+                      <Section
+                        title="Realized"
+
+                        action={
+                          <span className={cnTone(summary.realized)}>
+                            {formatMoney(summary.realized, base, { signed: true })}
+                          </span>
+                        }
+                      >
+                        <Rows>
+                          {realized.map((entry) => (
+                            <Row
+                              key={entry.symbol}
+                              trailing={
+                                <span className={cnTone(entry.realized)}>
+                                  {formatMoney(entry.realized, base, { signed: true })}
+                                </span>
+                              }
+                            >
+                              <span className="flex items-baseline gap-2">
+                                <span className="mono-label text-caption text-ink">
+                                  {entry.symbol}
+                                </span>
+                                <span className="text-micro text-stone">
+                                  {entry.stillHeld ? "trimmed" : "closed out"}
+                                </span>
+                              </span>
+                            </Row>
+                          ))}
+                        </Rows>
+                      </Section>
+                    )}
+
+                    <Section
+                      title="Transactions"
+                      hint={`${transactions.length} logged`}
+                      action={
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setImporting(true)}
+                          className="h-7 px-2.5 text-micro"
+                        >
+                          <Upload />
+                          Import
+                        </Button>
+                      }
                     >
-                      <Upload />
-                      Import
-                    </Button>
-                  }
-                >
-                  <TransactionHistory
-                    transactions={transactions}
-                    instruments={instruments}
-                    onEdit={(tx) => setEditing({ mode: "edit", tx })}
-                    onDelete={handleDelete}
-                  />
-                </Section>
+                      <TransactionHistory
+                        transactions={transactions}
+                        instruments={instruments}
+                        onEdit={(tx) => setEditing({ mode: "edit", tx })}
+                        onDelete={handleDelete}
+                      />
+                    </Section>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
 
             <p className="text-micro text-stone">
               Cost basis uses average cost.{" "}
-              <Link
-                href="/settings"
-                className="underline underline-offset-2 hover:text-stone"
-              >
+              <Link href="/settings" className="underline underline-offset-2 hover:text-stone">
                 Export or clear your data
               </Link>
               .
@@ -498,7 +526,6 @@ export function PortfolioScreen() {
         open={editing !== null}
         onOpenChange={(open) => !open && setEditing(null)}
         title={editing?.mode === "edit" ? "Edit trade" : "Log a trade"}
-        
       >
         {editing && (
           <TransactionForm
@@ -510,9 +537,7 @@ export function PortfolioScreen() {
             existing={ledger}
             editing={editing.mode === "edit" ? editing.tx : undefined}
             defaults={
-              editing.mode === "add" && editing.symbol
-                ? { symbol: editing.symbol }
-                : undefined
+              editing.mode === "add" && editing.symbol ? { symbol: editing.symbol } : undefined
             }
             onSubmit={handleSubmit}
             onCancel={() => setEditing(null)}

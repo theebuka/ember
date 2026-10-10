@@ -21,6 +21,28 @@ const LOCALE = "en-US";
 
 const moneyCache = new Map<string, Intl.NumberFormat>();
 
+/**
+ * The currency's own glyph where it has one: `₦`, not `NGN`.
+ *
+ * `en-US` prints a currency it has no US symbol for as its ISO code, so a naira
+ * balance read "NGN 107,670,672". The narrow symbol is the one people write,
+ * except where it collides — `$` for a Canadian or Taiwanese dollar, `¥` for
+ * the yuan — where the disambiguated form (`CA$`, `NT$`, `CN¥`) stays, the same
+ * rule the pricing card follows (decision 258).
+ */
+function currencyDisplay(currency: Currency): "narrowSymbol" | "symbol" {
+  const narrow = new Intl.NumberFormat(LOCALE, {
+    style: "currency",
+    currency,
+    currencyDisplay: "narrowSymbol",
+  })
+    .formatToParts(1)
+    .find((part) => part.type === "currency")?.value;
+  if (narrow === "$" && currency !== "USD") return "symbol";
+  if (narrow === "¥" && currency !== "JPY") return "symbol";
+  return "narrowSymbol";
+}
+
 function moneyFormatter(currency: Currency, decimals: number): Intl.NumberFormat {
   const key = `${currency}:${decimals}`;
   let cached = moneyCache.get(key);
@@ -28,6 +50,7 @@ function moneyFormatter(currency: Currency, decimals: number): Intl.NumberFormat
     cached = new Intl.NumberFormat(LOCALE, {
       style: "currency",
       currency,
+      currencyDisplay: currencyDisplay(currency),
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
     });
@@ -82,6 +105,7 @@ export function formatCompactMoney(value: number, currency: Currency): string {
   const formatted = new Intl.NumberFormat(LOCALE, {
     style: "currency",
     currency,
+    currencyDisplay: currencyDisplay(currency),
     notation: "compact",
     maximumFractionDigits: 1,
   }).format(Math.abs(value));

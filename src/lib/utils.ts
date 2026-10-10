@@ -39,6 +39,7 @@ const twMerge = extendTailwindMerge({
           text: [
             "figure",
             "display",
+            "balance",
             "title",
             "heading",
             "body",

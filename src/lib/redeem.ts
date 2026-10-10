@@ -50,11 +50,11 @@ export function isCompleteCode(value: string): boolean {
 
 /** The periods offered in the admin panel. Days, to match the column. */
 export const CODE_PERIODS = [
-  { days: 7, label: "1 week" },
-  { days: 30, label: "1 month" },
-  { days: 90, label: "3 months" },
-  { days: 182, label: "6 months" },
-  { days: 365, label: "1 year" },
+  { days: 7, label: "1 week", short: "1W" },
+  { days: 30, label: "1 month", short: "1M" },
+  { days: 90, label: "3 months", short: "3M" },
+  { days: 182, label: "6 months", short: "6M" },
+  { days: 365, label: "1 year", short: "1Y" },
 ] as const;
 
 /** How long a code stays redeemable. `null` days is never. */

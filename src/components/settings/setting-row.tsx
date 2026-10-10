@@ -16,9 +16,10 @@ import { cn } from "@/lib/utils";
  *   width. Dropping one below its own description leaves a lone toggle
  *   floating on the left with nothing to attach it to.
  *
- *   `responsive` (the default) — a pair of buttons or a link. Inline where
- *   there's room, beneath the text on a phone, where sharing the row would
- *   squeeze the description to nothing.
+ *   `responsive` (the default) — a button or a link. Also on the right at
+ *   every width: dropped beneath the text on a phone, a lone `sm` button read
+ *   as a new row rather than this row's action, and the switches beside it
+ *   in Markets stayed on the right, so one pane had two layouts.
  *
  *   `stack` — a segmented control or anything else that needs the full width.
  */
@@ -50,8 +51,7 @@ export function SettingRow({
       <div
         className={cn(
           "flex gap-x-5 gap-y-2.5",
-          layout === "inline" && "flex-row items-center",
-          layout === "responsive" && "flex-col sm:flex-row sm:items-center",
+          (layout === "inline" || layout === "responsive") && "flex-row items-center",
           layout === "stack" && "flex-col",
         )}
       >
@@ -96,8 +96,7 @@ export function SettingRow({
               // instead, which is the correct order of concessions: a sentence
               // can take another line, `Sign out` cannot.
               "shrink-0",
-              layout === "inline" && "ml-auto",
-              layout === "responsive" && "sm:ml-auto",
+              layout !== "stack" && "ml-auto",
             )}
           >
             {control}
@@ -220,12 +219,12 @@ export function SettingsPaneHeader({
 }) {
   return (
     // On a phone the page header already carries the section's name, so the
-    // title stays for assistive tech and only the line under it shows.
-    <header className="mb-6 lg:mb-8 lg:border-b lg:border-line lg:pb-5">
+    // title stays for assistive tech and the line under it is desktop's.
+    <header className="lg:mb-8 lg:border-b lg:border-line lg:pb-5">
       <h2 className="text-heading font-semibold tracking-title text-ink max-lg:sr-only">
         {title}
       </h2>
-      {description && <p className="text-caption text-stone lg:mt-1">{description}</p>}
+      {description && <p className="mt-1 text-caption text-stone max-lg:hidden">{description}</p>}
     </header>
   );
 }

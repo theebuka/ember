@@ -67,7 +67,10 @@ export function GreetingLine({ className }: { className?: string }) {
        * continuously. The colour is the only thing the split buys, and colour
        * is not semantic.
        */}
-      <p className="text-title font-medium tracking-title text-stone">
+      {/* On a phone, one line at heading size. At 22px over a second line it
+          was the largest text on the screen above the balance, and two
+          sentences, one of them a question, read as something to answer. */}
+      <p className="text-title font-medium tracking-title text-stone max-md:text-heading">
         {parts === null ? (
           <span className="invisible">Good afternoon</span>
         ) : (
@@ -95,7 +98,7 @@ export function GreetingLine({ className }: { className?: string }) {
        * move when the text lands (ADR 0019). Two reserved lines now, which is
        * why this is a real element rather than something conditional.
        */}
-      <p className="mt-1 text-body text-stone">
+      <p className="mt-1 text-body text-stone max-md:hidden">
         {prompt === null ? (
           <span className="invisible">Where would you like to start?</span>
         ) : (
