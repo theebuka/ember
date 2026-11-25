@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+/// <reference types="react/canary" />
+import { useEffect, useMemo, ViewTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageBody } from "@/components/common/page-body";
@@ -182,166 +183,181 @@ export function SettingsScreen() {
         }
       />
       {!atIndex && (
-        <PageHeader title={section.label} back="/settings" className="lg:hidden" />
+        <ViewTransition enter="page-enter" exit="page-exit" default="none">
+          <PageHeader title={section.label} back="/settings" className="lg:hidden" />
+        </ViewTransition>
       )}
 
       <PageBody className="pb-12">
         <div className="lg:grid lg:grid-cols-[13.5rem_minmax(0,1fr)] lg:gap-12 xl:gap-16">
           <SettingsSidebar current={current} sections={sections} />
 
-          {atIndex && <SettingsIndex sections={sections} />}
+          {atIndex && (
+            <ViewTransition enter="page-enter" exit="page-exit" default="none">
+              <SettingsIndex sections={sections} />
+            </ViewTransition>
+          )}
 
           {/* One measure, every width. A settings pane has no "more" to give
               (decision 065): a switch 1,400px from its label is worse than a
               narrow column. */}
           {/* The plan comparison is two columns side by side and needs the room
               the modal gives it; every other pane keeps the reading measure. */}
-          <div
-            className={cn(
-              "min-w-0",
-              current === "plan" ? "max-w-[52.5rem]" : "max-w-2xl",
-              atIndex && "max-lg:hidden",
-            )}
+          {/* Each section is a page of its own (decision 314): keyed by it, so
+              switching sections moves like a route change. */}
+          <ViewTransition
+            key={atIndex ? "index" : current}
+            enter="page-enter"
+            exit="page-exit"
+            default="none"
           >
-            <SettingsPaneHeader title={section.label} description={section.description} />
-
-            {/* 40px between groups, 12px from a group's heading to its rows. */}
-            <div className="space-y-10">
-              {current === "account" && (
-                <>
-                  <AccountSetting />
-                  <ProfileSettings />
-                </>
+            <div
+              className={cn(
+                "min-w-0",
+                current === "plan" ? "max-w-[52.5rem]" : "max-w-2xl",
+                atIndex && "max-lg:hidden",
               )}
+            >
+              <SettingsPaneHeader title={section.label} description={section.description} />
 
-              {current === "plan" && <PlanSetting />}
+              {/* 40px between groups, 12px from a group's heading to its rows. */}
+              <div className="space-y-10">
+                {current === "account" && (
+                  <>
+                    <AccountSetting />
+                    <ProfileSettings />
+                  </>
+                )}
 
-              {/* Only rendered for an admin — `visibleSections` already hides the
-                  entry, this is the matching half. Not a permission: every
-                  control inside would be refused by RLS anyway (ADR 0039). */}
-              {current === "admin" && isAdmin && <AdminPanels />}
+                {current === "plan" && <PlanSetting />}
 
-              {current === "advice" && (
-                <SettingGroup
-                  title="Risk profile"
-                  description="Also sets how large a position ember suggests."
-                  boxed={false}
-                >
-                  <RiskProfileSetting value={riskProfile} onChange={setRiskProfile} />
-                </SettingGroup>
-              )}
+                {/* Only rendered for an admin — `visibleSections` already hides the
+                    entry, this is the matching half. Not a permission: every
+                    control inside would be refused by RLS anyway (ADR 0039). */}
+                {current === "admin" && isAdmin && <AdminPanels />}
 
-              {current === "preferences" && (
-                <>
-                  <SettingGroup title="Markets" description="What ember watches and advises on.">
-                    {(["equity", "crypto", "fx"] as const).map((market) => {
-                      const on = markets[market];
-                      const locked = on && onlyOneMarket;
-                      // Not before hydration: a warm instruments cache can answer
-                      // before React reaches this row, and the server's HTML has
-                      // no count — decision 250's mismatch, on this screen.
-                      const count = hydrated ? counts[market] : 0;
-
-                      return (
-                        <SettingRow
-                          key={market}
-                          label={MARKET_LABELS[market]}
-                          description={
-                            locked
-                              ? "Keep at least one market on."
-                              : `${MARKET_NOTES[market]}${count > 0 ? ` ${count} instruments.` : ""}`
-                          }
-                          layout="inline"
-                          control={
-                            <Switch
-                              checked={on}
-                              disabled={locked}
-                              onCheckedChange={() => toggleMarket(market)}
-                              aria-label={`Follow ${MARKET_LABELS[market]}`}
-                            />
-                          }
-                        />
-                      );
-                    })}
-                  </SettingGroup>
-
-                  {/* Alerts were their own tab; they sit with the markets they
-                      watch (decision 286). `?tab=alerts` lands here. */}
-                  <AlertSettings />
-
+                {current === "advice" && (
                   <SettingGroup
-                    title="Currency"
+                    title="Risk profile"
+                    description="Also sets how large a position ember suggests."
+                    boxed={false}
+                  >
+                    <RiskProfileSetting value={riskProfile} onChange={setRiskProfile} />
+                  </SettingGroup>
+                )}
+
+                {current === "preferences" && (
+                  <>
+                    <SettingGroup title="Markets" description="What ember watches and advises on.">
+                      {(["equity", "crypto", "fx"] as const).map((market) => {
+                        const on = markets[market];
+                        const locked = on && onlyOneMarket;
+                        // Not before hydration: a warm instruments cache can answer
+                        // before React reaches this row, and the server's HTML has
+                        // no count — decision 250's mismatch, on this screen.
+                        const count = hydrated ? counts[market] : 0;
+
+                        return (
+                          <SettingRow
+                            key={market}
+                            label={MARKET_LABELS[market]}
+                            description={
+                              locked
+                                ? "Keep at least one market on."
+                                : `${MARKET_NOTES[market]}${count > 0 ? ` ${count} instruments.` : ""}`
+                            }
+                            layout="inline"
+                            control={
+                              <Switch
+                                checked={on}
+                                disabled={locked}
+                                onCheckedChange={() => toggleMarket(market)}
+                                aria-label={`Follow ${MARKET_LABELS[market]}`}
+                              />
+                            }
+                          />
+                        );
+                      })}
+                    </SettingGroup>
+
+                    {/* Alerts were their own tab; they sit with the markets they
+                        watch (decision 286). `?tab=alerts` lands here. */}
+                    <AlertSettings />
+
+                    <SettingGroup
+                      title="Currency"
+                      footer={
+                        <p>
+                          Realized P&amp;L uses today&apos;s exchange rate, not the rate on the
+                          day you traded.
+                        </p>
+                      }
+                    >
+                      <SettingRow
+                        label="Base currency"
+                        description="Used for totals and P&L. Prices stay in their own currency."
+                        layout="stack"
+                        control={
+                          <Segmented
+                            aria-label="Base currency"
+                            value={baseCurrency}
+                            onChange={(value) => setBaseCurrency(value as BaseCurrency)}
+                            options={CURRENCY_OPTIONS}
+                          />
+                        }
+                      />
+                    </SettingGroup>
+
+                    <SettingGroup title="Appearance">
+                      <SettingRow label="Theme" layout="inline" control={<ThemeToggle />} />
+                    </SettingGroup>
+                  </>
+                )}
+
+                {current === "data" && <DataSettings />}
+
+                {current === "about" && (
+                  <SettingGroup
                     footer={
                       <p>
-                        Realized P&amp;L uses today&apos;s exchange rate, not the rate on the
-                        day you traded.
+                        ember gives information, not financial advice. It doesn&apos;t account
+                        for your circumstances, tax position or timeline.
                       </p>
                     }
                   >
                     <SettingRow
-                      label="Base currency"
-                      description="Used for totals and P&L. Prices stay in their own currency."
-                      layout="stack"
-                      control={
-                        <Segmented
-                          aria-label="Base currency"
-                          value={baseCurrency}
-                          onChange={(value) => setBaseCurrency(value as BaseCurrency)}
-                          options={CURRENCY_OPTIONS}
-                        />
+                      label="Where the prices come from"
+                      description={
+                        !synthetic
+                          ? "Stocks from Yahoo and Finnhub, crypto from CoinGecko, exchange rates from the European Central Bank. Central-bank rates and the economic calendar are modelled."
+                          : "Prices and company data are simulated. The engine and track record are real, running on that simulated data."
                       }
+                      control={<DataSourceChip />}
+                    />
+                    <SettingRow
+                      label="How the signals are built"
+                      description="Every rule ember uses, with its source and weight."
+                      control={<AboutLink href="/signals/methodology">Methodology</AboutLink>}
+                    />
+                    <SettingRow
+                      label="How past calls performed"
+                      description="Every call the engine has made in testing, losses included."
+                      control={<AboutLink href="/signals/track-record">Track record</AboutLink>}
+                    />
+                    <SettingRow
+                      label="How alerts behave"
+                      description="In-app alerts arrive while ember is open; push reaches you when it's closed. You're never alerted twice about the same thing or about a call you've handled. Warnings about what you hold repeat at most once a day."
+                    />
+                    <SettingRow
+                      label="Run through setup again"
+                      description="Your data isn't affected."
+                      control={<AboutLink href="/onboarding?replay=1">Replay</AboutLink>}
                     />
                   </SettingGroup>
-
-                  <SettingGroup title="Appearance">
-                    <SettingRow label="Theme" layout="inline" control={<ThemeToggle />} />
-                  </SettingGroup>
-                </>
-              )}
-
-              {current === "data" && <DataSettings />}
-
-              {current === "about" && (
-                <SettingGroup
-                  footer={
-                    <p>
-                      ember gives information, not financial advice. It doesn&apos;t account
-                      for your circumstances, tax position or timeline.
-                    </p>
-                  }
-                >
-                  <SettingRow
-                    label="Where the prices come from"
-                    description={
-                      !synthetic
-                        ? "Stocks from Yahoo and Finnhub, crypto from CoinGecko, exchange rates from the European Central Bank. Central-bank rates and the economic calendar are modelled."
-                        : "Prices and company data are simulated. The engine and track record are real, running on that simulated data."
-                    }
-                    control={<DataSourceChip />}
-                  />
-                  <SettingRow
-                    label="How the signals are built"
-                    description="Every rule ember uses, with its source and weight."
-                    control={<AboutLink href="/signals/methodology">Methodology</AboutLink>}
-                  />
-                  <SettingRow
-                    label="How past calls performed"
-                    description="Every call the engine has made in testing, losses included."
-                    control={<AboutLink href="/signals/track-record">Track record</AboutLink>}
-                  />
-                  <SettingRow
-                    label="How alerts behave"
-                    description="In-app alerts arrive while ember is open; push reaches you when it's closed. You're never alerted twice about the same thing or about a call you've handled. Warnings about what you hold repeat at most once a day."
-                  />
-                  <SettingRow
-                    label="Run through setup again"
-                    description="Your data isn't affected."
-                    control={<AboutLink href="/onboarding?replay=1">Replay</AboutLink>}
-                  />
-                </SettingGroup>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          </ViewTransition>
         </div>
       </PageBody>
     </>

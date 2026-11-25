@@ -511,6 +511,53 @@
   animation: ember-pulse 4.8s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
 }
 
+/* Page transitions (decision 314). The old page leaves fast so it never
+   competes with the new one; the new one fades in a few pixels low and
+   settles. Short on purpose: the page is not interactive while the browser's
+   snapshots are on screen. `PageTransition` and the settings pane name these. */
+:root {
+  --page-exit: 110ms;
+  --page-enter: 200ms;
+  --page-move: 300ms;
+  --page-delay: 60ms;
+}
+
+::view-transition-old(.page-exit) {
+  animation: var(--page-exit) cubic-bezier(0.4, 0, 1, 1) both page-fade-out;
+}
+
+::view-transition-new(.page-enter) {
+  animation:
+    var(--page-enter) cubic-bezier(0, 0, 0.2, 1) var(--page-delay) both page-fade-in,
+    var(--page-move) cubic-bezier(0.2, 0.8, 0.2, 1) var(--page-delay) both page-rise;
+}
+
+/* The chrome around the page is identical before and after, so its crossfade
+   is invisible; it is shortened to match so nothing outlives the page. */
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: calc(var(--page-delay) + var(--page-enter));
+}
+
+@keyframes page-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes page-rise {
+  from {
+    transform: translateY(8px);
+  }
+}
+
 /* Honoured everywhere, including the ticking `now` marker on the window band
    and the live price pulse. Non-negotiable — see CLAUDE.md §5. */
 @media (prefers-reduced-motion: reduce) {
@@ -521,6 +568,13 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  /* A reduced-motion reader gets the swap, never the movement. */
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }
 

@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { AnnouncementBar } from "@/components/shell/announcement-bar";
 import { BottomNav } from "@/components/shell/bottom-nav";
 import { CommandMenuLoader } from "@/components/shell/command-menu-loader";
+import { PageTransition } from "@/components/shell/page-transition";
 import { SidePanel } from "@/components/shell/side-panel";
 import { useFindingAlerts } from "@/hooks/use-finding-alerts";
 import { useSync } from "@/hooks/use-sync";
@@ -32,7 +33,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useSync();
   usePlanRefresh();
 
-  if (isBareRoute(pathname)) return <>{children}</>;
+  if (isBareRoute(pathname)) return <PageTransition id={pathname}>{children}</PageTransition>;
 
   return (
     <>
@@ -81,7 +82,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             id="main"
             className="flex-1 pb-[calc(var(--nav-height)+var(--safe-bottom)+0.5rem)] md:pb-16"
           >
-            {children}
+            <PageTransition id={pathname}>{children}</PageTransition>
           </main>
         </div>
 
