@@ -57,3 +57,6 @@ next-env.d.ts
 
 # design critique snapshots (impeccable)
 .impeccable/
+
+# case-study working files (renders, drafts, Sanity refs)
+docs/case-study/hires/

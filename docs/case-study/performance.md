@@ -1,6 +1,6 @@
 # Performance and layout shift
 
-`scripts/perf.mjs`, 2026-10-10, against a production build.
+`scripts/perf.mjs`, 2026-11-25, against a production build.
 
 ## Layout shift
 
@@ -21,7 +21,7 @@ Lighthouse table below is where that one shows up.
 | News | 0.000 | 0.000 |
 | Track record | 0.000 | 0.000 |
 | Methodology | 0.000 | 0.000 |
-| Asset detail | 0.083 | 0.029 |
+| Asset detail | 0.081 | 0.029 |
 | Settings | 0.000 | 0.004 |
 | Settings — profile | 0.032 | 0.004 |
 | Settings — your data | 0.000 | 0.000 |
@@ -55,11 +55,11 @@ does seeded.
 
 | Screen | Profile | Perf | A11y | Best practices | SEO | LCP | TBT | CLS |
 |---|---|---|---|---|---|---|---|---|
-| Home | mobile | 82 | 100 | 100 | 100 | 4.9 s | 69 ms | 0.000 |
-| Signals feed | mobile | 82 | 100 | 100 | 100 | 5.1 s | 9 ms | 0.000 |
-| Asset detail | mobile | 85 | 100 | 100 | 100 | 4.5 s | 9 ms | 0.002 |
+| Home | mobile | 80 | 100 | 100 | 100 | 5.3 s | 18 ms | 0.000 |
+| Signals feed | mobile | 82 | 100 | 100 | 100 | 4.9 s | 13 ms | 0.000 |
+| Asset detail | mobile | 84 | 100 | 100 | 100 | 4.6 s | 18 ms | 0.002 |
 | Home | desktop | 99 | 100 | 100 | 100 | 1.0 s | 0 ms | 0.015 |
-| Signals feed | desktop | 99 | 100 | 100 | 100 | 1.0 s | 0 ms | 0.015 |
+| Signals feed | desktop | 98 | 100 | 100 | 100 | 1.1 s | 0 ms | 0.015 |
 | Asset detail | desktop | 99 | 100 | 100 | 100 | 0.9 s | 0 ms | 0.001 |
 
 Mobile is Lighthouse's throttled profile — simulated slow 4G with a 4×

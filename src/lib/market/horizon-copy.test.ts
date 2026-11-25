@@ -28,22 +28,36 @@ function sources(dir: string): string[] {
  */
 const LITERAL = /\b(next three days|inside three days|across three days|72-hour)\b/;
 
+/**
+ * A count of bars interpolated into copy: `{n} bars`. The engine counts in bars;
+ * a reader counts in trading days (decision 302). The track record said "filled
+ * 1.0 bars after it was made" for a phase after that decision.
+ */
+const BARS = /\}\s*bars?\b/;
+
+function offenders(dirs: string[], pattern: RegExp): string[] {
+  return dirs
+    .flatMap(sources)
+    .flatMap((file) =>
+      readFileSync(file, "utf8")
+        .split("\n")
+        .map((line, i) => ({ file, line: i + 1, text: line.trim() }))
+        .filter(
+          ({ text }) =>
+            !text.startsWith("//") && !text.startsWith("*") && !text.startsWith("{/*"),
+        )
+        .filter(({ text }) => pattern.test(text)),
+    )
+    .map(({ file, line }) => `${file}:${line}`);
+}
+
 describe("horizon copy", () => {
   it("is never written as a literal in a component or the engine", () => {
-    const offenders = [...sources("src/components"), ...sources("src/lib/signals")]
-      .flatMap((file) =>
-        readFileSync(file, "utf8")
-          .split("\n")
-          .map((line, i) => ({ file, line: i + 1, text: line.trim() }))
-          .filter(
-            ({ text }) =>
-              !text.startsWith("//") && !text.startsWith("*") && !text.startsWith("{/*"),
-          )
-          .filter(({ text }) => LITERAL.test(text)),
-      )
-      .map(({ file, line }) => `${file}:${line}`);
+    expect(offenders(["src/components", "src/lib/signals"], LITERAL)).toEqual([]);
+  });
 
-    expect(offenders).toEqual([]);
+  it("never counts in bars in a component", () => {
+    expect(offenders(["src/components"], BARS)).toEqual([]);
   });
 
   it("describes each market's span in words", () => {

@@ -197,7 +197,7 @@ export function TrackRecordScreen() {
                 </p>
                 <p className="mt-1 text-caption text-stone">
                   Average per call, filled{" "}
-                  {result.averageEntryLagBars.toFixed(1)} bars after it was made. Returns are measured from the first price you could actually trade, not the price on the card.
+                  {result.averageEntryLagBars.toFixed(1)} trading days after it was made. Returns are measured from the first price you could actually trade, not the price on the card.
                 </p>
               </div>
 

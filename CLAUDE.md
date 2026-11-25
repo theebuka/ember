@@ -89,7 +89,7 @@ npm run build        # production build
 npm run start        # serve production build
 npm run lint         # eslint
 npx tsc --noEmit     # typecheck — run before declaring any phase done
-npx vitest run       # unit tests — 427 passing (engine, exposure triggers,
+npx vitest run       # unit tests — 428 passing (engine, exposure triggers,
                      #   finding ranking, backtest invariants, mock calendar,
                      #   portfolio math, CSV import + export round-trip, ledger
                      #   validation, watchlist resolve, alert scheduling for both
@@ -1366,6 +1366,37 @@ See `docs/decisions/` for full ADRs. Summary:
 - **There is no screenshot set.** The gate took 74 PNGs until 2026-10-10; the
   Figma file ("ember — App design") is the visual record now, kept by hand, so
   it can drift from the code in a way a regenerated folder could not.
+- **The Figma file was rewritten to the app on 2026-10-11 and measured against it
+  on 2026-10-12. It is close, and still kept by hand.** The first pass checked
+  every string against `src/` and redrew about fourteen screens whose wording and
+  structure the code never had. The second pass measured the running app (type
+  size, weight, colour and position of every text node, phone and 1920 wide) and
+  found the drift was in the shared components as much as the screens: buttons
+  were medium at the wrong padding, inactive labels were `graphite` where the app
+  uses `stone`, containers were 12px where `rounded-xl` computes to 15, and every
+  desktop frame ignored the 1600px cap. Fixed at the component level (Button,
+  Action badge with an `sm` size, Tag, Segment with an `sm` size, Live chip, tab
+  bar, rail, call cards, position row), then per screen: Home, Signals, the asset
+  page, Watching, News, Track record, Search, Notifications and the Pro return
+  screens were rebuilt or corrected on phone and desktop, and desktop Portfolio
+  got the app's hero, chart and positions table. Added: the announcement bar, the
+  pinned card, "Your position comes first", sync paused, blocked notifications, a
+  signed-in Preferences, a lapsed plan and the signed-out Pro return page
+  (M49–M56, D45–D52). Light and dark match frame for frame by text hash and node
+  count: 56 phone frames, 52 desktop. **Not re-measured in the second pass:**
+  onboarding, Methodology, the settings panes' inner layout, the trade, import
+  and plans sheets, and the empty and loading states; they inherit the component
+  fixes only. Prototype links were not re-checked, and the new frames have none.
+  **A third pass (2026-10-12) measured vertical spacing and is unfinished.** Done
+  on all four pages: the call cards', position rows' and notice rows' internal
+  gaps; the phone header (64px) and body padding; block gaps on phone Home,
+  Signals, the asset page, Portfolio, News, Notifications and Track record, and on
+  desktop Home, Signals and Portfolio; and Methodology rebuilt in full (it had been
+  a stub: all 19 rules by family, regime weights, risk profile, ruled out). Checked
+  against the app to within about 3px on phone Home only. **Not done:** the settings
+  panes, sign-in, onboarding, the three sheets and the empty and loading states
+  were not measured at all; the other desktop screens were not re-checked after the
+  spacing pass; prototype links are still unchecked and the new frames have none.
 - **A Supabase project now exists, and half the unverified list is closed.** `.env.local` carries real credentials and `0001_init.sql` has been applied — verified directly against the REST API: all five tables answer, an anonymous read of `profiles`, `transactions`, `preferences` and `watchlist` returns `[]` rather than rows, and an anonymous write is refused with a 401. **RLS is doing its job.** `notices` is readable, as its policy intends.
 - **Migrations 0001–0006 are all applied.** Probed against the live REST API on
   2026-08-17 rather than taken from this file: `push_subscriptions` returns 200
@@ -1488,7 +1519,7 @@ See `docs/decisions/` for full ADRs. Summary:
   needs an hourly cron and a filter rather than new data — 24 runs a day against a
   free tier's 2,000 minutes a month, which is a cost to take deliberately.
 - **The NGX clock has started, for half the Lagos rows.** The workflow runs from
-  the private repository `theebuka/ember`; the first run (2026-09-29, by hand)
+  the public repository `theebuka/ember`; the first run (2026-09-29, by hand)
   stored six bars for the 2026-09-28 session. **The other six never get a close
   from this endpoint**: AIRTELAFRI, BUACEMENT, DANGCEM, MTNN, NESTLE and SEPLAT are
   Premium Board listings, and the board returns `ClosePrice`, `HighPrice` and
@@ -1696,7 +1727,7 @@ Next, in order of what unblocks the most:
    destroy data, but no two real devices have ever met. Check for duplication
    rather than for loss: the merge is last-write-wins per row, so the failure that
    looks like a bug is a trade appearing twice.
-2. **Finish turning the scheduler on.** The workflow is live on the private
+2. **Finish turning the scheduler on.** The workflow is live on the public
    repository `theebuka/ember` with seven secrets set, on Node 24, and the NGX
    collector has run. Push and both digests are still blocked: they need a
    deployed app for `EMBER_APP_URL`, and the digest needs a From address on a
@@ -1790,6 +1821,6 @@ The user is writing a design/engineering case study to senior-design-engineer st
 - [x] Signature component study — `docs/case-study/window-band.md`
 - [x] Logo rationale — the ember point as both brand mark and product primitive (`docs/design-system.md`, "The ember point")
 - [x] Screenshots: superseded by the Figma file below. The 74 gate-generated PNGs and the script that took them were removed on 2026-10-10 (decision 312)
-- [x] Design file and flows — Figma "ember — App design" (`bOiyRBaQ46QkGVeU86NrMI`): every screen on iPhone 16 Pro (iOS 27 status bar) and at 1920 × 1080, light and dark, in sections, prototyped, with a Pitfalls and bugs page. FigJam "ember — Flows & UX" (`sDRF9GhpbL4GnjZHH84OjZ`): sitemap, flows, states, persona, journey map Brought up to decisions 306–313 on 2026-10-10: wording, the Home and Portfolio heroes, the phone chart header, the settings panes, onboarding's compact risk step and its market labels outside the ring, Home's one-line locked calls, and the trimmed finding row. A frame clips at its device height, so anything below the fold renders blank in a screenshot; clone it to the page to look at it
+- [x] Design file and flows — Figma "ember — App design" (`bOiyRBaQ46QkGVeU86NrMI`): every screen on iPhone 16 Pro (iOS 27 status bar) and at 1920 × 1080, light and dark, in sections, prototyped, with a Pitfalls and bugs page. FigJam "ember — Flows & UX" (`sDRF9GhpbL4GnjZHH84OjZ`): sitemap, flows, states, persona, journey map Brought up to decisions 306–313 on 2026-10-10: wording, the Home and Portfolio heroes, the phone chart header, the settings panes, onboarding's compact risk step and its market labels outside the ring, Home's one-line locked calls, and the trimmed finding row. Rewritten to the app's copy and structure on 2026-10-11 (settings, sheets and modals, sign-in, Activity, Methodology; see §8 for what was and wasn't compared). Measured against the running app on 2026-10-12: components and ten screen families corrected, eight states added (§8). A frame clips at its device height, so anything below the fold renders blank in a screenshot; clone it to the page to look at it
 - [ ] Before/after shots where a design changed and why — the nav redesign, the type-scale fix and the CLS work all have a genuine "before", but no screenshots were taken of the earlier state. The ADRs carry the reasoning; the images would have to be reconstructed from git history
 - [x] Performance and accessibility numbers — `docs/case-study/performance.md` and `accessibility.md`, both regenerated per run; summarised in `docs/case-study/README.md`. axe 0 violations over 80 page audits, Lighthouse 99 desktop / 82–85 mobile, CLS under 0.02 on thirteen of fifteen measured screens, worst 0.083 (2026-10-10)
